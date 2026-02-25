@@ -4,8 +4,16 @@ extends CanvasLayer
 @onready var floor_label: Label = $MarginContainer/TopLeft/FloorLabel
 @onready var modifier_container: HBoxContainer = $MarginContainer/TopCenter/ModifierContainer
 
+@onready var equip_button: Button = $MarginContainer/TopLeft/EquipButton
+
 func _ready() -> void:
+    equip_button.pressed.connect(_on_equip_pressed)
     update_hud()
+
+func _on_equip_pressed() -> void:
+    var overlay = load("res://src/ui/EquipmentOverlay.tscn").instantiate()
+    add_child(overlay)
+    overlay.closed.connect(func(): update_hud())
 
 func update_hud() -> void:
     var run = RunManager.get_run()

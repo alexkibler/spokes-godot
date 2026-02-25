@@ -91,6 +91,57 @@ func add_gold(amount: int) -> void:
 func add_to_inventory(item_id: String) -> void:
 	run_data["inventory"].append(item_id)
 
+func equip_item(item_id: String) -> bool:
+	var registry = get_node("/root/RewardManager").registry
+	var def = registry.get_item(item_id)
+	if not def.has("slot"): return false
+	
+	var idx = run_data["inventory"].find(item_id)
+	if idx == -1: return false
+	
+	var slot = def["slot"]
+	# Unequip current if any
+	if run_data["equipped"].has(slot):
+		unequip_item(slot)
+		# Re-fetch index as unequip might shift inventory
+		idx = run_data["inventory"].find(item_id)
+		
+	run_data["inventory"].remove_at(idx)
+	run_data["equipped"][slot] = item_id
+	
+	if def.has("modifier"):
+		apply_modifier(def["modifier"], def["label"] + " (equipped)")
+		
+	return true
+
+func unequip_item(slot: String) -> String:
+	var item_id = run_data["equipped"].get(slot, "")
+	if item_id == "": return ""
+	
+	var registry = get_node("/root/RewardManager").registry
+	var def = registry.get_item(item_id)
+	
+	if def.has("modifier"):
+		_reverse_modifier(def["modifier"])
+		# Remove from log
+		var log_label = def["label"] + " (equipped)"
+		for i in range(run_data["modifierLog"].size() - 1, -1, -1):
+			if run_data["modifierLog"][i]["label"] == log_label:
+				run_data["modifierLog"].remove_at(i)
+				break
+				
+	run_data["equipped"].erase(slot)
+	run_data["inventory"].append(item_id)
+	modifiers_changed.emit()
+	return item_id
+
+func _reverse_modifier(delta: Dictionary) -> void:
+	var m = run_data["modifiers"]
+	if delta.has("powerMult"): m["powerMult"] /= delta["powerMult"]
+	if delta.has("dragReduction"): m["dragReduction"] = max(0.0, m["dragReduction"] - delta["dragReduction"])
+	if delta.has("weightMult"): m["weightMult"] /= delta["weightMult"]
+	if delta.has("crrMult"): m["crrMult"] /= delta["crrMult"]
+
 func apply_modifier(delta: Dictionary, label: String = "") -> void:
 	if not is_active_run: return
 	var m = run_data["modifiers"]

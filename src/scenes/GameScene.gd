@@ -88,8 +88,8 @@ func _spawn_ghosts() -> void:
 		environment.add_child(g_node)
 		
 		# Style the ghost
-		var rider = g_node.get_node("Rider")
-		rider.color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+		var rider_n = g_node.get_node("Rider")
+		rider_n.color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
 		
 		var ghost_state = {
 			"label": labels[i],
@@ -230,8 +230,6 @@ func _update_visuals(delta: float) -> void:
 	# Animate and Position Ghosts
 	for g in ghosts:
 		var g_node = g["node"]
-		# Screen position: 1 meter = 100 pixels (arbitrary scaling)
-		# Player is at x=300 relative to environment
 		var relative_x = (g["distance_m"] - distance_m) * 100.0
 		g_node.position.x = 300.0 + relative_x
 		
@@ -310,7 +308,6 @@ func _update_hud() -> void:
 	for g in sorted_ghosts:
 		var gap = g["distance_m"] - distance_m
 		var l = Label.new()
-		var color_prefix = "[color=green]" if gap < 0 else "[color=red]"
 		var dist_str = "%+.1f m" % gap
 		l.text = g["label"] + ": " + dist_str
 		l.add_theme_font_size_override("font_size", 14)

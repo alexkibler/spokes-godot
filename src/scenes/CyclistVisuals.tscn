@@ -1,0 +1,35 @@
+[gd_scene load_steps=2 format=3]
+
+[node name="CyclistVisuals" type="Node2D"]
+
+[node name="Frame" type="Line2D" parent="."]
+points = PackedVector2Array(-30, -30, 0, -60, 30, -30, 0, 0, -30, -30)
+width = 4.0
+default_color = Color(0.164706, 0.12549, 0.0941176, 1)
+
+[node name="Rider" type="Polygon2D" parent="."]
+position = Vector2(0, -65)
+polygon = PackedVector2Array(-15, 15, 15, 15, 10, -30, -10, -30)
+color = Color(0.352941, 0.227451, 0.101961, 1)
+
+[node name="WheelBack" type="Line2D" parent="."]
+position = Vector2(-35, 0)
+points = PackedVector2Array(0, -20, 14, -14, 20, 0, 14, 14, 0, 20, -14, 14, -20, 0, -14, -14, 0, -20)
+width = 3.0
+default_color = Color(0.1, 0.1, 0.1, 1)
+
+[node name="Spokes" type="Line2D" parent="WheelBack"]
+points = PackedVector2Array(-20, 0, 20, 0, 0, 0, 0, -20, 0, 20)
+width = 1.0
+default_color = Color(0.4, 0.4, 0.4, 1)
+
+[node name="WheelFront" type="Line2D" parent="."]
+position = Vector2(35, 0)
+points = PackedVector2Array(0, -20, 14, -14, 20, 0, 14, 14, 0, 20, -14, 14, -20, 0, -14, -14, 0, -20)
+width = 3.0
+default_color = Color(0.1, 0.1, 0.1, 1)
+
+[node name="Spokes" type="Line2D" parent="WheelFront"]
+points = PackedVector2Array(-20, 0, 20, 0, 0, 0, 0, -20, 0, 20)
+width = 1.0
+default_color = Color(0.4, 0.4, 0.4, 1)

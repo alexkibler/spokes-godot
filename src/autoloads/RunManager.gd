@@ -6,9 +6,16 @@ signal run_started
 signal run_ended
 signal edge_completed
 signal modifiers_changed
+signal autoplay_changed(enabled: bool)
 
 var run_data: Dictionary = {}
 var is_active_run: bool = false
+var autoplay_enabled: bool = false
+var autoplay_delay_ms: int = 2000
+
+func toggle_autoplay() -> void:
+	autoplay_enabled = !autoplay_enabled
+	autoplay_changed.emit(autoplay_enabled)
 
 func start_new_run(run_length: int, total_distance_km: float, difficulty: String, ftp_w: int, weight_kg: float, units: String) -> void:
 	run_data = {
@@ -53,14 +60,69 @@ func export_data() -> Dictionary:
 func set_active_edge(edge: Dictionary) -> void:
 	run_data["active_edge"] = edge
 
-func get_active_edge() -> Dictionary:
-	return run_data.get("active_edge", {})
+func get_next_autoplay_node() -> Dictionary:
+	if not is_active_run or run_data.get("currentNodeId", "") == "": return {}
+	
+	var current_id = run_data["currentNodeId"]
+	var current_node = null
+	for n in run_data["nodes"]:
+		if n["id"] == current_id:
+			current_node = n
+			break
+	if not current_node: return {}
+	
+	# Identify valid next steps (neighbors)
+	var neighbors = []
+	for edge in run_data["edges"]:
+		var target_id = ""
+		if edge["from"] == current_id: target_id = edge["to"]
+		elif edge["to"] == current_id: target_id = edge["from"]
+		
+		if target_id != "":
+			for n in run_data["nodes"]:
+				if n["id"] == target_id:
+					neighbors.append(n)
+					break
+					
+	if neighbors.is_empty(): return {}
+	
+	# Logic: Path toward the "Finish" node, but only if all medals are held.
+	# Otherwise, path toward unvisited "Boss" nodes.
+	var medals_held = 0
+	for item in run_data["inventory"]:
+		if item.begins_with("medal_"): medals_held += 1
+	var medals_needed = run_data["runLength"]
+	
+	var targets = []
+	for n in run_data["nodes"]:
+		if n["type"] == "finish" and medals_held >= medals_needed:
+			targets.append(n)
+		elif n["type"] == "boss" and not n["id"] in run_data["visitedNodeIds"]:
+			targets.append(n)
+			
+	if targets.is_empty():
+		# Fallback: just pick the first unvisited neighbor or any neighbor
+		for n in neighbors:
+			if not n["id"] in run_data["visitedNodeIds"]: return n
+		return neighbors[0]
+		
+	# Simple heuristic: Pick neighbor that reduces distance to the nearest target
+	var best_neighbor = neighbors[0]
+	var min_dist = 999.0
+	
+	for n in neighbors:
+		for t in targets:
+			var d = Vector2(n["x"], n["y"]).distance_to(Vector2(t["x"], t["y"]))
+			if d < min_dist:
+				min_dist = d
+				best_neighbor = n
+				
+	return best_neighbor
 
 func complete_active_edge() -> bool:
 	var ae = run_data.get("active_edge")
 	if not ae: return false
 	
-	# Find the edge in the main list
 	var found_edge = null
 	for e in run_data["edges"]:
 		if e["from"] == ae["from"] and e["to"] == ae["to"]:
@@ -68,6 +130,28 @@ func complete_active_edge() -> bool:
 			break
 			
 	if found_edge:
+		# Find the destination node
+		var dest_node = null
+		for n in run_data["nodes"]:
+			if n["id"] == found_edge["to"]:
+				dest_node = n
+				break
+		
+		# Award gold
+		var reward_gold = 25
+		if dest_node:
+			if dest_node["type"] == "boss": reward_gold = 100
+			elif dest_node["type"] == "finish": reward_gold = 500
+		add_gold(reward_gold)
+		
+		# Award Medals for Bosses
+		if dest_node and dest_node["type"] == "boss":
+			var spoke_id = dest_node.get("metadata", {}).get("spokeId", "unknown")
+			var medal_id = "medal_" + spoke_id
+			if not medal_id in run_data["inventory"]:
+				run_data["inventory"].append(medal_id)
+				print("[RUN] Awarded Medal: ", medal_id)
+
 		# Advance current node
 		run_data["currentNodeId"] = found_edge["to"]
 		if not found_edge["to"] in run_data["visitedNodeIds"]:

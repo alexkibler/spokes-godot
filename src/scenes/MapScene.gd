@@ -11,6 +11,7 @@ func _ready() -> void:
 	
 	hud.update_hud()
 	queue_redraw()
+	_check_autoplay()
 
 func _draw() -> void:
 	var run = RunManager.get_run()
@@ -60,6 +61,17 @@ func _draw() -> void:
 			draw_circle(pos, radius + 5, Color.WHITE) # Highlight current
 		
 		draw_circle(pos, radius, color)
+
+func _check_autoplay() -> void:
+	if not RunManager.autoplay_enabled: return
+	
+	var next_node = RunManager.get_next_autoplay_node()
+	if not next_node.is_empty():
+		print("[AUTOPLAY] Selecting next node: ", next_node["id"])
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if RunManager.autoplay_enabled:
+				_on_node_clicked(next_node)
+		)
 
 func _find_node(nodes: Array, id: String) -> Dictionary:
 	for n in nodes:

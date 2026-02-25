@@ -13,6 +13,13 @@ func _ready() -> void:
 	# Pick 3 random rewards
 	current_rewards = RewardManager.get_random_rewards(3)
 	_render_cards()
+	
+	if RunManager.autoplay_enabled:
+		# Auto-pick first card after delay
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if is_inside_tree() and not current_rewards.is_empty():
+				_on_card_pressed(current_rewards[0]["id"])
+		)
 
 func _render_cards() -> void:
 	# Clear existing

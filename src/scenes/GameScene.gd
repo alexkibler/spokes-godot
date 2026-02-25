@@ -151,6 +151,11 @@ func _get_elevation_at(p_course: Dictionary, p_dist: float) -> float:
 func _physics_process(delta: float) -> void:
 	if is_complete: return
 	
+	# 0. Autoplay Power
+	if RunManager.autoplay_enabled:
+		var target_power = float(RunManager.run_data.get("ftpW", 200.0))
+		latest_power = lerp(latest_power, target_power, delta * 2.0)
+	
 	# 1. Update Drafting
 	var best_draft = 0.0
 	for g in ghosts:

@@ -24,6 +24,7 @@ var latest_power: float = 0.0
 var current_grade: float = 0.0
 var current_surface: String = "asphalt"
 var player_draft_factor: float = 0.0
+var travel_direction: float = 1.0 # 1.0 for L->R, -1.0 for R->L
 
 var ghosts: Array = [] # List of Dictionaries { "distance_m", "velocity_ms", "power_w", "node" }
 var ghost_scene = preload("res://src/scenes/CyclistVisuals.tscn")
@@ -81,8 +82,29 @@ func _ready() -> void:
 		if not ae.is_empty():
 			course = ae["profile"]
 			current_surface = CourseProfile.get_surface_at_distance(course, 0.0)
+			
+			# Determine direction from map coordinates
+			var from_node = null
+			var to_node = null
+			for n in RunManager.run_data["nodes"]:
+				if n["id"] == ae["actual_from"]: from_node = n
+				if n["id"] == ae["actual_to"]: to_node = n
+			
+			if from_node and to_node:
+				var dx = to_node["x"] - from_node["x"]
+				var dy = to_node["y"] - from_node["y"]
+				if abs(dx) > 0.1:
+					travel_direction = 1.0 if dx > 0 else -1.0
+				else:
+					# Straight vertical: North (decreasing Y) is L->R, South (increasing Y) is R->L
+					travel_direction = 1.0 if dy < 0 else -1.0
+			
 			_update_physics_for_surface_and_grade(0.0, current_surface)
 			_apply_biome_theming(ae)
+			
+			var vw = get_viewport_rect().size.x
+			if vw <= 0: vw = 1280
+			player_cyclist.position.x = vw - 300.0 if travel_direction < 0 else 300.0
 	else:
 		run_modifiers = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
 		course = CourseProfile.generate_course_profile(5.0, 0.05)
@@ -192,6 +214,8 @@ func _build_elevation_graph() -> void:
 	
 	for i in range(elev_points.size()):
 		var x = (float(i) / points) * width
+		if travel_direction < 0:
+			x = width - x
 		var y = container_height - ((elev_points[i] - min_elev) / range_elev) * container_height
 		elevation_line.add_point(Vector2(x, y))
 
@@ -213,8 +237,10 @@ func _update_ground_line() -> void:
 	var start_grade = CourseProfile.get_grade_at_distance(course, 0.0)
 	var end_grade = CourseProfile.get_grade_at_distance(course, total_dist - 0.1)
 	
+	var player_anchor_x = vw - 300.0 if travel_direction < 0 else 300.0
+	
 	for x in range(int(start_x), int(end_x) + int(step_x), int(step_x)):
-		var d = distance_m + (float(x) - 300.0) / 100.0
+		var d = distance_m + travel_direction * (float(x) - player_anchor_x) / 100.0
 		
 		var elev: float
 		if d < 0:
@@ -392,7 +418,7 @@ func _physics_process(delta: float) -> void:
 
 func _update_visuals(delta: float) -> void:
 	# Parallax scrolling
-	parallax.scroll_offset.x -= velocity_ms * delta * 100.0
+	parallax.scroll_offset.x -= travel_direction * velocity_ms * delta * 100.0
 	
 	# Deform road to match elevation graph
 	_update_ground_line()
@@ -404,19 +430,21 @@ func _update_visuals(delta: float) -> void:
 	# Position and Rotate Player on road (Pivot at player distance)
 	var p_grade = CourseProfile.get_grade_at_distance(course, distance_m)
 	player_cyclist.position.y = 0 
-	player_cyclist.rotation = lerp_angle(player_cyclist.rotation, -atan(p_grade * 3.0), delta * 10.0)
+	player_cyclist.rotation = lerp_angle(player_cyclist.rotation, -travel_direction * atan(p_grade * 3.0), delta * 10.0)
+	player_cyclist.scale.x = travel_direction
 	
 	# Animate and Position Ghosts
 	var base_elev = CourseProfile.get_elevation_at_distance(course, distance_m)
 	for g in ghosts:
 		var g_node = g["node"]
-		var relative_x = (g["distance_m"] - distance_m) * 100.0
-		g_node.position.x = 300.0 + relative_x
+		var relative_x = travel_direction * (g["distance_m"] - distance_m) * 100.0
+		g_node.position.x = (1280 - 300.0 if travel_direction < 0 else 300.0) + relative_x
 		
 		var g_elev = CourseProfile.get_elevation_at_distance(course, g["distance_m"])
 		var g_grade = CourseProfile.get_grade_at_distance(course, g["distance_m"])
 		g_node.position.y = -(g_elev - base_elev) * 100.0 * 3.0
-		g_node.rotation = lerp_angle(g_node.rotation, -atan(g_grade * 3.0), delta * 10.0)
+		g_node.rotation = lerp_angle(g_node.rotation, -travel_direction * atan(g_grade * 3.0), delta * 10.0)
+		g_node.scale.x = travel_direction
 		
 		g["wheel_rotation"] += g["velocity_ms"] * delta * 10.0
 		_animate_cyclist(g_node, g["wheel_rotation"], g["velocity_ms"])
@@ -428,7 +456,12 @@ func _update_visuals(delta: float) -> void:
 	var total_dist = course.get("totalDistanceM", 1.0)
 	var graph_width = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
 	if graph_width <= 0: graph_width = 1240
-	player_marker.position.x = clamp(distance_m / total_dist, 0.0, 1.0) * graph_width
+	
+	var progress = clamp(distance_m / total_dist, 0.0, 1.0)
+	if travel_direction < 0:
+		player_marker.position.x = (1.0 - progress) * graph_width
+	else:
+		player_marker.position.x = progress * graph_width
 
 func _on_viewport_resized() -> void:
 	var vw = get_viewport_rect().size.x

@@ -1,5 +1,8 @@
 extends GutTest
 
+# Tests for DraftingPhysics and the new DraftingComponent
+const DraftingComponent = preload("res://src/features/cycling/components/DraftingComponent.gd")
+
 func test_drafting_dropoff_curve():
 	print("
 --- Drafting Factor (Trailing Rider) ---")
@@ -55,7 +58,32 @@ func test_drafting_sweet_spot():
 	assert_gt(mid, far, "Mid draft should be stronger than far")
 	
 	# The pow(1.5) curve means the drop-off is not linear.
-	# At 10m (50% distance), a linear drop would be 15.5%. 
-	# With pow(1.5), it should be less, because the benefit "falls off" faster as you get further.
-	# Wait, 1 - (10/20) = 0.5. 0.5^1.5 = 0.353. 0.353 * 0.29 + 0.01 = 0.112 (11.2%).
 	assert_almost_eq(mid, 0.112, 0.01, "Curve should reduce mid-distance draft compared to linear")
+
+func test_drafting_component():
+	var comp = DraftingComponent.new()
+	comp.stats = CyclistStats.new()
+
+	var my_dist = 100.0
+	var ghosts = [
+		{"distance_m": 102.0, "stats": comp.stats}, # 2m ahead
+		{"distance_m": 99.0, "stats": comp.stats}   # 1m behind
+	]
+
+	# Initial update
+	comp.update_drafting(my_dist, ghosts)
+	var factor = comp.get_draft_factor()
+
+	# Should draft from the one ahead (2m gap)
+	var expected_draft = DraftingPhysics.get_draft_factor(comp.stats, 2.0)
+	# Should get pushed by the one behind (1m gap)
+	var expected_push = DraftingPhysics.get_leading_draft_factor(comp.stats, 1.0)
+
+	# Component logic takes the max of any single interaction
+	var expected = max(expected_draft, expected_push)
+
+	assert_almost_eq(factor, expected, 0.0001, "DraftingComponent should calculate max draft benefit")
+
+	# Test update with no ghosts
+	comp.update_drafting(my_dist, [])
+	assert_eq(comp.get_draft_factor(), 0.0, "Should be zero with no ghosts")

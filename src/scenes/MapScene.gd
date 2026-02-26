@@ -211,26 +211,10 @@ func _on_node_clicked(node: Dictionary) -> void:
 
 	# 3. Handle by type
 	if node["type"] == "shop":
-		var overlay = load("res://src/ui/ShopOverlay.tscn").instantiate()
-		add_child(overlay)
-		overlay.closed.connect(func(): 
-			RunManager.complete_node_visit(connecting_edge)
-			queue_redraw()
-			_check_autoplay()
-		)
-		return
-		
-	if node["type"] == "event":
-		var overlay = load("res://src/ui/EventOverlay.tscn").instantiate()
-		add_child(overlay)
-		overlay.closed.connect(func(): 
-			RunManager.complete_node_visit(connecting_edge)
-			queue_redraw()
-			_check_autoplay()
-		)
-		return
-		
-	if node["type"] == "hard":
+		RunManager.pending_overlay = "shop"
+	elif node["type"] == "event":
+		RunManager.pending_overlay = "event"
+	elif node["type"] == "hard":
 		var challenge = EliteChallenge.get_random_challenge()
 		var overlay = load("res://src/ui/EliteOverlay.tscn").instantiate()
 		add_child(overlay)
@@ -248,6 +232,6 @@ func _on_node_clicked(node: Dictionary) -> void:
 		)
 		return
 
-	# Start the ride!
+	# Start the ride for all other types (standard, shop, event, etc.)
 	RunManager.set_active_edge(connecting_edge)
 	get_tree().change_scene_to_file("res://src/scenes/GameScene.tscn")

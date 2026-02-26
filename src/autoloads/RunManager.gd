@@ -14,6 +14,7 @@ var is_active_run: bool = false
 var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
 var active_challenge: Dictionary = {}
+var pending_overlay: String = "" # "shop", "event", or ""
 
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled

@@ -495,12 +495,34 @@ func _on_ride_complete() -> void:
 		get_tree().change_scene_to_file("res://src/scenes/VictoryScene.tscn")
 		return
 
+	# Handle post-ride overlays
+	var on_overlay_closed = func():
+		get_tree().change_scene_to_file("res://src/scenes/MapScene.tscn")
+
 	if is_first_clear:
 		var overlay = load("res://src/ui/RewardOverlay.tscn").instantiate()
 		add_child(overlay)
-		overlay.reward_selected.connect(func(): get_tree().change_scene_to_file("res://src/scenes/MapScene.tscn"))
+		overlay.reward_selected.connect(func(): 
+			_check_and_show_pending_overlay(on_overlay_closed)
+		)
 	else:
-		get_tree().create_timer(2.0).timeout.connect(func(): get_tree().change_scene_to_file("res://src/scenes/MapScene.tscn"))
+		_check_and_show_pending_overlay(on_overlay_closed)
+
+func _check_and_show_pending_overlay(callback: Callable) -> void:
+	var pending = RunManager.pending_overlay
+	RunManager.pending_overlay = "" # Clear it immediately
+	
+	if pending == "shop":
+		var overlay = load("res://src/ui/ShopOverlay.tscn").instantiate()
+		add_child(overlay)
+		overlay.closed.connect(callback)
+	elif pending == "event":
+		var overlay = load("res://src/ui/EventOverlay.tscn").instantiate()
+		add_child(overlay)
+		overlay.closed.connect(callback)
+	else:
+		# No pending overlay, wait a bit then return to map
+		get_tree().create_timer(2.0).timeout.connect(callback)
 
 func _on_trainer_data(data: Dictionary) -> void:
 	latest_power = data.get("power", 0.0)

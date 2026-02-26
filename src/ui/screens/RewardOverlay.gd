@@ -33,7 +33,7 @@ func _ready() -> void:
 	current_rewards = ContentRegistry.get_loot_pool(3)
 	_render_cards()
 	
-	RunManager.autoplay_changed.connect(_on_autoplay_changed)
+	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
 	_check_autoplay()
 
 func _on_autoplay_changed(enabled: bool) -> void:

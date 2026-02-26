@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 func test_drafting_dropoff_curve():
 	print("

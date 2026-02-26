@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Tests ported from ~/Repos/spokes/src/core/roguelike/__tests__/RunManager.test.ts
 

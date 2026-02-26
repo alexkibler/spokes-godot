@@ -127,7 +127,7 @@ func _ready() -> void:
 	# Spawn Ghosts
 	_spawn_ghosts()
 
-	RunManager.item_discovered.connect(_on_item_discovered)
+	SignalBus.item_discovered.connect(_on_item_discovered)
 	
 	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
 
@@ -514,7 +514,7 @@ func _animate_cyclist(node: Node2D, w_rot: float, vel: float, crank_rot: float =
 	# Update Sprites
 	for child in node.get_children():
 		if child is Sprite2D:
-			if child.name == "Crank":
+			if child.name == "Crank" or child.name == "BackPedal":
 				child.frame = crank_idx
 			else:
 				child.frame = wheel_idx
@@ -532,7 +532,7 @@ func _animate_cyclist(node: Node2D, w_rot: float, vel: float, crank_rot: float =
 			rider.position.y = base_y + bob
 	
 	# Ensure Bike parts stay stationary (at their base_y)
-	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Sprite2D"]:
+	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Handlebars", "BackPedal", "Sprite2D"]:
 		if node.has_node(node_name) and node_name != "Rider":
 			var child = node.get_node(node_name)
 			if child is Sprite2D:

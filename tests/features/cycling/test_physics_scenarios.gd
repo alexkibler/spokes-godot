@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Systematic profiling of cyclist physics across weights, FTPs, and grades.
 

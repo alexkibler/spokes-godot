@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Simulating the Surge/Recovery State Machine from GameScene.gd
 # This validates that timers transition correctly and multipliers apply.

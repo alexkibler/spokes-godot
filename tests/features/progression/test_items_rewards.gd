@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Tests for ContentRegistry (Items/Rewards) and RunManager modifier stacking.
 

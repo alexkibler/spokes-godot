@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Systematic testing of map generation across distances and difficulties.
 

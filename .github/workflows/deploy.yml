@@ -41,4 +41,5 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref_name == 'main' && 'main' || 'dev' }}
+            ghcr.io/${{ github.repository }}:${{ github.ref_name == 'main' && 'latest' || 'dev-latest' }}
             ghcr.io/${{ github.repository }}:${{ github.sha }}

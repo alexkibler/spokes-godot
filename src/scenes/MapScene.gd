@@ -128,11 +128,11 @@ func _draw() -> void:
 
 	# Draw autoplay progress
 	if is_selecting and not autoplay_target_node.is_empty():
-		var node = autoplay_target_node
-		var pos = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
-		var radius = 22.0
+		var ap_node = autoplay_target_node
+		var ap_pos = center + (Vector2(ap_node["x"], ap_node["y"]) - Vector2(0.5, 0.5)) * scale_factor
+		var ap_radius = 22.0
 		var progress = 1.0 - (autoplay_timer / 2.0)
-		draw_arc(pos, radius, -PI/2, -PI/2 + (2.0 * PI * progress), 32, Color.GOLD, 3.0, true)
+		draw_arc(ap_pos, ap_radius, -PI/2, -PI/2 + (2.0 * PI * progress), 32, Color.GOLD, 3.0, true)
 
 func _check_autoplay() -> void:
 	if not RunManager.autoplay_enabled or is_selecting: return

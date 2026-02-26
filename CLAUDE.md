@@ -24,6 +24,20 @@ To run a single test file:
 
 Test files: `test_cyclist_physics.gd`, `test_course_profile.gd`, `test_run_manager.gd`, `test_map_generator.gd`, `test_units.gd`, `test_elite_challenge.gd`, `test_fit_writer.gd`.
 
+## Local Deployment
+
+For faster iteration without waiting for GitHub Actions CI/CD:
+
+```sh
+# Build Web export, inject local git hash, and restart local Docker container
+./deploy_local.sh
+```
+
+This script:
+1. Injects the current Git commit hash into `src/autoloads/BuildInfo.gd`.
+2. Exports the project for Web to `build/web/Web/`.
+3. Rebuilds the local Docker image and restarts the `spokes-godot` service in the `nginx-proxy-manager` stack.
+
 ## Architecture
 
 ### Autoloads (Singletons)

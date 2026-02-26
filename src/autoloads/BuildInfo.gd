@@ -7,25 +7,42 @@ const COMMIT_HASH: String = "dev"
 
 func _ready() -> void:
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("console.log('Spokes: BuildInfo initializing [Hash: " + COMMIT_HASH + "]...')")
+		JavaScriptBridge.eval("console.log('Spokes: BuildInfo initializing [Hash: " + COMMIT_HASH.left(7) + "]')")
 	_add_version_watermark.call_deferred()
 
 func _add_version_watermark() -> void:
 	var layer = CanvasLayer.new()
-	layer.layer = 128 # Very high layer
+	layer.layer = 128
 	add_child(layer)
 	
-	var watermark = Label.new()
-	watermark.text = "v: " + COMMIT_HASH.left(7)
-	watermark.add_theme_font_size_override("font_size", 14)
-	watermark.add_theme_color_override("font_color", Color(0, 0, 0, 0.6)) # Slightly darker semi-transparent black
-	watermark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# MarginContainer handles the anchoring properly
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	margin.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	margin.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(margin)
 	
-	layer.add_child(watermark)
+	var panel = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(panel)
 	
-	# Use the combined preset function which is more reliable for direct children of CanvasLayer
-	watermark.layout_mode = 1
-	watermark.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 10)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.5)
+	style.set_corner_radius_all(5)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", style)
+	
+	var label = Label.new()
+	label.text = "v: " + COMMIT_HASH.left(7)
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	panel.add_child(label)
 	
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("console.log('Spokes: Watermark positioned at bottom-right')")
+		JavaScriptBridge.eval("console.log('Spokes: Version pill added to bottom-right via MarginContainer')")

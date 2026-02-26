@@ -32,6 +32,19 @@ Tests are located in `res://tests/` and use the GUT framework.
 1. Enable the GUT plugin in Project Settings.
 2. Use the "GUT" bottom panel to run tests.
 
+### Local Deployment
+For faster iteration without waiting for GitHub Actions CI/CD:
+
+```sh
+# Build Web export, inject local git hash, and restart local Docker container
+./deploy_local.sh
+```
+
+This script automates:
+1. Injecting the local Git commit hash into `src/autoloads/BuildInfo.gd`.
+2. Headless Web export to `build/web/Web/`.
+3. Rebuilding the local Docker image and restarting the `spokes-godot` service.
+
 ---
 
 ## CI/CD Pipeline

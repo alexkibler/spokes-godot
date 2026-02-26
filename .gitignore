@@ -4,3 +4,5 @@
 *.mono/
 .DS_Store
 *.uid
+deploy_local.sh
+build/

@@ -29,7 +29,7 @@ Project instructions and conventions for Claude Code.
   - Testing: Every feature script should have a corresponding test in `tests/` prefixed with `test_`.
 
 ## Key Architectural Patterns
-- **Entity-Component**: `Cyclist.gd` coordinates modular child nodes (`PowerReceiver`, `Drafting`, `Fatigue`, `Visuals`).
+- **Entity-Component**: `Cyclist.gd` coordinates modular child nodes (`HardwareReceiver`, `Drafting`, `Surge`, `Visuals`).
 - **Resource-Based Data**: Data models (e.g., `CyclistStats`, `CourseProfile`, `EliteChallenge`) inherit from `Resource`.
 - **Global Signal Bus**: UI and state managers communicate via `SignalBus.gd`.
 - **Hardware Abstraction**: `TrainerService.gd` handles Web Bluetooth vs. Mock Desktop data.

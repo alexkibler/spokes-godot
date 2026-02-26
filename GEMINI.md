@@ -10,7 +10,7 @@ Foundational mandates and precedence instructions for Gemini CLI.
 
 ## Project Structure (Quick Reference)
 - `src/core/`: Utilities and global bus.
-- `src/features/cycling/`: Physics, `Cyclist` entity, and components (`Power`, `Drafting`, `Fatigue`).
+- `src/features/cycling/`: Physics, `Cyclist` entity, and components (`HardwareReceiver`, `Drafting`, `Surge`).
 - `src/features/map/`: `MapGenerator`, `CourseProfile`.
 - `src/features/progression/`: `RunManager`, `ContentRegistry`, `FitWriter`.
 - `src/ui/`: All screens and UI components.

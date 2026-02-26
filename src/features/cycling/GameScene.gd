@@ -4,6 +4,7 @@ extends Node2D
 # Orchestrator for the riding experience
 
 @onready var hud_power_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/PowerValue
+@onready var hud_cadence_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/CadenceValue
 @onready var hud_speed_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/SpeedValue
 @onready var hud_dist_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/DistValue
 @onready var hud_grade_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/GradeValue
@@ -511,13 +512,6 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
-func _on_cadence_updated(p_rpm: float) -> void:
-	# Note: player_cyclist.hardware_receiver handles the value internally.
-	# We just trigger the HUD update logic.
-	var cadence_node: Label = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false) as Label
-	if cadence_node:
-		(cadence_node as Label).text = str(round(p_rpm)) + " RPM"
-
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
@@ -527,6 +521,10 @@ func _input(event: InputEvent) -> void:
 func _update_hud(p_effective_power: float) -> void:
 	if hud_power_label:
 		hud_power_label.text = str(round(p_effective_power)) + " W"
+	if hud_cadence_label:
+		var hr: Node = player_cyclist.get("hardware_receiver")
+		var cadence: float = (hr as HardwareReceiverComponent).get_cadence() if hr else 0.0
+		hud_cadence_label.text = str(round(cadence)) + " RPM"
 	if hud_speed_label:
 		var speed: float = Units.ms_to_kmh(player_cyclist.velocity_ms) if SettingsManager.units == "metric" else Units.ms_to_mph(player_cyclist.velocity_ms)
 		var unit_suffix: String = " km/h" if SettingsManager.units == "metric" else " mph"

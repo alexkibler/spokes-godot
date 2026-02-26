@@ -9,17 +9,17 @@ The Hub-and-Spoke generator creates a radial map where each 'spoke' represents a
 
 | Target | Diff | Metric | Mean | Median | Min | Max | Outliers? |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 50km | easy | Ascent (ft/10mi) | 367.7 | 367.3 | 292.2 | 447.6 | Yes |
+| 50km | easy | Ascent (ft/10mi) | 367.5 | 366.6 | 286.0 | 467.8 | Yes |
 | | | Map Dist (km) | 77.9 | 77.9 | 77.9 | 77.9 | Yes |
-| 50km | normal | Ascent (ft/10mi) | 874.7 | 874.3 | 681.8 | 1041.0 | Yes |
+| 50km | normal | Ascent (ft/10mi) | 869.2 | 870.6 | 694.5 | 1015.5 | Yes |
 | | | Map Dist (km) | 77.9 | 77.9 | 77.9 | 77.9 | Yes |
-| 50km | hard | Ascent (ft/10mi) | 1342.5 | 1342.9 | 1116.2 | 1548.0 | Yes |
+| 50km | hard | Ascent (ft/10mi) | 1345.4 | 1344.9 | 1085.9 | 1570.9 | Yes |
 | | | Map Dist (km) | 77.9 | 77.9 | 77.9 | 77.9 | Yes |
-| 200km | easy | Ascent (ft/10mi) | 355.6 | 355.2 | 305.3 | 404.3 | Yes |
+| 200km | easy | Ascent (ft/10mi) | 355.8 | 355.5 | 322.0 | 402.7 | Yes |
 | | | Map Dist (km) | 318.5 | 318.5 | 318.5 | 318.5 | No |
-| 200km | normal | Ascent (ft/10mi) | 871.8 | 871.7 | 802.1 | 952.6 | Yes |
+| 200km | normal | Ascent (ft/10mi) | 874.3 | 873.6 | 789.5 | 959.0 | Yes |
 | | | Map Dist (km) | 318.5 | 318.5 | 318.5 | 318.5 | No |
-| 200km | hard | Ascent (ft/10mi) | 1352.0 | 1351.5 | 1245.8 | 1482.0 | Yes |
+| 200km | hard | Ascent (ft/10mi) | 1349.8 | 1351.5 | 1230.9 | 1455.0 | Yes |
 | | | Map Dist (km) | 318.5 | 318.5 | 318.5 | 318.5 | No |
 
 ### Node Type Distribution (200km Normal Run)
@@ -27,10 +27,10 @@ The Hub-and-Spoke generator creates a radial map where each 'spoke' represents a
 | Node Type | Avg per Map | Percentage |
 | :--- | :--- | :--- |
 | start | 1.00 | 1.5% |
-| standard | 21.22 | 32.1% |
-| hard | 10.91 | 16.5% |
+| event | 15.89 | 24.1% |
+| standard | 21.08 | 31.9% |
 | shop | 8.00 | 12.1% |
-| event | 15.87 | 24.1% |
+| hard | 11.03 | 16.7% |
 | boss | 8.00 | 12.1% |
 | finish | 1.00 | 1.5% |
 
@@ -39,18 +39,18 @@ Generates a variable elevation profile for a single edge. Each edge begins and e
 
 | Config | Metric | Mean | Median | Min | Max |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 5km @ 4% | Segments | 32.2 | 32.0 | 29.0 | 36.0 |
-| | Avg Grade % | 2.51% | 2.50% | 1.86% | 3.21% |
-| 20km @ 8% | Segments | 35.8 | 36.0 | 32.0 | 41.0 |
-| | Avg Grade % | 4.99% | 5.00% | 3.61% | 6.22% |
+| 5km @ 4% | Segments | 32.1 | 32.0 | 29.0 | 35.0 |
+| | Avg Grade % | 2.51% | 2.50% | 1.66% | 3.17% |
+| 20km @ 8% | Segments | 35.9 | 36.0 | 30.0 | 42.0 |
+| | Avg Grade % | 5.00% | 5.00% | 3.60% | 6.15% |
 
 ## 3. Elite Challenges (`EliteChallenge.gd`)
 Elite challenges are 'Hard' nodes that present specific power-based goals. The following table shows the distribution of challenge types across 1000 selections.
 
 | Challenge Title | Frequency | Percentage |
 | :--- | :--- | :--- |
-| Threshold Push | 198 | 19.8% |
-| Time Trial Effort | 198 | 19.8% |
-| Clean Ascent | 218 | 21.8% |
-| Sprint Finish | 193 | 19.3% |
-| Red Zone Ramp | 193 | 19.3% |
+| Threshold Push | 212 | 21.2% |
+| Sprint Finish | 219 | 21.9% |
+| Red Zone Ramp | 185 | 18.5% |
+| Time Trial Effort | 218 | 21.8% |
+| Clean Ascent | 166 | 16.6% |

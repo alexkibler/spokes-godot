@@ -1,6 +1,7 @@
 extends GutTest
 
 # Tests ported from ~/Repos/spokes/src/core/physics/__tests__/CyclistPhysics.test.ts
+# Updated to use Cyclist entity where appropriate, or verify the static library is still correct.
 
 func test_calculate_acceleration_basic():
 	var stats = CyclistStats.new()

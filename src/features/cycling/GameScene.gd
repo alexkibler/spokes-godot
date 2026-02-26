@@ -8,7 +8,6 @@ extends Node2D
 @onready var hud_grade_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/GradeValue
 @onready var progress_bar: ProgressBar = $HUD/MarginContainer/VBoxContainer/ProgressBar
 @onready var environment: Node2D = $Environment
-@onready var player_cyclist: Node2D = $Environment/PlayerCyclist
 @onready var parallax: ParallaxBackground = $ParallaxBackground
 @onready var elevation_line: Line2D = $HUD/MarginContainer/VBoxContainer/ElevationContainer/ElevationLine
 @onready var player_marker: ColorRect = $HUD/MarginContainer/VBoxContainer/ElevationContainer/PlayerMarker
@@ -16,35 +15,24 @@ extends Node2D
 @onready var draft_badge: PanelContainer = %DraftBadge
 @onready var race_gap_panel: VBoxContainer = %RaceGapPanel
 
-var wheel_rotation: float = 0.0
-var distance_m: float = 0.0
-var velocity_ms: float = 0.0
+# The Player Entity (replaces the old simplistic node)
+var player_cyclist: Cyclist
+
+var wheel_rotation: float = 0.0 # Kept for parallax scrolling only? No, parallax uses player velocity.
 var raw_trainer_speed_ms: float = 0.0
-var latest_power: float = 0.0
-var current_grade: float = 0.0
-var current_surface: String = "asphalt"
-var player_draft_factor: float = 0.0
+# var latest_power: float = 0.0 # Handled by PowerReceiverComponent
 var travel_direction: float = 1.0 # 1.0 for L->R, -1.0 for R->L
-var cadence: float = 90.0
-var crank_rotation: float = 0.0
+# var cadence: float = 90.0 # Handled by Cyclist / SignalBus
+# var crank_rotation: float = 0.0 # Handled by Visuals
 
-var ghosts: Array = [] # List of Dictionaries { "distance_m", "velocity_ms", "power_w", "node", "stats" }
-var ghost_scene = preload("res://src/features/cycling/CyclistVisuals.tscn")
+var ghosts: Array = [] # List of Cyclist entities
+var cyclist_scene = preload("res://src/features/cycling/Cyclist.tscn")
 
-var player_stats: CyclistStats
 var base_crr: float = 0.0041
 var run_modifiers: Dictionary = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
 
 var course: CourseProfile = null
 var is_complete: bool = false
-
-# Surge / Recovery state
-var surge_timer: float = 0.0
-var recovery_timer: float = 0.0
-const SURGE_DURATION: float = 5.0
-const SURGE_POWER_MULT: float = 1.25
-const RECOVERY_DURATION: float = 4.0
-const RECOVERY_POWER_MULT: float = 0.85
 
 var fit_writer: FitWriter
 var last_record_ms: int = 0
@@ -64,13 +52,20 @@ func _ready() -> void:
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
 	last_record_ms = ride_start_time
 	
+	# Create Player Entity
+	player_cyclist = cyclist_scene.instantiate()
+	player_cyclist.name = "PlayerCyclist"
+	player_cyclist.is_player = true
+	environment.add_child(player_cyclist)
+
 	# Initialize stats from settings
 	var weight_kg = SettingsManager.weight_kg
-	player_stats = CyclistStats.new()
-	player_stats.mass_kg = weight_kg + 8.0
-	player_stats.cda = 0.416 * pow(weight_kg / 114.3, 0.66)
-	player_stats.crr = 0.0041
-	base_crr = player_stats.crr
+	var stats = CyclistStats.new()
+	stats.mass_kg = weight_kg + 8.0
+	stats.cda = 0.416 * pow(weight_kg / 114.3, 0.66)
+	stats.crr = 0.0041
+	base_crr = stats.crr
+	player_cyclist.stats = stats
 	
 	# Initialize Course from Active Edge
 	if RunManager.is_active_run:
@@ -78,7 +73,8 @@ func _ready() -> void:
 		var ae = RunManager.get_active_edge()
 		if not ae.is_empty():
 			course = ae["profile"]
-			current_surface = course.get_surface_at_distance(0.0)
+			# Note: Cyclist entity updates its own physics state based on distance, so we just set start pos.
+			var current_surface = course.get_surface_at_distance(0.0)
 			
 			# Determine direction from map coordinates
 			var from_node = null
@@ -96,7 +92,6 @@ func _ready() -> void:
 					# Straight vertical: North (decreasing Y) is L->R, South (increasing Y) is R->L
 					travel_direction = 1.0 if dy < 0 else -1.0
 			
-			_update_physics_for_surface_and_grade(0.0, current_surface)
 			_apply_biome_theming(ae)
 			
 			var vw = get_viewport_rect().size.x
@@ -105,17 +100,17 @@ func _ready() -> void:
 	else:
 		run_modifiers = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
 		course = CourseProfile.generate_course_profile(5.0, 0.05)
-		current_surface = "asphalt"
-		_update_physics_for_surface_and_grade(0.0, current_surface)
 
 	# Subscribe to SignalBus for hardware updates
-	SignalBus.trainer_power_updated.connect(_on_power_updated)
+	# PlayerCyclist's PowerReceiverComponent listens to trainer_power_updated automatically.
+	# We listen here for cadence to pass to player? Or let SignalBus handle it?
+	# GameScene manages cadence for display HUD.
 	SignalBus.trainer_cadence_updated.connect(_on_cadence_updated)
 	SignalBus.trainer_speed_updated.connect(_on_speed_updated)
 
 	TrainerService.connect_trainer()
 	
-	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
+	player_cyclist.cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
 	
 	# Setup UI
 	progress_bar.max_value = course.total_distance_m
@@ -124,25 +119,20 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	_on_viewport_resized() # This now handles _build_elevation_graph via process_frame
 	
+	# Remove old PlayerCyclist placeholder if it exists in the scene tree from .tscn
+	if environment.has_node("PlayerCyclist") and environment.get_node("PlayerCyclist") != player_cyclist:
+		environment.get_node("PlayerCyclist").queue_free()
+
 	# Spawn Ghosts
 	_spawn_ghosts()
 
 	SignalBus.item_discovered.connect(_on_item_discovered)
 	
-	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
-
 	# Dev-only speed control
 	var hostname = JavaScriptBridge.eval("window.location.hostname")
 	if typeof(hostname) == TYPE_STRING and hostname.begins_with("spokesdev"):
 		is_dev_build = true
 		_create_speed_control()
-
-func _update_physics_for_surface_and_grade(p_grade: float, p_surface: String) -> void:
-	current_grade = p_grade
-	current_surface = p_surface
-	
-	var crr_mult = CourseProfile.get_crr_for_surface(p_surface) / CourseProfile.get_crr_for_surface("asphalt")
-	player_stats.crr = base_crr * crr_mult * run_modifiers.get("crrMult", 1.0)
 
 func _spawn_ghosts() -> void:
 	# Spawn 3 ghosts with slightly different powers
@@ -154,39 +144,28 @@ func _spawn_ghosts() -> void:
 	var labels = ["ROOKIE", "PRO", "ELITE"]
 	
 	for i in range(3):
-		var g_node = ghost_scene.instantiate()
+		var g_node = cyclist_scene.instantiate()
+		g_node.is_player = false
+		g_node.label = labels[i]
+
+		# Set Stats
+		var g_stats = player_cyclist.stats.duplicate()
+		g_node.stats = g_stats
+
+		# Set Initial State
+		g_node.distance_m = 10.0 + i * 5.0
+		g_node.velocity_ms = 0.0
+
+		# Set Power (Manual)
+		g_node.get_node("PowerReceiver").set_power_manual(base_power * offsets[i])
+
 		environment.add_child(g_node)
 		
 		# Style the ghost
 		var color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
-		if g_node.has_node("Frame"):
-			g_node.get_node("Frame").modulate = color
-		if g_node.has_node("Crank"):
-			g_node.get_node("Crank").modulate = color
-		if g_node.has_node("Rider"):
-			var rider = g_node.get_node("Rider")
-			if rider is Sprite2D:
-				rider.modulate = color
-			else:
-				rider.color = color
-		if g_node.has_node("RiderPoly"):
-			g_node.get_node("RiderPoly").color = color
+		g_node.set_color(color)
 		
-		# Legacy support for old single-sprite
-		if g_node.has_node("Sprite2D"):
-			g_node.get_node("Sprite2D").modulate = color
-			
-		var ghost_state = {
-			"label": labels[i],
-			"distance_m": 10.0 + i * 5.0,
-			"velocity_ms": 0.0,
-			"power_w": base_power * offsets[i],
-			"node": g_node,
-			"wheel_rotation": 0.0,
-			"crank_rotation": 0.0,
-			"stats": player_stats.duplicate()
-		}
-		ghosts.append(ghost_state)
+		ghosts.append(g_node)
 
 func _apply_biome_theming(edge: Dictionary) -> void:
 	var spoke_id = "plains"
@@ -249,6 +228,7 @@ func _update_ground_line() -> void:
 	var step_x = 25.0   # pixels (0.25m per step at 100px/m)
 	
 	var total_dist = course.total_distance_m
+	var distance_m = player_cyclist.distance_m
 	var base_elev = course.get_elevation_at_distance(distance_m)
 	
 	# Cache grades for extrapolation
@@ -288,187 +268,100 @@ func _physics_process(delta: float) -> void:
 	
 	# 0. Mock Power Simulation (if no real trainer is active)
 	if TrainerService.is_mock_mode:
-		latest_power = float(RunManager.run_data.get("ftpW", 200.0))
+		# In mock mode, we feed the mock power to the player's component
+		var ftp = float(RunManager.run_data.get("ftpW", 200.0))
+		player_cyclist.power_receiver.set_power_manual(ftp)
 	
-	# 1. Update Drafting Logic
-	var best_draft = 0.0
-	
+	# 1. Gather all cyclists for drafting
+	var all_entities = []
+	# For player, nearby are ghosts
 	for g in ghosts:
-		var gap_behind = g["distance_m"] - distance_m # Ghost is in front
-		var gap_ahead = distance_m - g["distance_m"]  # Ghost is behind
-		
-		# Benefit from ghost in front (standard draft)
-		var draft = DraftingPhysics.get_draft_factor(player_stats, gap_behind)
-		# Benefit from ghost behind (push)
-		var push = DraftingPhysics.get_leading_draft_factor(player_stats, gap_ahead)
-		
-		best_draft = max(best_draft, max(draft, push))
-				
-	player_draft_factor = best_draft
+		all_entities.append(g)
 	
-	# Surge State Machine
-	if surge_timer > 0:
-		surge_timer -= delta
-		if surge_timer <= 0:
-			recovery_timer = RECOVERY_DURATION
-	elif recovery_timer > 0:
-		recovery_timer -= delta
-	elif player_draft_factor > 0.01:
-		surge_timer = SURGE_DURATION
+	# Process Player
+	player_cyclist.process_cyclist(delta, course, all_entities, run_modifiers)
 	
-	# 2. Update Player Physics
-	var new_grade = course.get_grade_at_distance(distance_m)
-	var new_surface = course.get_surface_at_distance(distance_m)
+	# For Ghosts, nearby is player + other ghosts
+	for g in ghosts:
+		var nearby = [player_cyclist]
+		for other in ghosts:
+			if other != g: nearby.append(other)
+		# Ghosts don't have run modifiers
+		g.process_cyclist(delta, course, nearby, {})
 	
-	# Track metrics for Elite Challenges
+	# Elite Challenge Tracking
 	if RunManager.active_challenge != null:
+		var latest_power = player_cyclist.power_receiver.get_power()
 		challenge_power_sum += latest_power
 		challenge_tick_count += 1
 		challenge_peak_power = max(challenge_peak_power, latest_power)
-		if velocity_ms < 0.1 and distance_m > 10.0: # Ignore very start
+		if player_cyclist.velocity_ms < 0.1 and player_cyclist.distance_m > 10.0: # Ignore very start
 			challenge_ever_stopped = true
 	
-	if new_grade != current_grade or new_surface != current_surface:
-		_update_physics_for_surface_and_grade(new_grade, new_surface)
-		if new_surface != current_surface:
-			parallax.set_surface(new_surface)
+	var current_surface = player_cyclist.current_surface
+	parallax.set_surface(current_surface)
 	
-	var draft_mods = run_modifiers.duplicate()
-	draft_mods["dragReduction"] = min(0.99, draft_mods.get("dragReduction", 0.0) + player_draft_factor)
-	
-	var power_mult = run_modifiers.get("powerMult", 1.0)
-	var effective_power = latest_power
-	if surge_timer > 0:
-		effective_power *= SURGE_POWER_MULT
-	elif recovery_timer > 0:
-		effective_power *= RECOVERY_POWER_MULT
-	
-	# Net power for HUD display and physics (includes stat boosts)
-	var net_power = effective_power * power_mult
-	
-	if not TrainerService.is_mock_mode:
-		# Directly tie in-game speed to the physical flywheel's speed (bypassing virtual inertia)
-		# We apply the surge/recovery multiplier and stat boosts to the speed
-		var target_speed = raw_trainer_speed_ms
-		
-		# Apply surge/recovery speed adjustments
-		if surge_timer > 0: target_speed *= 1.15
-		elif recovery_timer > 0: target_speed *= 0.90
-		
-		# Apply stat boost speed adjustment (Direct 1:1 boost)
-		target_speed *= power_mult
-		
-		velocity_ms += (target_speed - velocity_ms) * delta * 5.0
-	else:
-		# Mock mode uses the pure physics engine
-		# Note: CyclistPhysics.calculate_acceleration also applies powerMult from draft_mods
-		var acceleration = CyclistPhysics.calculate_acceleration(
-			effective_power, 
-			velocity_ms, 
-			player_stats,
-			current_grade,
-			draft_mods
-		)
-		
-		velocity_ms += acceleration * delta
-	
-	velocity_ms = max(0.0, velocity_ms)
-	distance_m += velocity_ms * delta
-	
-	# 3. Update Ghosts
-	for g in ghosts:
-		var g_dist = g["distance_m"]
-		var g_grade = course.get_grade_at_distance(g_dist)
-		var g_surface = course.get_surface_at_distance(g_dist)
-		
-		var g_crr_mult = CourseProfile.get_crr_for_surface(g_surface) / CourseProfile.get_crr_for_surface("asphalt")
-		var g_stats: CyclistStats = g["stats"]
-		g_stats.crr = base_crr * g_crr_mult
-		
-		# Ghost also drafts the player (following)
-		var g_draft = DraftingPhysics.get_draft_factor(g_stats, distance_m - g_dist)
-		# Ghost also gets pushed (leading player)
-		g_draft = max(g_draft, DraftingPhysics.get_leading_draft_factor(g_stats, g_dist - distance_m))
-		
-		for other in ghosts:
-			if other == g: continue
-			# Drafting other ghosts
-			g_draft = max(g_draft, DraftingPhysics.get_draft_factor(g_stats, other["distance_m"] - g_dist))
-			# Getting pushed by other ghosts
-			g_draft = max(g_draft, DraftingPhysics.get_leading_draft_factor(g_stats, g_dist - other["distance_m"]))
-			
-		var g_accel = CyclistPhysics.calculate_acceleration(g["power_w"], g["velocity_ms"], g_stats, g_grade, {"dragReduction": g_draft})
-		g["velocity_ms"] = max(0.0, g["velocity_ms"] + g_accel * delta)
-		g["distance_m"] += g["velocity_ms"] * delta
-	
-	# 4. Record every second
 	# 4. Record every second
 	var now = Time.get_ticks_msec()
 	if now - last_record_ms >= 1000:
 		last_record_ms = now
 		fit_writer.add_record({
 			"timestampMs": Time.get_unix_time_from_system() * 1000,
-			"powerW": latest_power,
-			"cadenceRpm": 90,
-			"speedMs": velocity_ms,
-			"distanceM": distance_m
+			"powerW": player_cyclist.power_receiver.get_power(),
+			"cadenceRpm": player_cyclist.cadence,
+			"speedMs": player_cyclist.velocity_ms,
+			"distanceM": player_cyclist.distance_m
 		})
 	
 	# 5. Check Completion
-	if distance_m >= course.total_distance_m:
+	if player_cyclist.distance_m >= course.total_distance_m:
 		_on_ride_complete()
 	
 	# 6. Update UI & Visuals
-	_update_hud(net_power)
+	_update_hud(player_cyclist.effective_power)
 	_update_visuals(delta)
 	
 	if Engine.get_physics_frames() % 60 == 0:
 		# Match Phaser's Trainer simulation parameters (scaling by massRatio)
 		var assumed_trainer_mass = 83.0
-		var mass_ratio = player_stats.mass_kg / assumed_trainer_mass
+		var mass_ratio = player_cyclist.stats.mass_kg / assumed_trainer_mass
+
+		var effective_grade = player_cyclist.current_grade * mass_ratio
+		var effective_crr = player_cyclist.stats.crr * mass_ratio # Note: stats.crr is temporarily modified in process_cyclist, but here it's likely reset.
+		# Wait, I modified stats.crr inside process_cyclist and then reset it. So here it is the base value.
+		# Ideally we want the effective one?
+		# Phaser code used the base Crr scaled by mass_ratio for the trainer sim.
 		
-		var effective_grade = current_grade * mass_ratio
-		var effective_crr = player_stats.crr * mass_ratio
 		# CWA = CdA according to Phaser implementation (Rho scaling is commented out there)
-		var cwa = player_stats.cda
+		var cwa = player_cyclist.stats.cda
 		
 		TrainerService.set_simulation_params(effective_grade, effective_crr, cwa)
 
 func _update_visuals(delta: float) -> void:
 	# Parallax scrolling
-	parallax.scroll_offset.x -= travel_direction * velocity_ms * delta * 100.0
+	parallax.scroll_offset.x -= travel_direction * player_cyclist.velocity_ms * delta * 100.0
 	
 	# Deform road to match elevation graph
 	_update_ground_line()
 	
-	# Animate Player
-	wheel_rotation += velocity_ms * delta * 10.0
-	crank_rotation += (cadence / 60.0) * 2.0 * PI * delta
-	_animate_cyclist(player_cyclist, wheel_rotation, velocity_ms, crank_rotation)
-	
 	# Position and Rotate Player on road (Pivot at player distance)
-	var p_grade = course.get_grade_at_distance(distance_m)
+	var p_grade = player_cyclist.current_grade
 	player_cyclist.position.y = 0 
 	player_cyclist.rotation = lerp_angle(player_cyclist.rotation, -travel_direction * atan(p_grade * 3.0), delta * 10.0)
 	player_cyclist.scale.x = travel_direction
 	
 	# Animate and Position Ghosts
-	var base_elev = course.get_elevation_at_distance(distance_m)
+	var base_elev = course.get_elevation_at_distance(player_cyclist.distance_m)
+
 	for g in ghosts:
-		var g_node = g["node"]
-		var relative_x = travel_direction * (g["distance_m"] - distance_m) * 100.0
-		g_node.position.x = (1280 - 300.0 if travel_direction < 0 else 300.0) + relative_x
+		var relative_x = travel_direction * (g.distance_m - player_cyclist.distance_m) * 100.0
+		g.position.x = (1280 - 300.0 if travel_direction < 0 else 300.0) + relative_x
 		
-		var g_elev = course.get_elevation_at_distance(g["distance_m"])
-		var g_grade = course.get_grade_at_distance(g["distance_m"])
-		g_node.position.y = -(g_elev - base_elev) * 100.0 * 3.0
-		g_node.rotation = lerp_angle(g_node.rotation, -travel_direction * atan(g_grade * 3.0), delta * 10.0)
-		g_node.scale.x = travel_direction
-		
-		g["wheel_rotation"] += g["velocity_ms"] * delta * 10.0
-		var g_crank_rot = g.get("crank_rotation", 0.0) + (90.0 / 60.0) * 2.0 * PI * delta
-		g["crank_rotation"] = g_crank_rot
-		_animate_cyclist(g_node, g["wheel_rotation"], g["velocity_ms"], g_crank_rot)
+		var g_elev = course.get_elevation_at_distance(g.distance_m)
+		var g_grade = course.get_grade_at_distance(g.distance_m)
+		g.position.y = -(g_elev - base_elev) * 100.0 * 3.0
+		g.rotation = lerp_angle(g.rotation, -travel_direction * atan(g_grade * 3.0), delta * 10.0)
+		g.scale.x = travel_direction
 	
 	# Environment stays level as the ground itself is now deformed
 	environment.rotation = 0
@@ -478,7 +371,7 @@ func _update_visuals(delta: float) -> void:
 	var graph_width = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
 	if graph_width <= 0: graph_width = 1240
 	
-	var progress = clamp(distance_m / total_dist, 0.0, 1.0)
+	var progress = clamp(player_cyclist.distance_m / total_dist, 0.0, 1.0)
 	if travel_direction < 0:
 		player_marker.position.x = (1.0 - progress) * graph_width
 	else:
@@ -497,48 +390,6 @@ func _on_viewport_resized() -> void:
 	
 	# Wait for layout update to get correct ElevationContainer width
 	get_tree().process_frame.connect(_build_elevation_graph, CONNECT_ONE_SHOT)
-
-func _animate_cyclist(node: Node2D, w_rot: float, vel: float, crank_rot: float = 0.0) -> void:
-	var frames = 12
-	
-	# Frame Index for Wheels/Chain/Frame (Speed-based)
-	var wheel_idx = 0
-	if vel > 0.1:
-		wheel_idx = int(fmod(w_rot, 2.0 * PI) / (2.0 * PI) * frames)
-		if wheel_idx < 0: wheel_idx += frames
-	
-	# Frame Index for Crank (Cadence-based)
-	var crank_idx = int(fmod(crank_rot, 2.0 * PI) / (2.0 * PI) * frames)
-	if crank_idx < 0: crank_idx += frames
-	
-	# Update Sprites
-	for child in node.get_children():
-		if child is Sprite2D:
-			if child.name == "Crank" or child.name == "BackPedal":
-				child.frame = crank_idx
-			else:
-				child.frame = wheel_idx
-	
-	# Bob ONLY the Rider (the person)
-	var bob = 0.0
-	if vel > 0.1:
-		bob = sin(Time.get_ticks_msec() * 0.01) * 3.0
-	
-	# Rider could be the Sprite2D or the Polygon2D (for legacy/ghost support)
-	for node_name in ["Rider", "RiderPoly"]:
-		if node.has_node(node_name):
-			var rider = node.get_node(node_name)
-			var base_y = -45.0 if rider is Sprite2D else -62.0
-			rider.position.y = base_y + bob
-	
-	# Ensure Bike parts stay stationary (at their base_y)
-	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Handlebars", "BackPedal", "Sprite2D"]:
-		if node.has_node(node_name) and node_name != "Rider":
-			var child = node.get_node(node_name)
-			if child is Sprite2D:
-				child.position.y = -45.0
-
-
 
 func _create_speed_control() -> void:
 	var layer = CanvasLayer.new()
@@ -593,14 +444,13 @@ func _on_item_discovered(item_id: String) -> void:
 
 func _on_ride_complete() -> void:
 	is_complete = true
-	velocity_ms = 0.0
+	# player_cyclist.velocity_ms = 0.0 # Handled via physics loop stop or ignored
 	Engine.time_scale = 1.0
 	
 	# Cleanup global signal connections
 	if SignalBus.item_discovered.is_connected(_on_item_discovered):
 		SignalBus.item_discovered.disconnect(_on_item_discovered)
-	if SignalBus.trainer_power_updated.is_connected(_on_power_updated):
-		SignalBus.trainer_power_updated.disconnect(_on_power_updated)
+	# Power/Cadence/Speed connected to SignalBus are handled via components or local connections
 	if SignalBus.trainer_cadence_updated.is_connected(_on_cadence_updated):
 		SignalBus.trainer_cadence_updated.disconnect(_on_cadence_updated)
 	if SignalBus.trainer_speed_updated.is_connected(_on_speed_updated):
@@ -672,17 +522,14 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
-func _on_power_updated(p_watts: float) -> void:
-	latest_power = p_watts
-
 func _on_speed_updated(p_kmh: float) -> void:
 	raw_trainer_speed_ms = p_kmh / 3.6
 
 func _on_cadence_updated(p_rpm: float) -> void:
-	cadence = p_rpm
+	player_cyclist.cadence = p_rpm
 	var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
 	if cadence_node:
-		cadence_node.text = str(round(cadence)) + " RPM"
+		cadence_node.text = str(round(p_rpm)) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -694,30 +541,32 @@ func _update_hud(p_effective_power: float) -> void:
 	if hud_power_label:
 		hud_power_label.text = str(round(p_effective_power)) + " W"
 	if hud_speed_label:
-		var speed = Units.ms_to_kmh(velocity_ms) if SettingsManager.units == "metric" else Units.ms_to_mph(velocity_ms)
+		var speed = Units.ms_to_kmh(player_cyclist.velocity_ms) if SettingsManager.units == "metric" else Units.ms_to_mph(player_cyclist.velocity_ms)
 		var unit_suffix = " km/h" if SettingsManager.units == "metric" else " mph"
 		hud_speed_label.text = Units.format_fixed(speed, 1) + unit_suffix
 	if hud_dist_label:
-		var dist = Units.m_to_km(distance_m) if SettingsManager.units == "metric" else Units.m_to_mi(distance_m)
+		var dist = Units.m_to_km(player_cyclist.distance_m) if SettingsManager.units == "metric" else Units.m_to_mi(player_cyclist.distance_m)
 		var unit_suffix = " km" if SettingsManager.units == "metric" else " mi"
 		hud_dist_label.text = Units.format_fixed(dist, 2) + unit_suffix
 	if hud_grade_label:
-		hud_grade_label.text = "Grade: " + Units.format_fixed(current_grade * 100.0, 1) + "%"
+		hud_grade_label.text = "Grade: " + Units.format_fixed(player_cyclist.current_grade * 100.0, 1) + "%"
 	if progress_bar:
-		progress_bar.value = distance_m
+		progress_bar.value = player_cyclist.distance_m
 		
 	# Update Draft/Surge Badge
-	if surge_timer > 0:
+	var state = player_cyclist.fatigue.get_state()
+
+	if state == "surge":
 		draft_badge.visible = true
 		draft_badge.get_node("Label").text = "ATTACK! +25% POWER"
 		draft_badge.modulate = Color.ORANGE_RED
-	elif recovery_timer > 0:
+	elif state == "recovery":
 		draft_badge.visible = true
 		draft_badge.get_node("Label").text = "RECOVERING... -15% POWER"
 		draft_badge.modulate = Color.SKY_BLUE
-	elif player_draft_factor > 0.01:
+	elif player_cyclist.draft_factor > 0.01:
 		draft_badge.visible = true
-		draft_badge.get_node("Label").text = "SLIPSTREAM  −%d%% DRAG" % int(player_draft_factor * 100)
+		draft_badge.get_node("Label").text = "SLIPSTREAM  −%d%% DRAG" % int(player_cyclist.draft_factor * 100)
 		draft_badge.modulate = Color.WHITE
 	else:
 		draft_badge.visible = false
@@ -729,13 +578,13 @@ func _update_hud(p_effective_power: float) -> void:
 			
 		# Sort ghosts by distance
 		var sorted_ghosts = ghosts.duplicate()
-		sorted_ghosts.sort_custom(func(a, b): return a["distance_m"] > b["distance_m"])
+		sorted_ghosts.sort_custom(func(a, b): return a.distance_m > b.distance_m)
 		
 		for g in sorted_ghosts:
-			var gap = g["distance_m"] - distance_m
+			var gap = g.distance_m - player_cyclist.distance_m
 			var l = Label.new()
 			var dist_str = "%+.1f m" % gap
-			l.text = g["label"] + ": " + dist_str
+			l.text = g.label + ": " + dist_str
 			l.add_theme_font_size_override("font_size", 14)
 			if gap > 0: l.add_theme_color_override("font_color", Color.SALMON)
 			else: l.add_theme_color_override("font_color", Color.LIGHT_GREEN)

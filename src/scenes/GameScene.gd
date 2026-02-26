@@ -157,8 +157,11 @@ func _spawn_ghosts() -> void:
 		environment.add_child(g_node)
 		
 		# Style the ghost
-		var rider_n = g_node.get_node("Rider")
-		rider_n.color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+		var sprite = g_node.get_node("Sprite2D")
+		var rider = g_node.get_node("Rider")
+		var color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+		sprite.modulate = color
+		rider.color = color
 		
 		var ghost_state = {
 			"label": labels[i],
@@ -478,12 +481,24 @@ func _on_viewport_resized() -> void:
 	get_tree().process_frame.connect(_build_elevation_graph, CONNECT_ONE_SHOT)
 
 func _animate_cyclist(node: Node2D, w_rot: float, vel: float) -> void:
-	node.get_node("WheelBack").rotation = w_rot
-	node.get_node("WheelFront").rotation = w_rot
+	var sprite: Sprite2D = node.get_node("Sprite2D")
+	var rider: Polygon2D = node.get_node("Rider")
 	
-	var bob = sin(Time.get_ticks_msec() * 0.01) * (3.0 if vel > 1.0 else 0.5)
-	node.get_node("Rider").position.y = -65 + bob
-
+	if vel > 0.1:
+		# Use w_rot to determine frame (0 to 11)
+		# 2*PI radians is one full rotation
+		var frames = 12
+		var frame_idx = int(fmod(w_rot, 2.0 * PI) / (2.0 * PI) * frames)
+		if frame_idx < 0: frame_idx += frames
+		sprite.frame = frame_idx
+		
+		# Bob the rider
+		var bob = sin(Time.get_ticks_msec() * 0.01) * 3.0
+		rider.position.y = -62 + bob
+	else:
+		# Stationary frame
+		sprite.frame = 0
+		rider.position.y = -62
 func _create_speed_control() -> void:
 	var layer = CanvasLayer.new()
 	layer.layer = 10
@@ -511,7 +526,7 @@ func _create_speed_control() -> void:
 
 	for speed in [1.0, 2.0, 5.0, 10.0]:
 		var btn = Button.new()
-		btn.text = "%gx" % speed
+		btn.text = str(speed) + "x"
 		btn.custom_minimum_size = Vector2(48, 32)
 		btn.add_theme_font_size_override("font_size", 16)
 		btn.add_theme_color_override("font_color", Color.WHITE)

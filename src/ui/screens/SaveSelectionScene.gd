@@ -7,21 +7,22 @@ func _ready() -> void:
 
 func refresh_slots() -> void:
 	# Clear existing slot UI and rebuild
-	for child in slots_container.get_children():
+	for child: Node in slots_container.get_children():
 		child.queue_free()
 
-	for i in range(SaveManager.SLOT_COUNT):
-		var slot_data = SaveManager.get_slot_metadata(i)
-		var slot_ui = preload("res://src/ui/components/SaveSlot.tscn").instantiate()
+	for i: int in range(SaveManager.SLOT_COUNT):
+		var slot_data: Dictionary = SaveManager.get_slot_metadata(i)
+		var slot_scene: PackedScene = preload("res://src/ui/components/SaveSlot.tscn")
+		var slot_ui: SaveSlot = slot_scene.instantiate() as SaveSlot
 		slots_container.add_child(slot_ui)
 
 		if slot_data.is_empty():
-			slot_ui.call("setup_empty", i)
+			slot_ui.setup_empty(i)
 		else:
-			slot_ui.call("setup_data", i, slot_data)
+			slot_ui.setup_data(i, slot_data)
 
-		slot_ui.connect("slot_selected", _on_slot_selected)
-		slot_ui.connect("slot_deleted", _on_slot_deleted)
+		slot_ui.slot_selected.connect(_on_slot_selected)
+		slot_ui.slot_deleted.connect(_on_slot_deleted)
 
 func _on_slot_selected(index: int, is_empty: bool) -> void:
 	RunManager.current_slot_index = index

@@ -20,41 +20,42 @@ func get_slot_metadata(slot_index: int) -> Dictionary:
 	if not has_save(slot_index):
 		return {}
 
-	var file = FileAccess.open(get_save_path(slot_index), FileAccess.READ)
+	var file: FileAccess = FileAccess.open(get_save_path(slot_index), FileAccess.READ)
 	if not file:
 		return {}
 
-	var text = file.get_as_text()
-	var data = JSON.parse_string(text)
+	var text: String = file.get_as_text()
+	var data: Variant = JSON.parse_string(text)
 
 	if data and typeof(data) == TYPE_DICTIONARY:
+		var dict: Dictionary = data
 		return {
-			"gold": data.get("gold", 0),
-			"distance": data.get("totalDistanceKm", 0.0),
-			"difficulty": data.get("difficulty", "normal"),
+			"gold": dict.get("gold", 0),
+			"distance": dict.get("totalDistanceKm", 0.0),
+			"difficulty": dict.get("difficulty", "normal"),
 			"timestamp": FileAccess.get_modified_time(get_save_path(slot_index))
 		}
 	return {}
 
 func save_game(slot_index: int) -> void:
-	var path = get_save_path(slot_index)
-	var data = RunManager.get_run() # Fetches the current run_data
-	var file = FileAccess.open(path, FileAccess.WRITE)
+	var path: String = get_save_path(slot_index)
+	var data: Dictionary = RunManager.get_run() # Fetches the current run_data
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data))
 
 func load_game(slot_index: int) -> bool:
-	var path = get_save_path(slot_index)
+	var path: String = get_save_path(slot_index)
 	if not FileAccess.file_exists(path): return false
 
-	var file = FileAccess.open(path, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if not file: return false
 
-	var data = JSON.parse_string(file.get_as_text())
+	var data: Variant = JSON.parse_string(file.get_as_text())
 	if data and typeof(data) == TYPE_DICTIONARY:
 		# RunManager must implement load_run_data
 		if RunManager.has_method("load_run_data"):
-			RunManager.load_run_data(data)
+			RunManager.load_run_data(data as Dictionary)
 			return true
 	return false
 

@@ -1,4 +1,5 @@
 extends MarginContainer
+class_name SaveSlot
 
 signal slot_selected(index: int, is_empty: bool)
 signal slot_deleted(index: int)
@@ -32,7 +33,7 @@ func setup_data(index: int, data: Dictionary) -> void:
 	dist_label.text = "Dist: %.1f km" % data.get("distance", 0.0)
 	diff_label.text = "Mode: " + str(data.get("difficulty", "normal")).capitalize()
 
-	var time = Time.get_datetime_dict_from_unix_time(data.get("timestamp", 0))
+	var time: Dictionary = Time.get_datetime_dict_from_unix_time(data.get("timestamp", 0))
 	date_label.text = "%04d-%02d-%02d %02d:%02d" % [time.year, time.month, time.day, time.hour, time.minute]
 
 func _on_select_button_pressed() -> void:

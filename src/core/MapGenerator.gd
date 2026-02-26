@@ -5,7 +5,7 @@ extends Object
 # Procedurally generates the Hub-and-Spoke map structure.
 
 const NODES_PER_SPOKE = 2
-const SPOKE_STEP = 0.07
+const SPOKE_STEP = 0.12
 const MIN_SPOKES = 2
 const MAX_SPOKES = 8
 const KM_PER_SPOKE = 20
@@ -102,7 +102,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     for spoke_index in range(active_spokes.size()):
         var spoke_id = active_spokes[spoke_index]
         var config = SPOKE_CONFIG[spoke_id]
-        var angle = (2.0 * PI * spoke_index) / float(num_spokes)
+        var angle = (TAU * spoke_index) / float(num_spokes) - (TAU / 16.0)
         
         var get_pos = func(radial: float, perp: float = 0.0):
             return {
@@ -217,7 +217,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         ip_node["connectedTo"].append(boss_id)
 
     # 3. Final Boss
-    var final_angle = PI * (2.0 * num_spokes - 1.0) / float(num_spokes)
+    var final_angle = (TAU * (float(num_spokes) - 0.5)) / float(num_spokes) - (TAU / 16.0)
     var final_dist = 0.45
     var final_boss_node = {
         "id": "node_final_boss",

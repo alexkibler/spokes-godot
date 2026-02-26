@@ -1,15 +1,11 @@
-name: "Build and Push Docker Image"
+name: "Pull Request Build Validation"
 on:
-  push:
+  pull_request:
     branches:
-      - '**'
-
-permissions:
-  contents: read
-  packages: write
+      - main
 
 jobs:
-  build-and-push:
+  validate-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,20 +21,10 @@ jobs:
           relative_project_path: ./
           archive_output: false
           use_preset_export_path: true
-          export_debug: false
+          export_debug: true # Debug export for PR validation
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push Docker Image
+      - name: Build Docker Image (No Push)
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name == 'main' && 'main' || 'dev' }}
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          push: false

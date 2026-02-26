@@ -43,7 +43,7 @@ func ms_to_mph(ms: float) -> float:
 ## Formats a value for display, stripping trailing .0 for integers.
 func format_fixed(val: float, decimals: int = 1) -> String:
 	if is_close_to_integer(val):
-		return str(round(val))
+		return str(int(round(val)))
 	return "%.*f" % [decimals, val]
 
 ## Checks if a number is "close enough" to an integer to be displayed as one.

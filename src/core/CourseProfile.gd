@@ -19,6 +19,7 @@ static func get_grade_at_distance(profile: Dictionary, distance_m: float) -> flo
     if total_dist <= 0: return 0.0
     
     var wrapped = fmod(distance_m, total_dist)
+    if wrapped < 0: wrapped += total_dist
     var remaining = wrapped
     for segment in profile.get("segments", []):
         if remaining < segment["distanceM"]:
@@ -26,11 +27,27 @@ static func get_grade_at_distance(profile: Dictionary, distance_m: float) -> flo
         remaining -= segment["distanceM"]
     return 0.0
 
+static func get_elevation_at_distance(profile: Dictionary, distance_m: float) -> float:
+    var total_dist = profile.get("totalDistanceM", 0.0)
+    if total_dist <= 0: return 0.0
+    
+    var wrapped = fmod(distance_m, total_dist)
+    if wrapped < 0: wrapped += total_dist
+    var remaining = wrapped
+    var elevation = 0.0
+    for segment in profile.get("segments", []):
+        var dist = min(remaining, segment["distanceM"])
+        elevation += dist * segment["grade"]
+        if remaining <= segment["distanceM"]: break
+        remaining -= segment["distanceM"]
+    return elevation
+
 static func get_surface_at_distance(profile: Dictionary, distance_m: float) -> String:
     var total_dist = profile.get("totalDistanceM", 0.0)
     if total_dist <= 0: return "asphalt"
     
     var wrapped = fmod(distance_m, total_dist)
+    if wrapped < 0: wrapped += total_dist
     var remaining = wrapped
     for segment in profile.get("segments", []):
         if remaining < segment["distanceM"]:

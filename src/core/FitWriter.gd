@@ -103,13 +103,23 @@ func export_fit() -> PackedByteArray:
     write_val.call(T_UINT32, start_ts)
     
     # 2. Records
-    write_def.call(1, 20, [
+    var has_hr = false
+    var has_alt = false
+    for r in records:
+        if r.get("heartRateBpm", 0) > 0: has_hr = true
+        if r.get("altitudeM", 0.0) != 0.0: has_alt = true
+        
+    var record_fields = [
         [253, T_UINT32], # timestamp
         [6,   T_UINT16], # speed (m/s * 1000)
         [7,   T_UINT16], # power (W)
         [4,   T_UINT8],  # cadence
         [5,   T_UINT32], # distance (m * 100)
-    ])
+    ]
+    if has_hr: record_fields.append([3, T_UINT8]) # heart rate
+    if has_alt: record_fields.append([2, T_UINT16]) # altitude (m * 5 + 500)
+    
+    write_def.call(1, 20, record_fields)
     for r in records:
         w8.call(1)
         write_val.call(T_UINT32, _to_fit_ts(r["timestampMs"]))
@@ -117,6 +127,8 @@ func export_fit() -> PackedByteArray:
         write_val.call(T_UINT16, r["powerW"])
         write_val.call(T_UINT8, r["cadenceRpm"])
         write_val.call(T_UINT32, r["distanceM"] * 100)
+        if has_hr: write_val.call(T_UINT8, r.get("heartRateBpm", 0))
+        if has_alt: write_val.call(T_UINT16, (r.get("altitudeM", 0.0) + 500.0) * 5.0)
         
     # 3. Lap
     write_def.call(2, 19, [

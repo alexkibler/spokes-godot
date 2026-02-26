@@ -128,9 +128,6 @@ func _draw() -> void:
 
 	# Draw autoplay progress
 	if is_selecting and not autoplay_target_node.is_empty():
-		var viewport_size = get_viewport().get_visible_rect().size
-		var center = viewport_size / 2.0
-		var scale_factor = min(viewport_size.x, viewport_size.y) * 0.8
 		var node = autoplay_target_node
 		var pos = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 		var radius = 22.0
@@ -152,19 +149,21 @@ func _find_node(nodes: Array, id: String) -> Dictionary:
 	return {}
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
+	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		var run = RunManager.get_run()
 		if run.is_empty(): return
 		
 		var viewport_size = get_viewport().get_visible_rect().size
 		var center = viewport_size / 2.0
 		var scale_factor = min(viewport_size.x, viewport_size.y) * 0.8
-		var mouse_pos = get_local_mouse_position()
+		
+		# For ScreenTouch, use event.position. For Mouse, make_input_local(event).position is safer.
+		var click_pos = event.position
 		
 		# Check node clicks
 		for node in run["nodes"]:
 			var pos = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
-			if mouse_pos.distance_to(pos) < 25.0:
+			if click_pos.distance_to(pos) < 25.0:
 				_on_node_clicked(node)
 				return
 	

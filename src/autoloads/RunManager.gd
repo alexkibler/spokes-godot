@@ -253,8 +253,7 @@ func add_to_inventory(item_id: String) -> void:
 	run_data["inventory"].append(item_id)
 
 func equip_item(item_id: String) -> bool:
-	var registry = get_node("/root/RewardManager").registry
-	var def = registry.get_item(item_id)
+	var def = ContentRegistry.get_item(item_id)
 	if not def.has("slot"): return false
 	
 	var idx = run_data["inventory"].find(item_id)
@@ -279,8 +278,7 @@ func unequip_item(slot: String) -> String:
 	var item_id = run_data["equipped"].get(slot, "")
 	if item_id == "": return ""
 	
-	var registry = get_node("/root/RewardManager").registry
-	var def = registry.get_item(item_id)
+	var def = ContentRegistry.get_item(item_id)
 	
 	if def.has("modifier"):
 		_reverse_modifier(def["modifier"])

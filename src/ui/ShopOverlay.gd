@@ -111,12 +111,9 @@ func _build_inventory() -> void:
 
 func _on_buy_pressed(item: Dictionary, price: int) -> void:
 	if RunManager.spend_gold(price):
-		# Access RewardManager explicitly via the Root to avoid potential parse issues
-		var rm = get_node("/root/RewardManager")
-		
 		# Special case: permanent stat boosts apply immediately
 		if item["id"].begins_with("stat_"):
-			rm.apply_reward(item["id"])
+			ContentRegistry.apply_reward(item["id"])
 		else:
 			RunManager.add_to_inventory(item["id"])
 			

@@ -405,13 +405,13 @@ func _update_hud(p_effective_power: float) -> void:
 	if hud_speed_label:
 		var speed = CyclistPhysics.ms_to_kmh(velocity_ms) if SettingsManager.units == "metric" else CyclistPhysics.ms_to_mph(velocity_ms)
 		var unit_suffix = " km/h" if SettingsManager.units == "metric" else " mph"
-		hud_speed_label.text = "%.1f" % speed + unit_suffix
+		hud_speed_label.text = Units.format_fixed(speed, 1) + unit_suffix
 	if hud_dist_label:
-		var dist = distance_m / 1000.0 if SettingsManager.units == "metric" else distance_m * 0.000621371
+		var dist = Units.m_to_km(distance_m) if SettingsManager.units == "metric" else Units.m_to_mi(distance_m)
 		var unit_suffix = " km" if SettingsManager.units == "metric" else " mi"
-		hud_dist_label.text = "%.2f" % dist + unit_suffix
+		hud_dist_label.text = Units.format_fixed(dist, 2) + unit_suffix
 	if hud_grade_label:
-		hud_grade_label.text = "Grade: %.1f%%" % (current_grade * 100.0)
+		hud_grade_label.text = "Grade: " + Units.format_fixed(current_grade * 100.0, 1) + "%"
 	if progress_bar:
 		progress_bar.value = distance_m
 		

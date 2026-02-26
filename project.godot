@@ -21,10 +21,11 @@ config/features=PackedStringArray("4.6", "Mobile")
 
 [autoload]
 
+Units="*res://src/autoloads/Units.gd"
+ContentRegistry="*res://src/autoloads/ContentRegistry.gd"
 RunManager="*res://src/autoloads/RunManager.gd"
 TrainerService="*res://src/autoloads/TrainerService.gd"
 SettingsManager="*res://src/autoloads/SettingsManager.gd"
-RewardManager="*res://src/autoloads/RewardManager.gd"
 
 [display]
 

@@ -11,7 +11,7 @@ var current_rewards: Array = []
 
 func _ready() -> void:
 	# Pick 3 random rewards
-	current_rewards = RewardManager.get_random_rewards(3)
+	current_rewards = ContentRegistry.get_loot_pool(3)
 	_render_cards()
 	
 	if RunManager.autoplay_enabled:
@@ -89,6 +89,6 @@ func _render_cards() -> void:
 		card_container.add_child(card)
 
 func _on_card_pressed(reward_id: String) -> void:
-	RewardManager.apply_reward(reward_id)
+	ContentRegistry.apply_reward(reward_id)
 	reward_selected.emit()
 	queue_free()

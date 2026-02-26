@@ -22,7 +22,6 @@ func _build_slots() -> void:
 		child.queue_free()
 		
 	var run = RunManager.get_run()
-	var registry = get_node("/root/RewardManager").registry
 	
 	for slot in ALL_SLOTS:
 		var equipped_id = run["equipped"].get(slot, "")
@@ -40,7 +39,7 @@ func _build_slots() -> void:
 		vbox.add_child(slot_label)
 		
 		if equipped_id != "":
-			var def = registry.get_item(equipped_id)
+			var def = ContentRegistry.get_item(equipped_id)
 			var item_label = Label.new()
 			item_label.text = def["label"]
 			item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -69,11 +68,10 @@ func _build_inventory() -> void:
 		child.queue_free()
 		
 	var run = RunManager.get_run()
-	var registry = get_node("/root/RewardManager").registry
 	
 	var gear_in_inv = []
 	for id in run["inventory"]:
-		var def = registry.get_item(id)
+		var def = ContentRegistry.get_item(id)
 		if def.has("slot"):
 			gear_in_inv.append(id)
 			
@@ -85,7 +83,7 @@ func _build_inventory() -> void:
 		return
 		
 	for id in gear_in_inv:
-		var def = registry.get_item(id)
+		var def = ContentRegistry.get_item(id)
 		var hbox = HBoxContainer.new()
 		
 		var l = Label.new()

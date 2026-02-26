@@ -4,18 +4,17 @@ extends Resource
 # Port of CourseProfile.ts
 # Defines a cycling course as an ordered list of grade segments.
 
-const CRR_BY_SURFACE: Dictionary = {
-    "asphalt": 0.005, # smooth tarmac — baseline
-    "gravel":  0.012, # packed gravel  — ~2.4× baseline
-    "dirt":    0.020, # dirt track     — ~4×   baseline
-    "mud":     0.040, # soft mud       — ~8×   baseline
-}
+const DEFAULT_SURFACE: Resource = preload("res://src/features/map/surfaces/asphalt.tres")
 
 @export var segments: Array[Dictionary] = [] ## Array of Dictionaries {distanceM, grade, surface}
 @export var total_distance_m: float = 0.0
 
-static func get_crr_for_surface(surface: String = "asphalt") -> float:
-    return CRR_BY_SURFACE.get(surface, 0.005)
+static func get_surface_resource(surface_name: String) -> Resource:
+    if surface_name == "asphalt": return preload("res://src/features/map/surfaces/asphalt.tres")
+    if surface_name == "gravel": return preload("res://src/features/map/surfaces/gravel.tres")
+    if surface_name == "dirt": return preload("res://src/features/map/surfaces/dirt.tres")
+    if surface_name == "mud": return preload("res://src/features/map/surfaces/mud.tres")
+    return DEFAULT_SURFACE
 
 func get_grade_at_distance(distance_m: float) -> float:
     if total_distance_m <= 0: return 0.0
@@ -49,17 +48,20 @@ func get_elevation_at_distance(distance_m: float) -> float:
         
     return (num_wraps * total_elev) + current_wrap_elev
 
-func get_surface_at_distance(distance_m: float) -> String:
-    if total_distance_m <= 0: return "asphalt"
+func get_surface_at_distance(distance_m: float) -> Resource:
+    if total_distance_m <= 0: return DEFAULT_SURFACE
     
     var wrapped: float = fmod(distance_m, total_distance_m)
     if wrapped < 0: wrapped += total_distance_m
     var remaining: float = wrapped
     for segment: Dictionary in segments:
         if remaining < segment["distanceM"]:
-            return segment.get("surface", "asphalt")
+            var surf_val: Variant = segment.get("surface", "asphalt")
+            if typeof(surf_val) == TYPE_STRING:
+                return CourseProfile.get_surface_resource(surf_val)
+            return surf_val as Resource
         remaining -= segment["distanceM"]
-    return "asphalt"
+    return DEFAULT_SURFACE
 
 static func generate_course_profile(distance_km: float, max_grade: float, surface: String = "asphalt") -> CourseProfile:
     var total_m: float = distance_km * 1000.0

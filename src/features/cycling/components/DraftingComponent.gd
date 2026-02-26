@@ -1,5 +1,5 @@
 class_name DraftingComponent
-extends Node
+extends CyclistComponent
 
 ## DraftingComponent
 ## Manages aerodynamic drag reduction based on nearby cyclists.
@@ -11,6 +11,10 @@ signal draft_factor_changed(factor: float)
 @export var stats: CyclistStats
 
 var current_draft_factor: float = 0.0
+
+func initialize(parent_cyclist: Node2D) -> void:
+	super(parent_cyclist)
+	stats = cyclist.get("stats")
 
 ## Updates the draft factor based on a list of nearby entities.
 ## Each entity is expected to be a Node2D (or dictionary from ghosts) with 'distance_m' and 'stats'.

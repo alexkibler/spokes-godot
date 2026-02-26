@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SurfaceType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/features/map/SurfaceType.gd" id="1_surface"]
+
+[resource]
+script = ExtResource("1_surface")
+name = "asphalt"
+crr = 0.005
+particle_color = Color(0.2, 0.2, 0.2, 1)

@@ -64,7 +64,8 @@ func _ready() -> void:
 		if not ae.is_empty():
 			course = ae["profile"]
 			# Note: Cyclist entity updates its own physics state based on distance, so we just set start pos.
-			var current_surface: String = course.get_surface_at_distance(0.0)
+			var current_surface_res: Resource = course.get_surface_at_distance(0.0)
+			var current_surface: String = current_surface_res.get("name")
 			
 			# Determine direction from map coordinates
 			var from_node: Dictionary = {}
@@ -96,7 +97,8 @@ func _ready() -> void:
 	TrainerService.connect_trainer()
 	
 	if TrainerService.is_mock_mode:
-		player_cyclist.hardware_receiver.set_cadence_manual(TrainerService.mock_cadence)
+		var hr: Node = player_cyclist.get("hardware_receiver")
+		if hr: (hr as Object).call("set_cadence_manual", TrainerService.mock_cadence)
 	
 	# Setup UI
 	progress_bar.max_value = course.total_distance_m
@@ -245,7 +247,8 @@ func _physics_process(delta: float) -> void:
 	if TrainerService.is_mock_mode:
 		# In mock mode, we feed the mock power to the player's component
 		var ftp: float = float(RunManager.run_data.get("ftpW", 200.0))
-		player_cyclist.hardware_receiver.set_power_manual(ftp)
+		var hr: Node = player_cyclist.get("hardware_receiver")
+		if hr: (hr as Object).call("set_power_manual", ftp)
 	
 	# 1. Gather all cyclists for drafting
 	var all_entities: Array[Cyclist] = []
@@ -266,24 +269,26 @@ func _physics_process(delta: float) -> void:
 	
 	# Elite Challenge Tracking
 	if RunManager.active_challenge != null:
-		var latest_power: float = player_cyclist.hardware_receiver.get_power()
+		var hr: Node = player_cyclist.get("hardware_receiver")
+		var latest_power: float = (hr as Object).call("get_power") if hr else 0.0
 		challenge_power_sum += latest_power
 		challenge_tick_count += 1
 		challenge_peak_power = max(challenge_peak_power, latest_power)
 		if player_cyclist.velocity_ms < 0.1 and player_cyclist.distance_m > 10.0: # Ignore very start
 			challenge_ever_stopped = true
 	
-	var current_surface: String = player_cyclist.current_surface
-	_set_surface(current_surface)
+	var current_surface_name: String = player_cyclist.current_surface.get("name")
+	_set_surface(current_surface_name)
 	
 	# 4. Record every second
 	var now: int = Time.get_ticks_msec()
 	if now - last_record_ms >= 1000:
 		last_record_ms = now
+		var hr: Node = player_cyclist.get("hardware_receiver")
 		fit_writer.add_record({
 			"timestampMs": Time.get_unix_time_from_system() * 1000,
-			"powerW": player_cyclist.hardware_receiver.get_power(),
-			"cadenceRpm": player_cyclist.hardware_receiver.get_cadence(),
+			"powerW": (hr as Object).call("get_power") if hr else 0.0,
+			"cadenceRpm": (hr as Object).call("get_cadence") if hr else 0.0,
 			"speedMs": player_cyclist.velocity_ms,
 			"distanceM": player_cyclist.distance_m
 		})
@@ -536,7 +541,8 @@ func _update_hud(p_effective_power: float) -> void:
 		progress_bar.value = player_cyclist.distance_m
 		
 	# Update Draft/Surge Badge
-	var state: String = player_cyclist.surge.get_state()
+	var surge_comp: Node = player_cyclist.get("surge")
+	var state: String = (surge_comp as Object).call("get_state") if surge_comp else "normal"
 
 	if state == "surge":
 		draft_badge.visible = true

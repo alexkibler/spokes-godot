@@ -1,5 +1,5 @@
 class_name SurgeComponent
-extends Node
+extends CyclistComponent
 
 ## SurgeComponent
 ## Manages the Surge/Recovery state machine logic.

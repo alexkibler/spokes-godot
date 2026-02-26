@@ -1,5 +1,5 @@
 class_name HardwareReceiverComponent
-extends Node
+extends CyclistComponent
 
 ## HardwareReceiverComponent
 ## Listens for telemetry updates from hardware (via SignalBus) or other sources.
@@ -16,7 +16,10 @@ var _current_power: float = 0.0
 var _current_cadence: float = 0.0
 var _current_speed_kmh: float = 0.0
 
-func _ready() -> void:
+func initialize(parent_cyclist: Node2D) -> void:
+	super(parent_cyclist)
+	is_player = cyclist.get("is_player")
+	
 	if is_player:
 		if not SignalBus.trainer_power_updated.is_connected(_on_power_updated):
 			SignalBus.trainer_power_updated.connect(_on_power_updated)
@@ -24,6 +27,13 @@ func _ready() -> void:
 			SignalBus.trainer_cadence_updated.connect(_on_cadence_updated)
 		if not SignalBus.trainer_speed_updated.is_connected(_on_speed_updated):
 			SignalBus.trainer_speed_updated.connect(_on_speed_updated)
+	else:
+		if SignalBus.trainer_power_updated.is_connected(_on_power_updated):
+			SignalBus.trainer_power_updated.disconnect(_on_power_updated)
+		if SignalBus.trainer_cadence_updated.is_connected(_on_cadence_updated):
+			SignalBus.trainer_cadence_updated.disconnect(_on_cadence_updated)
+		if SignalBus.trainer_speed_updated.is_connected(_on_speed_updated):
+			SignalBus.trainer_speed_updated.disconnect(_on_speed_updated)
 
 func _on_power_updated(watts: float) -> void:
 	# Simple exponential moving average for smoothing if needed

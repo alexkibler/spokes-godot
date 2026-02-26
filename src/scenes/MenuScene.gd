@@ -11,6 +11,7 @@ extends Control
 @onready var dist_label: Label = $MarginContainer/VBoxContainer/DistanceContainer/HBox/DistValue
 
 func _ready() -> void:
+	_add_version_watermark()
 	# Load from settings
 	ftp_input.value = SettingsManager.ftp_w
 	weight_input.value = SettingsManager.weight_kg
@@ -104,3 +105,15 @@ func _on_start_pressed() -> void:
 	)
 	
 	get_tree().change_scene_to_file("res://src/scenes/MapScene.tscn")
+
+func _add_version_watermark() -> void:
+	var watermark = Label.new()
+	watermark.text = "v: " + BuildInfo.COMMIT_HASH.left(7)
+	watermark.add_theme_font_size_override("font_size", 12)
+	watermark.add_theme_color_override("font_color", Color(1, 1, 1, 0.4)) # Semi-transparent
+	
+	# Position in bottom-right corner
+	watermark.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 10)
+	
+	# Add to root to ensure it stays on top of other menu elements
+	add_child(watermark)

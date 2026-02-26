@@ -191,12 +191,12 @@ func test_autoplay_pathfinding_complex_navigation():
 	
 	# 2. Spoke 1 -> Boss 1
 	# We'll skip ahead to the boss node for brevity in the test
-	rm.run_data["currentNodeId"] = "node_plains_pre"
+	rm.run_data["currentNodeId"] = "node_plains_ip"
 	next = rm.get_next_autoplay_node()
 	assert_eq(next["id"], "node_plains_boss", "Path 2: Must target the unvisited boss")
 	
 	# 3. Defeat Boss 1 -> Unlock Spoke 2
-	rm.complete_node_visit({"from": "node_plains_pre", "to": "node_plains_boss", "profile": {"totalDistanceM": 1000}})
+	rm.complete_node_visit({"from": "node_plains_ip", "to": "node_plains_boss", "profile": {"totalDistanceM": 1000}})
 	assert_true("medal_plains" in rm.run_data["inventory"], "Should have earned medal_plains")
 	
 	# 4. Return to Hub

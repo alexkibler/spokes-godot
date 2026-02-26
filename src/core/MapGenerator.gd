@@ -261,6 +261,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     run_data["edges"] = edges
     run_data["currentNodeId"] = hub_node["id"]
     run_data["visitedNodeIds"] = [hub_node["id"]]
+    hub_node["isUsed"] = true
     
     var total_map_dist = 0.0
     for e in edges:

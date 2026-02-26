@@ -113,6 +113,8 @@ func _draw() -> void:
 		var draw_color = color
 		if is_locked:
 			draw_color = color.lerp(Color.BLACK, 0.4)
+		elif node.get("isUsed", false) and node["id"] != run["currentNodeId"] and node["type"] != "start":
+			draw_color = color.lerp(Color.BLACK, 0.7) # Heavily dim used nodes
 			
 		draw_circle(pos, radius + 1.5, Color.BLACK) # Outline
 		draw_circle(pos, radius, draw_color)
@@ -198,6 +200,13 @@ func _on_node_clicked(node: Dictionary) -> void:
 		tween.tween_property(self, "position", orig_pos, 0.05)
 		# Re-check autoplay in case we picked a bad node
 		get_tree().create_timer(0.5).timeout.connect(_check_autoplay)
+		return
+
+	# NEW: Skip interactions if already used
+	if node.get("isUsed", false):
+		RunManager.complete_node_visit(connecting_edge)
+		queue_redraw()
+		_check_autoplay()
 		return
 
 	# 3. Handle by type

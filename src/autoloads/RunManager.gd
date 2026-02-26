@@ -190,6 +190,9 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	if not dest_id in run_data["visitedNodeIds"]:
 		run_data["visitedNodeIds"].append(dest_id)
 		
+	if dest_node:
+		dest_node["isUsed"] = true
+		
 	if not edge.get("isCleared", false):
 		edge["isCleared"] = true
 		return true # First clear!

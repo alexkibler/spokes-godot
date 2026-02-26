@@ -26,6 +26,7 @@ ContentRegistry="*res://src/autoloads/ContentRegistry.gd"
 RunManager="*res://src/autoloads/RunManager.gd"
 TrainerService="*res://src/autoloads/TrainerService.gd"
 SettingsManager="*res://src/autoloads/SettingsManager.gd"
+BuildInfo="*res://src/autoloads/BuildInfo.gd"
 
 [display]
 

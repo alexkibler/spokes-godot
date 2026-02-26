@@ -5,7 +5,7 @@ on:
       - '**'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -36,6 +36,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+
+      - name: Run Procedural Audit
+        run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_audit.gd -gexit
+
+      - name: Commit Updated Audit
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add ALGORITHMS_OVERVIEW.md
+          git commit -m "docs: update procedural algorithms overview [skip ci]" || echo "No changes to commit"
+          git push || echo "No changes to push"
 
       - name: Inject Commit Hash
         run: |

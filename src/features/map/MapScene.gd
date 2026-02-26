@@ -224,11 +224,11 @@ func _on_node_clicked(node: Dictionary) -> void:
 			var overlay = load("res://src/ui/screens/EliteOverlay.tscn").instantiate()
 			add_child(overlay)
 			overlay.setup(challenge)
-			overlay.challenge_accepted.connect(func(accepted_challenge):
+			overlay.challenge_accepted.connect(func(accepted_challenge: EliteChallenge):
 				RunManager.active_challenge = accepted_challenge
 				# Use specialized elite profile
 				var max_g = RunManager.get_absolute_max_grade()
-				var profile = EliteChallenge.generate_elite_course_profile(accepted_challenge, max_g)
+				var profile = accepted_challenge.generate_course_profile(max_g)
 				# Note: We don't overwrite the base edge profile permanently here 
 				# so that future traversals (in reverse) use the normal profile.
 				# We duplicate it for this specific ride.

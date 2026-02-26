@@ -13,7 +13,7 @@ var run_data: Dictionary = {}
 var is_active_run: bool = false
 var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
-var active_challenge: Dictionary = {}
+var active_challenge: Variant = null
 var pending_overlay: String = "" # "shop", "event", or ""
 
 func toggle_autoplay() -> void:
@@ -90,13 +90,9 @@ func set_active_edge(edge: Dictionary) -> void:
 	var current_id = run_data.get("currentNodeId", "")
 	var processed_edge = edge.duplicate()
 	
-	# Identify actual start and end node IDs for direction determination
-	var from_id = edge["from"]
-	var to_id = edge["to"]
-	
 	# If we are going backwards (from 'to' to 'from'), invert the profile
 	if current_id == edge["to"]:
-		processed_edge["profile"] = CourseProfile.invert_course_profile(edge["profile"])
+		processed_edge["profile"] = edge["profile"].invert_course_profile()
 		processed_edge["direction"] = "backward"
 		processed_edge["actual_from"] = edge["to"]
 		processed_edge["actual_to"] = edge["from"]

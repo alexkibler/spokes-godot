@@ -502,6 +502,11 @@ func _on_ride_complete() -> void:
 	if is_first_clear:
 		var overlay = load("res://src/ui/RewardOverlay.tscn").instantiate()
 		add_child(overlay)
+		
+		# Show boss medal if applicable
+		var is_boss = current_node and current_node["type"] == "boss"
+		overlay.setup(is_boss)
+		
 		overlay.reward_selected.connect(func(): 
 			_check_and_show_pending_overlay(on_overlay_closed)
 		)

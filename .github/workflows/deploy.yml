@@ -22,7 +22,7 @@ jobs:
         with:
           godot_version: '4.3'
           import_project: true
-          gut_params: "-gdir=res://tests -ginclude_subdirs -gexit"
+          gut_params: "-gdir=res://tests -ginclude_subdirs -gexit -gprefix=test_ -gsuffix=.gd"
 
   build-and-push:
     needs: test

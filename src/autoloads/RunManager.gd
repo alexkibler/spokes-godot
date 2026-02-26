@@ -46,7 +46,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		}
 	}
 	
-	MapGenerator.generate_hub_and_spoke_map(run_data)
+	preload("res://src/core/MapGenerator.gd").generate_hub_and_spoke_map(run_data)
 	
 	is_active_run = true
 	run_started.emit()

@@ -21,13 +21,13 @@ func make_record(overrides: Dictionary = {}) -> Dictionary:
 # ─── FitWriter construction ────────────────────────────────────────────────────
 
 func test_construction():
-	var fw = FitWriter.new(START_MS)
+	var fw = autofree(FitWriter.new(START_MS))
 	assert_eq(fw.get_record_count(), 0, "starts with zero records")
 
 # ─── add_record / get_record_count ──────────────────────────────────────────────
 
 func test_add_record():
-	var fw = FitWriter.new(START_MS)
+	var fw = autofree(FitWriter.new(START_MS))
 	fw.add_record(make_record())
 	assert_eq(fw.get_record_count(), 1)
 	fw.add_record(make_record())
@@ -36,7 +36,7 @@ func test_add_record():
 # ─── export_fit() – basic structure ──────────────────────────────────────────────
 
 func test_export_basic_structure():
-	var fw = FitWriter.new(START_MS)
+	var fw = autofree(FitWriter.new(START_MS))
 	var data = fw.export_fit()
 	assert_true(data is PackedByteArray, "returns a PackedByteArray")
 	assert_gt(data.size(), 16, "at least 16 bytes (14 header + 2 file CRC)")
@@ -50,7 +50,7 @@ func test_export_basic_structure():
 	assert_eq(data[11], 0x54, "'T' at 11")
 
 func test_data_size_header():
-	var fw = FitWriter.new(START_MS)
+	var fw = autofree(FitWriter.new(START_MS))
 	fw.add_record(make_record())
 	var data = fw.export_fit()
 	
@@ -65,25 +65,25 @@ func test_optional_fields():
 	# based on the read_file output. It only exports timestamp, speed, power, cadence, distance.
 	# So these tests SHOULD fail if we check for file size increase.
 	
-	var base = FitWriter.new(START_MS)
+	var base = autofree(FitWriter.new(START_MS))
 	base.add_record(make_record({"heartRateBpm": 0, "altitudeM": 0.0}))
 	var base_data = base.export_fit()
 	
-	var with_hr = FitWriter.new(START_MS)
+	var with_hr = autofree(FitWriter.new(START_MS))
 	with_hr.add_record(make_record({"heartRateBpm": 150, "altitudeM": 0.0}))
 	var with_hr_data = with_hr.export_fit()
 	
 	# This might fail in Godot if it doesn't implement HR
 	assert_gt(with_hr_data.size(), base_data.size(), "HR data should increase file size")
 	
-	var with_alt = FitWriter.new(START_MS)
+	var with_alt = autofree(FitWriter.new(START_MS))
 	with_alt.add_record(make_record({"heartRateBpm": 0, "altitudeM": 500.0}))
 	var with_alt_data = with_alt.export_fit()
 	
 	assert_gt(with_alt_data.size(), base_data.size(), "Altitude data should increase file size")
 
 func test_crc_presence():
-	var fw = FitWriter.new(START_MS)
+	var fw = autofree(FitWriter.new(START_MS))
 	fw.add_record(make_record())
 	var data = fw.export_fit()
 	
@@ -94,7 +94,7 @@ func test_crc_presence():
 	assert_ne(file_crc, 0, "file CRC should be non-zero")
 
 func test_empty_export():
-	var fw = FitWriter.new(START_MS)
+	var fw = autofree(FitWriter.new(START_MS))
 	var data = fw.export_fit()
 	assert_gt(data.size(), 16)
 	

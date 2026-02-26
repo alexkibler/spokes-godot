@@ -9,7 +9,22 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Run GUT Tests
+        uses: mike-ee/godot-gut-action@v2
+        with:
+          godot_version: 4.3-stable
+          gut_test_directory: res://tests
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

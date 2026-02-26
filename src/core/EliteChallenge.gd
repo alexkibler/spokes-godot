@@ -69,10 +69,11 @@ static func evaluate_challenge(challenge: Dictionary, metrics: Dictionary) -> bo
 
 static func grant_challenge_reward(challenge: Dictionary) -> void:
 	var reward = challenge.get("reward", {})
+	var run_manager = Engine.get_main_loop().root.get_node("/root/RunManager")
 	if reward.get("type") == "gold":
-		RunManager.add_gold(reward.get("goldAmount", 0))
+		run_manager.add_gold(reward.get("goldAmount", 0))
 	elif reward.get("type") == "item":
-		RunManager.add_to_inventory(reward.get("item", ""))
+		run_manager.add_to_inventory(reward.get("item", ""))
 
 static func format_challenge_text(challenge: Dictionary, ftp_w: int) -> String:
 	var text = challenge.get("conditionText", "")

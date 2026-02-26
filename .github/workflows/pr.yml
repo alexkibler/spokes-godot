@@ -13,6 +13,12 @@ jobs:
         with:
           lfs: true
 
+      - name: Run GUT Tests
+        uses: mike-ee/godot-gut-action@v2
+        with:
+          godot_version: 4.3-stable
+          gut_test_directory: res://tests
+
       - name: Web Export
         uses: firebelley/godot-export@v5.2.1
         with:

@@ -8,13 +8,13 @@ func before_each():
 	RunManager.run_data = {}
 
 func test_start_new_run():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	var run = RunManager.get_run()
 	
 	assert_not_null(run, "run should be active")
 	assert_eq(run.gold, 0, "initial gold should be 0")
 	assert_eq(run.runLength, 3, "runLength should match")
-	assert_eq(run.totalDistanceKm, 10.0, "totalDistanceKm should match")
+	assert_eq(run.totalDistanceKm, 50.0, "totalDistanceKm should match")
 	assert_eq(run.difficulty, "normal", "difficulty should match")
 	assert_eq(run.ftpW, 200, "ftpW should match")
 	assert_eq(run.weightKg, 68.0, "weightKg should match")
@@ -36,14 +36,14 @@ func test_get_run_null():
 	assert_eq(RunManager.get_run(), {}, "returns empty dict when no run active")
 
 func test_add_gold():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	RunManager.add_gold(50)
 	assert_eq(RunManager.get_run().gold, 50)
 	RunManager.add_gold(30)
 	assert_eq(RunManager.get_run().gold, 80)
 
 func test_spend_gold():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	RunManager.add_gold(100)
 	
 	var result = RunManager.spend_gold(40)
@@ -55,7 +55,7 @@ func test_spend_gold():
 	assert_eq(RunManager.get_run().gold, 60)
 
 func test_inventory():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	RunManager.add_to_inventory("tailwind")
 	assert_has(RunManager.get_run().inventory, "tailwind")
 	
@@ -70,7 +70,7 @@ func test_inventory():
 		pass
 
 func test_apply_modifier():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	
 	RunManager.apply_modifier({"powerMult": 1.1})
 	assert_almost_eq(RunManager.get_run().modifiers.powerMult, 1.1, 0.0001)
@@ -94,7 +94,7 @@ func test_apply_modifier():
 
 # Godot version has complete_node_visit instead of setCurrentNode
 func test_complete_node_visit():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	var run = RunManager.get_run()
 	var hub_id = run.currentNodeId
 	
@@ -117,7 +117,7 @@ func test_complete_node_visit():
 	assert_false(second_clear, "second visit should return false")
 
 func test_is_edge_traversable():
-	RunManager.start_new_run(3, 10.0, "normal", 200, 68.0, "imperial")
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	var run = RunManager.get_run()
 	
 	# Find a locked edge (Spoke Gate)

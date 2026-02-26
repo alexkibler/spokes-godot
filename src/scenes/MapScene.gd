@@ -102,7 +102,7 @@ func _draw() -> void:
 		
 		var is_locked = false
 		for edge in run["edges"]:
-			if edge["to"] == node["id"] and edge["from"] == run["currentNodeId"]:
+			if edge["to"] == node["id"]:
 				if not RunManager.is_edge_traversable(edge):
 					is_locked = true
 					break

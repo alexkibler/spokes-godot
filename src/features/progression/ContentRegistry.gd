@@ -107,7 +107,7 @@ static func bootstrap() -> void:
 		"description": "+4% Power output",
 		"rarity": "common",
 		"modifier": {"powerMult": 1.04},
-		"apply": func(rm: Node) -> void: rm.call("apply_modifier", {"powerMult": 1.04}, "Leg Day")
+		"apply": func(rm: Node) -> void: RunManager.apply_modifier({"powerMult": 1.04}, "Leg Day")
 	})
 	
 	register_reward({
@@ -116,7 +116,7 @@ static func bootstrap() -> void:
 		"description": "-2% Aerodynamic drag",
 		"rarity": "common",
 		"modifier": {"dragReduction": 0.02},
-		"apply": func(rm: Node) -> void: rm.call("apply_modifier", {"dragReduction": 0.02}, "Slammed Stem")
+		"apply": func(rm: Node) -> void: RunManager.apply_modifier({"dragReduction": 0.02}, "Slammed Stem")
 	})
 	
 	register_reward({
@@ -125,7 +125,7 @@ static func bootstrap() -> void:
 		"description": "-3% Total system weight",
 		"rarity": "common",
 		"modifier": {"weightMult": 0.97},
-		"apply": func(rm: Node) -> void: rm.call("apply_modifier", {"weightMult": 0.97}, "Carbon Cages")
+		"apply": func(rm: Node) -> void: RunManager.apply_modifier({"weightMult": 0.97}, "Carbon Cages")
 	})
 
 	# --- Rewards (Items) ---
@@ -134,5 +134,5 @@ static func bootstrap() -> void:
 		"label": "Aero Helmet",
 		"description": "Equipable: -3% Drag",
 		"rarity": "uncommon",
-		"apply": func(rm: Node) -> void: rm.call("add_to_inventory", "aero_helmet")
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("aero_helmet")
 	})

@@ -4,6 +4,7 @@ extends Node2D
 # Orchestrator for the riding experience
 
 @onready var hud_power_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/PowerValue
+@onready var hud_cadence_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/CadenceValue
 @onready var hud_speed_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/SpeedValue
 @onready var hud_dist_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/DistValue
 @onready var hud_grade_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/GradeValue
@@ -98,7 +99,7 @@ func _ready() -> void:
 	
 	if TrainerService.is_mock_mode:
 		var hr: Node = player_cyclist.get("hardware_receiver")
-		if hr: (hr as Object).call("set_cadence_manual", TrainerService.mock_cadence)
+		if hr: (hr as HardwareReceiverComponent).set_cadence_manual(TrainerService.mock_cadence)
 	
 	# Setup UI
 	progress_bar.max_value = course.total_distance_m
@@ -147,7 +148,7 @@ func _apply_biome_theming(edge: Dictionary) -> void:
 	var run: Dictionary = RunManager.get_run()
 	for n: Dictionary in run["nodes"]:
 		if n["id"] == edge["to"]:
-			spoke_id = ((n as Dictionary).get("metadata", {}) as Dictionary).get("spokeId", "plains")
+			spoke_id = n.get("metadata", {}).get("spokeId", "plains")
 			break
 	
 	var color: Color = SpokesTheme.BIOME_COLORS.get(spoke_id, Color.DARK_GREEN)
@@ -248,7 +249,7 @@ func _physics_process(delta: float) -> void:
 		# In mock mode, we feed the mock power to the player's component
 		var ftp: float = float(RunManager.run_data.get("ftpW", 200.0))
 		var hr: Node = player_cyclist.get("hardware_receiver")
-		if hr: (hr as Object).call("set_power_manual", ftp)
+		if hr: (hr as HardwareReceiverComponent).set_power_manual(ftp)
 	
 	# 1. Gather all cyclists for drafting
 	var all_entities: Array[Cyclist] = []
@@ -270,7 +271,7 @@ func _physics_process(delta: float) -> void:
 	# Elite Challenge Tracking
 	if RunManager.active_challenge != null:
 		var hr: Node = player_cyclist.get("hardware_receiver")
-		var latest_power: float = (hr as Object).call("get_power") if hr else 0.0
+		var latest_power: float = (hr as HardwareReceiverComponent).get_power() if hr else 0.0
 		challenge_power_sum += latest_power
 		challenge_tick_count += 1
 		challenge_peak_power = max(challenge_peak_power, latest_power)
@@ -287,8 +288,8 @@ func _physics_process(delta: float) -> void:
 		var hr: Node = player_cyclist.get("hardware_receiver")
 		fit_writer.add_record({
 			"timestampMs": Time.get_unix_time_from_system() * 1000,
-			"powerW": (hr as Object).call("get_power") if hr else 0.0,
-			"cadenceRpm": (hr as Object).call("get_cadence") if hr else 0.0,
+			"powerW": (hr as HardwareReceiverComponent).get_power() if hr else 0.0,
+			"cadenceRpm": (hr as HardwareReceiverComponent).get_cadence() if hr else 0.0,
 			"speedMs": player_cyclist.velocity_ms,
 			"distanceM": player_cyclist.distance_m
 		})
@@ -410,7 +411,7 @@ func _on_item_discovered(item_id: String) -> void:
 	var overlay: Node = (load("res://src/ui/screens/DiscoveryOverlay.tscn") as PackedScene).instantiate()
 	add_child(overlay)
 	if overlay.has_method("setup"):
-		overlay.call("setup", item_id)
+		overlay.setup(item_id)
 
 func _set_surface(surface: String) -> void:
 	var road_color: Color = Color(0.2, 0.2, 0.2) # Default Asphalt
@@ -484,7 +485,7 @@ func _on_ride_complete() -> void:
 		# Show boss medal if applicable
 		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
 		if overlay.has_method("setup"):
-			overlay.call("setup", is_boss)
+			overlay.setup(is_boss)
 		
 		if overlay.has_signal("reward_selected"):
 			overlay.connect("reward_selected", func() -> void:
@@ -511,13 +512,6 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
-func _on_cadence_updated(p_rpm: float) -> void:
-	# Note: player_cyclist.hardware_receiver handles the value internally.
-	# We just trigger the HUD update logic.
-	var cadence_node: Label = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false) as Label
-	if cadence_node:
-		(cadence_node as Label).text = str(round(p_rpm)) + " RPM"
-
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
@@ -527,6 +521,10 @@ func _input(event: InputEvent) -> void:
 func _update_hud(p_effective_power: float) -> void:
 	if hud_power_label:
 		hud_power_label.text = str(round(p_effective_power)) + " W"
+	if hud_cadence_label:
+		var hr: Node = player_cyclist.get("hardware_receiver")
+		var cadence: float = (hr as HardwareReceiverComponent).get_cadence() if hr else 0.0
+		hud_cadence_label.text = str(round(cadence)) + " RPM"
 	if hud_speed_label:
 		var speed: float = Units.ms_to_kmh(player_cyclist.velocity_ms) if SettingsManager.units == "metric" else Units.ms_to_mph(player_cyclist.velocity_ms)
 		var unit_suffix: String = " km/h" if SettingsManager.units == "metric" else " mph"
@@ -542,7 +540,7 @@ func _update_hud(p_effective_power: float) -> void:
 		
 	# Update Draft/Surge Badge
 	var surge_comp: Node = player_cyclist.get("surge")
-	var state: String = (surge_comp as Object).call("get_state") if surge_comp else "normal"
+	var state: String = (surge_comp as SurgeComponent).get_state() if surge_comp else "normal"
 
 	if state == "surge":
 		draft_badge.visible = true

@@ -67,16 +67,16 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 	SignalBus.run_started.emit()
 
 func is_edge_traversable(edge: Dictionary) -> bool:
-	if (edge as Dictionary).get("requiresAllMedals", false):
+	if edge.get("requiresAllMedals", false):
 		var medals_held: int = 0
-		var inventory: Array = run_data["inventory"] as Array
+		var inventory: Array = run_data["inventory"]
 		for item: String in inventory:
-			if (item as String).begins_with("medal_"): medals_held += 1
+			if item.begins_with("medal_"): medals_held += 1
 		var medals_needed: int = run_data["runLength"]
 		return medals_held >= medals_needed
 	
-	if (edge as Dictionary).has("requiredMedal"):
-		var inventory: Array = run_data["inventory"] as Array
+	if edge.has("requiredMedal"):
+		var inventory: Array = run_data["inventory"]
 		return edge["requiredMedal"] in inventory
 		
 	return true
@@ -208,7 +208,7 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	
 	# Award Medals for Bosses
 	if not dest_node.is_empty() and dest_node["type"] == "boss":
-		var spoke_id: String = (dest_node.get("metadata", {}) as Dictionary).get("spokeId", "unknown")
+		var spoke_id: String = dest_node.get("metadata", {}).get("spokeId", "unknown")
 		var medal_id: String = "medal_" + spoke_id
 		var inventory: Array = run_data["inventory"]
 		if not medal_id in inventory:
@@ -260,7 +260,7 @@ func _compute_reward_value(r: Dictionary) -> float:
 	var score: float = benefit * 100.0
 	
 	# Add rarity as a tie-breaker
-	var rarity: String = (r as Dictionary).get("rarity", "common")
+	var rarity: String = r.get("rarity", "common")
 	match rarity:
 		"common": score += 1.0
 		"uncommon": score += 2.0
@@ -270,18 +270,18 @@ func _compute_reward_value(r: Dictionary) -> float:
 
 func _get_reward_net_benefit(r: Dictionary) -> float:
 	var reward_id: String = r["id"]
-	var is_item: bool = (reward_id as String).begins_with("item_")
+	var is_item: bool = reward_id.begins_with("item_")
 	
 	if is_item:
-		var item_id: String = (reward_id as String).replace("item_", "")
+		var item_id: String = reward_id.replace("item_", "")
 		var item_def: Dictionary = ContentRegistry.get_item(item_id)
 		
 		# Already in inventory? Worthless for autoplay
-		var inventory: Array = run_data["inventory"] as Array
+		var inventory: Array = run_data["inventory"]
 		if item_id in inventory: return -1.0
 		
-		var slot: String = (item_def as Dictionary).get("slot", "none")
-		var equipped: Dictionary = run_data["equipped"] as Dictionary
+		var slot: String = item_def.get("slot", "none")
+		var equipped: Dictionary = run_data["equipped"]
 		var current_item_id: String = equipped.get(slot, "")
 		
 		if current_item_id != "":

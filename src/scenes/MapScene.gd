@@ -202,36 +202,35 @@ func _on_node_clicked(node: Dictionary) -> void:
 		get_tree().create_timer(0.5).timeout.connect(_check_autoplay)
 		return
 
-	# NEW: Skip interactions if already used
-	if node.get("isUsed", false):
-		RunManager.complete_node_visit(connecting_edge)
-		queue_redraw()
-		_check_autoplay()
-		return
+	# 3. Handle by type (Only if NOT already used)
+	if not node.get("isUsed", false):
+		if node["type"] == "shop":
+			RunManager.pending_overlay = "shop"
+		elif node["type"] == "event":
+			RunManager.pending_overlay = "event"
+		elif node["type"] == "hard":
+			var challenge = EliteChallenge.get_random_challenge()
+			var overlay = load("res://src/ui/EliteOverlay.tscn").instantiate()
+			add_child(overlay)
+			overlay.setup(challenge)
+			overlay.challenge_accepted.connect(func(accepted_challenge):
+				RunManager.active_challenge = accepted_challenge
+				# Use specialized elite profile
+				var max_g = RunManager.get_absolute_max_grade()
+				var profile = EliteChallenge.generate_elite_course_profile(accepted_challenge, max_g)
+				# Note: We don't overwrite the base edge profile permanently here 
+				# so that future traversals (in reverse) use the normal profile.
+				# We duplicate it for this specific ride.
+				var elite_edge = connecting_edge.duplicate()
+				elite_edge["profile"] = profile
+				RunManager.set_active_edge(elite_edge)
+				get_tree().change_scene_to_file("res://src/scenes/GameScene.tscn")
+			)
+			overlay.challenge_declined.connect(func():
+				_check_autoplay()
+			)
+			return
 
-	# 3. Handle by type
-	if node["type"] == "shop":
-		RunManager.pending_overlay = "shop"
-	elif node["type"] == "event":
-		RunManager.pending_overlay = "event"
-	elif node["type"] == "hard":
-		var challenge = EliteChallenge.get_random_challenge()
-		var overlay = load("res://src/ui/EliteOverlay.tscn").instantiate()
-		add_child(overlay)
-		overlay.setup(challenge)
-		overlay.challenge_accepted.connect(func(accepted_challenge):
-			RunManager.active_challenge = accepted_challenge
-			# Use specialized elite profile
-			var max_g = RunManager.get_absolute_max_grade()
-			connecting_edge["profile"] = EliteChallenge.generate_elite_course_profile(accepted_challenge, max_g)
-			RunManager.set_active_edge(connecting_edge)
-			get_tree().change_scene_to_file("res://src/scenes/GameScene.tscn")
-		)
-		overlay.challenge_declined.connect(func():
-			_check_autoplay()
-		)
-		return
-
-	# Start the ride for all other types (standard, shop, event, etc.)
+	# Start the ride for all other cases (standard, used nodes, etc.)
 	RunManager.set_active_edge(connecting_edge)
 	get_tree().change_scene_to_file("res://src/scenes/GameScene.tscn")

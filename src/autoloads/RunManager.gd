@@ -87,7 +87,17 @@ func export_data() -> Dictionary:
 	return run_data
 
 func set_active_edge(edge: Dictionary) -> void:
-	run_data["active_edge"] = edge
+	var current_id = run_data.get("currentNodeId", "")
+	var processed_edge = edge.duplicate()
+	
+	# If we are going backwards (from 'to' to 'from'), invert the profile
+	if current_id == edge["to"]:
+		processed_edge["profile"] = CourseProfile.invert_course_profile(edge["profile"])
+		processed_edge["direction"] = "backward"
+	else:
+		processed_edge["direction"] = "forward"
+		
+	run_data["active_edge"] = processed_edge
 
 func get_active_edge() -> Dictionary:
 	return run_data.get("active_edge", {})

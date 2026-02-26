@@ -107,13 +107,18 @@ func _on_start_pressed() -> void:
 	get_tree().change_scene_to_file("res://src/scenes/MapScene.tscn")
 
 func _add_version_watermark() -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 100 # Ensure it's on top of everything
+	add_child(layer)
+	
+	var margin = MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	layer.add_child(margin)
+	
 	var watermark = Label.new()
 	watermark.text = "v: " + BuildInfo.COMMIT_HASH.left(7)
-	watermark.add_theme_font_size_override("font_size", 12)
-	watermark.add_theme_color_override("font_color", Color(1, 1, 1, 0.4)) # Semi-transparent
-	
-	# Position in bottom-right corner
-	watermark.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 10)
-	
-	# Add to root to ensure it stays on top of other menu elements
-	add_child(watermark)
+	watermark.add_theme_font_size_override("font_size", 14)
+	watermark.add_theme_color_override("font_color", Color(0, 0, 0, 0.5)) # Semi-transparent black
+	margin.add_child(watermark)

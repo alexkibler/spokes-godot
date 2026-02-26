@@ -10,15 +10,15 @@ extends Node2D
 @export var label: String = "Cyclist"
 
 # Components
-@onready var power_receiver: PowerReceiverComponent = $PowerReceiver
+@onready var hardware_receiver: HardwareReceiverComponent = $HardwareReceiver
 @onready var drafting: DraftingComponent = $Drafting
-@onready var fatigue: FatigueComponent = $Fatigue
+@onready var surge: SurgeComponent = $Surge
 @onready var visuals: CyclistVisuals = $Visuals
 
 # Physics State
 var velocity_ms: float = 0.0
 var distance_m: float = 0.0
-var cadence: float = 90.0 # Default cadence
+# var cadence: float = 90.0 # Replaced by hardware_receiver.get_cadence()
 var current_grade: float = 0.0
 var current_surface: String = "asphalt"
 
@@ -31,65 +31,55 @@ func _ready() -> void:
 		stats = CyclistStats.new()
 
 	drafting.stats = stats
+	hardware_receiver.is_player = is_player
 
-	# Only the player should listen to hardware power by default.
-	# Ghosts will have their power set manually via PowerReceiver.
-	if not is_player:
-		# Disconnect signal if it was auto-connected by PowerReceiver (it connects in _ready)
-		if SignalBus.trainer_power_updated.is_connected(power_receiver._on_power_updated):
-			SignalBus.trainer_power_updated.disconnect(power_receiver._on_power_updated)
+## Setup the cyclist with specific properties.
+func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE) -> void:
+	is_player = p_is_player
+	stats = p_stats
+	label = p_label
+	
+	if hardware_receiver:
+		hardware_receiver.is_player = is_player
+	if drafting:
+		drafting.stats = stats
+	
+	set_color(p_color)
 
 func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array[Cyclist], run_modifiers: Dictionary = {}) -> void:
 	# 1. Gather Inputs
-	var raw_power: float = power_receiver.get_power()
+	var raw_power: float = hardware_receiver.get_power()
 
 	# 2. Update Components
 	drafting.update_drafting(distance_m, nearby_entities)
 	draft_factor = drafting.get_draft_factor()
 
-	fatigue.process_fatigue(delta, draft_factor)
-	var fatigue_mult: float = fatigue.get_power_multiplier()
+	surge.process_surge(delta, draft_factor)
+	var fatigue_mult: float = surge.get_power_multiplier()
 
 	# 3. Calculate Physics Modifiers
 	var physics_modifiers: Dictionary = run_modifiers.duplicate()
 	physics_modifiers["dragReduction"] = min(0.99, physics_modifiers.get("dragReduction", 0.0) + draft_factor)
-
-	# Apply Fatigue Multiplier to effective power calculation
-	# Note: In the original GameScene, fatigue multiplier was applied to 'effective_power'.
-	effective_power = raw_power * fatigue_mult
+	
+	# Centralize Power Scaling: Combine fatigue and run modifiers
+	physics_modifiers["powerMult"] = physics_modifiers.get("powerMult", 1.0) * fatigue_mult
+	effective_power = raw_power * physics_modifiers["powerMult"] # Store for HUD/UI
 
 	# 4. Update Physics
 	current_grade = course.get_grade_at_distance(distance_m)
 	current_surface = course.get_surface_at_distance(distance_m)
 
-	# Adjust Crr based on surface
-	var base_crr: float = 0.0041 # Default fallback
-	if stats: base_crr = stats.crr # Or store base separately
-	# Re-calculating Crr every frame might be overkill but follows previous logic
-	# Actually, stats.crr is mutated in GameScene. We should probably avoid mutating shared resources if possible.
-	# But here we have a unique stats instance per cyclist usually.
-	var crr_mult: float = CourseProfile.get_crr_for_surface(current_surface) / CourseProfile.get_crr_for_surface("asphalt")
-	# We can't easily mutate stats.crr cleanly without backing it up.
-	# For now, we rely on CyclistPhysics taking 'modifiers' or we just mutate it.
-	# CyclistPhysics uses stats.crr. Let's mutate it but resetting it might be needed?
-	# Better: CyclistPhysics doesn't take a Crr modifier in the dictionary?
-	# Checking CyclistPhysics.gd:
-	# var crr: float = stats.crr
-	# It doesn't look like it takes a Crr modifier in the dictionary.
-	# So we must mutate stats.crr temporarily.
-	var original_crr: float = stats.crr
-	stats.crr = stats.crr * crr_mult * run_modifiers.get("crrMult", 1.0)
+	# Adjust Crr based on surface via modifiers (Stateless)
+	var surface_crr_mult: float = CourseProfile.get_crr_for_surface(current_surface) / CourseProfile.get_crr_for_surface("asphalt")
+	physics_modifiers["crrMult"] = physics_modifiers.get("crrMult", 1.0) * surface_crr_mult
 
 	var acceleration: float = CyclistPhysics.calculate_acceleration(
-		effective_power,
+		raw_power,
 		velocity_ms,
 		stats,
 		current_grade,
 		physics_modifiers
 	)
-
-	# Restore Crr
-	stats.crr = original_crr
 
 	velocity_ms += acceleration * delta
 	velocity_ms = max(0.0, velocity_ms)
@@ -97,10 +87,28 @@ func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array
 
 	# 5. Update Visuals
 	if visuals:
-		visuals.update_animation(delta, velocity_ms, cadence)
+		visuals.update_animation(delta, velocity_ms, hardware_receiver.get_cadence())
 		# Position/Rotation handling is usually done by the parent scene (GameScene) relative to the track/camera,
 		# but strictly the visual's internal animation (pedaling) is handled here.
 		# The root Node2D transform (position along track) is updated by GameScene based on distance_m.
+
+## Returns the parameters needed for TrainerService simulation based on current physics.
+func get_trainer_resistance_params() -> Dictionary:
+	# Match Phaser's Trainer simulation parameters (scaling by massRatio)
+	var assumed_trainer_mass: float = 83.0
+	var mass_ratio: float = stats.mass_kg / assumed_trainer_mass
+
+	var effective_grade: float = current_grade * mass_ratio
+	var effective_crr: float = stats.crr * mass_ratio
+	
+	# CWA = CdA according to Phaser implementation
+	var cwa: float = stats.cda
+	
+	return {
+		"grade": effective_grade,
+		"crr": effective_crr,
+		"cwa": cwa
+	}
 
 func set_color(color: Color) -> void:
 	if visuals:

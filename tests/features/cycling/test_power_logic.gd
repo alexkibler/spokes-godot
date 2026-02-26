@@ -1,7 +1,7 @@
 extends GutTest
 
-const PowerReceiverComponent = preload("res://src/features/cycling/components/PowerReceiverComponent.gd")
-const FatigueComponent = preload("res://src/features/cycling/components/FatigueComponent.gd")
+const HardwareReceiverComponent = preload("res://src/features/cycling/components/HardwareReceiverComponent.gd")
+const SurgeComponent = preload("res://src/features/cycling/components/SurgeComponent.gd")
 
 func test_cyclist_physics_power_boost() -> void:
 	var stats: CyclistStats = CyclistStats.new()
@@ -22,28 +22,28 @@ func test_cyclist_physics_power_boost() -> void:
 
 func test_net_power_calculation_logic() -> void:
 	# Using the new component structure to verify power flow
-	var power_comp: PowerReceiverComponent = PowerReceiverComponent.new()
-	var fatigue_comp: FatigueComponent = FatigueComponent.new()
+	var hw_comp: HardwareReceiverComponent = HardwareReceiverComponent.new()
+	var surge_comp: SurgeComponent = SurgeComponent.new()
 	
 	# Mock input power
-	power_comp.set_power_manual(100.0)
+	hw_comp.set_power_manual(100.0)
 
 	# Scenario: Surge Active (+25%)
-	fatigue_comp.surge_timer = 5.0
-	var surge_mult: float = fatigue_comp.get_power_multiplier()
+	surge_comp.surge_timer = 5.0
+	var surge_mult: float = surge_comp.get_power_multiplier()
 	assert_eq(surge_mult, 1.25, "Surge multiplier should be 1.25")
 
 	# Scenario: Run Modifier Active (+50%)
 	var run_power_mult: float = 1.5
 
-	var effective_power: float = power_comp.get_power() * surge_mult
+	var effective_power: float = hw_comp.get_power() * surge_mult
 	var net_power: float = effective_power * run_power_mult
 	
 	assert_eq(net_power, 187.5, "Net power should be raw * surge * boost")
-	assert_eq(power_comp.get_power(), 100.0, "Raw power should remain unchanged")
+	assert_eq(hw_comp.get_power(), 100.0, "Raw power should remain unchanged")
 
-	power_comp.free()
-	fatigue_comp.free()
+	hw_comp.free()
+	surge_comp.free()
 
 func test_run_manager_modifier_stacking() -> void:
 	# Reset RunManager or use a mock if possible, but RunManager is an autoload.
@@ -60,7 +60,7 @@ func test_run_manager_modifier_stacking() -> void:
 	assert_almost_eq(RunManager.run_data["modifiers"]["powerMult"], 1.21, 0.01)
 
 func test_power_receiver_smoothing() -> void:
-	var pr: PowerReceiverComponent = PowerReceiverComponent.new()
+	var pr: HardwareReceiverComponent = HardwareReceiverComponent.new()
 	pr.smoothing_factor = 0.5
 
 	# Initial state 0

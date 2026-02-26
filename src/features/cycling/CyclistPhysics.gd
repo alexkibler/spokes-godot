@@ -6,6 +6,12 @@ extends Object
 const G: float = 9.80665
 
 ## Compute the forces and resulting acceleration (m/s²) for a given power and velocity.
+##
+## Modifiers:
+## - 'powerMult': Multiplicative scaling for effective power (combined items + fatigue).
+## - 'weightMult': Multiplicative scaling for effective mass.
+## - 'crrMult': Multiplicative scaling for rolling resistance (combined surface + items).
+## - 'dragReduction': Additive reduction factor for CdA (0.0 to 0.99).
 static func calculate_acceleration(
 	power_w: float,
 	current_velocity_ms: float,
@@ -21,10 +27,12 @@ static func calculate_acceleration(
 	var power_mult: float = modifiers.get("powerMult", 1.0)
 	var drag_reduction: float = modifiers.get("dragReduction", 0.0)
 	var weight_mult: float = modifiers.get("weightMult", 1.0)
+	var crr_mult: float = modifiers.get("crrMult", 1.0)
 	
 	var effective_power: float = power_w * power_mult
 	var effective_cdA: float = cdA * (1.0 - drag_reduction)
 	var effective_mass: float = massKg * weight_mult
+	var effective_crr: float = crr * crr_mult
 	
 	var theta: float = atan(grade)
 	var cos_theta: float = cos(theta)
@@ -39,7 +47,7 @@ static func calculate_acceleration(
 	# Drag = ½ρCdA·v²
 	var aero_force: float = 0.5 * rhoAir * effective_cdA * current_velocity_ms * current_velocity_ms
 	# Rolling resistance = Crr·m·g·cosθ
-	var rolling_force: float = crr * effective_mass * G * cos_theta
+	var rolling_force: float = effective_crr * effective_mass * G * cos_theta
 	# Gravity = m·g·sinθ
 	var grade_force: float = effective_mass * G * sin_theta
 	

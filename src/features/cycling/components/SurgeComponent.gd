@@ -1,7 +1,7 @@
-class_name FatigueComponent
+class_name SurgeComponent
 extends Node
 
-## FatigueComponent
+## SurgeComponent
 ## Manages the Surge/Recovery state machine logic.
 ## Determines power multipliers based on effort and drafting opportunities.
 
@@ -17,7 +17,7 @@ var recovery_timer: float = 0.0
 
 ## Processes the state machine. Should be called every physics frame.
 ## 'draft_factor' is used to trigger surges (when > 0.01).
-func process_fatigue(delta: float, draft_factor: float) -> void:
+func process_surge(delta: float, draft_factor: float) -> void:
 	var previous_state: String = get_state()
 
 	if surge_timer > 0:

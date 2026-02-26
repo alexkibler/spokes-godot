@@ -83,6 +83,40 @@ func test_calculate_acceleration_modifiers() -> void:
 		"powerMult of 0 should be same as zero power"
 	)
 
+	# it('crrMult > 1 increases rolling resistance and decreases acceleration/increases deceleration')
+	var rough_road: Dictionary = {"crrMult": 2.0}
+	assert_lt(
+		CyclistPhysics.calculate_acceleration(0, 10, stats, grade, rough_road),
+		CyclistPhysics.calculate_acceleration(0, 10, stats, grade, no_mod),
+		"crrMult > 1 should decrease acceleration (more deceleration)"
+	)
+
+func test_surface_transition_acceleration() -> void:
+	var stats: CyclistStats = CyclistStats.new()
+	var velocity: float = 10.0 # 36 km/h
+	var power: float = 200.0
+	
+	# Reference acceleration on smooth asphalt (baseline)
+	var accel_asphalt: float = CyclistPhysics.calculate_acceleration(power, velocity, stats, 0.0, {"crrMult": 1.0})
+	
+	# Simulate transition to gravel (approx 2.4x Crr increase)
+	var gravel_crr_mult: float = 0.012 / 0.005 # Based on CourseProfile.CRR_BY_SURFACE
+	var accel_gravel: float = CyclistPhysics.calculate_acceleration(power, velocity, stats, 0.0, {"crrMult": gravel_crr_mult})
+	
+	assert_lt(accel_gravel, accel_asphalt, "Acceleration on gravel should be lower than on asphalt")
+	assert_lt(accel_gravel, 0.0, "At 200W/36kmh, 122kg rider should decelerate on gravel")
+
+func test_stats_immutability() -> void:
+	var stats: CyclistStats = CyclistStats.new()
+	var original_crr: float = stats.crr
+	var original_mass: float = stats.mass_kg
+	
+	var modifiers: Dictionary = {"powerMult": 2.0, "crrMult": 5.0, "weightMult": 0.5}
+	CyclistPhysics.calculate_acceleration(200, 10, stats, 0.05, modifiers)
+	
+	assert_eq(stats.crr, original_crr, "CyclistStats.crr should not be modified by physics calculation")
+	assert_eq(stats.mass_kg, original_mass, "CyclistStats.mass_kg should not be modified by physics calculation")
+
 func test_ms_to_kmh() -> void:
 	assert_eq(CyclistPhysics.ms_to_kmh(0), 0.0)
 	assert_almost_eq(CyclistPhysics.ms_to_kmh(10), 36.0, 0.00001)

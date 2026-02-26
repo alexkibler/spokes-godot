@@ -2,20 +2,20 @@
 
 [ext_resource type="Script" path="res://src/features/cycling/Cyclist.gd" id="1_root"]
 [ext_resource type="PackedScene" uid="uid://cynyga1ofsc3h" path="res://src/features/cycling/CyclistVisuals.tscn" id="2_visuals"]
-[ext_resource type="Script" path="res://src/features/cycling/components/PowerReceiverComponent.gd" id="3_power"]
+[ext_resource type="Script" path="res://src/features/cycling/components/HardwareReceiverComponent.gd" id="3_hardware"]
 [ext_resource type="Script" path="res://src/features/cycling/components/DraftingComponent.gd" id="4_draft"]
-[ext_resource type="Script" path="res://src/features/cycling/components/FatigueComponent.gd" id="5_fatigue"]
+[ext_resource type="Script" path="res://src/features/cycling/components/SurgeComponent.gd" id="5_surge"]
 
 [node name="Cyclist" type="Node2D"]
 script = ExtResource("1_root")
 
 [node name="Visuals" parent="." instance=ExtResource("2_visuals")]
 
-[node name="PowerReceiver" type="Node" parent="."]
-script = ExtResource("3_power")
+[node name="HardwareReceiver" type="Node" parent="."]
+script = ExtResource("3_hardware")
 
 [node name="Drafting" type="Node" parent="."]
 script = ExtResource("4_draft")
 
-[node name="Fatigue" type="Node" parent="."]
-script = ExtResource("5_fatigue")
+[node name="Surge" type="Node" parent="."]
+script = ExtResource("5_surge")

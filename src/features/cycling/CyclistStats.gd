@@ -19,3 +19,12 @@ extends Resource
 @export_group("Drafting - Leading")
 @export var leading_draft_max_reduction: float = 0.03 ## Max CdA reduction for leader (pushed)
 @export var leading_draft_distance_m: float = 3.0 ## Max distance for leader benefit
+
+## Static factory to create stats based on rider weight using established formulas.
+static func create_from_weight(rider_weight_kg: float, bike_weight_kg: float = 8.0) -> CyclistStats:
+	var stats: CyclistStats = CyclistStats.new()
+	stats.mass_kg = rider_weight_kg + bike_weight_kg
+	# Standard CdA formula from Phaser port
+	stats.cda = 0.416 * pow(rider_weight_kg / 114.3, 0.66)
+	stats.crr = 0.0041
+	return stats

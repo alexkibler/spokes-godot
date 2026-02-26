@@ -26,6 +26,7 @@ RunManager="*res://src/features/progression/RunManager.gd"
 TrainerService="*res://src/features/hardware/TrainerService.gd"
 SettingsManager="*res://src/core/SettingsManager.gd"
 BuildInfo="*res://src/core/BuildInfo.gd"
+SaveManager="*res://src/core/SaveManager.gd"
 SignalBus="*res://src/core/SignalBus.gd"
 
 [debug]

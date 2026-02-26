@@ -55,6 +55,20 @@ func _ready() -> void:
 	vbox.add_child(bt_btn)
 	vbox.move_child(bt_btn, start_btn.get_index())
 	
+	# Add Load Game / Back button
+	var load_btn: Button = Button.new()
+	load_btn.text = "CHANGE SLOT / LOAD"
+	load_btn.custom_minimum_size = Vector2(300, 60)
+	load_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	load_btn.pressed.connect(_on_load_pressed)
+	vbox.add_child(load_btn)
+	vbox.move_child(load_btn, start_btn.get_index() + 1)
+
+	if RunManager.current_slot_index != -1:
+		start_btn.text = "START RUN (SLOT %d)" % (RunManager.current_slot_index + 1)
+	else:
+		start_btn.text = "SELECT SLOT"
+
 	_on_dist_changed(dist_slider.value)
 
 func _exit_tree() -> void:
@@ -109,7 +123,14 @@ func _on_bt_connected() -> void:
 func _on_dist_changed(val: float) -> void:
 	dist_label.text = str(val) + " km"
 
+func _on_load_pressed() -> void:
+	get_tree().change_scene_to_file("res://src/ui/screens/SaveSelectionScene.tscn")
+
 func _on_start_pressed() -> void:
+	if RunManager.current_slot_index == -1:
+		_on_load_pressed()
+		return
+
 	# Save settings
 	SettingsManager.ftp_w = int(ftp_input.value)
 	SettingsManager.weight_kg = weight_input.value

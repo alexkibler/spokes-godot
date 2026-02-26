@@ -4,6 +4,7 @@ extends Node
 
 var run_data: Dictionary = {}
 var is_active_run: bool = false
+var current_slot_index: int = -1
 var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
 var active_challenge: EliteChallenge = null
@@ -12,9 +13,15 @@ var pending_overlay: String = "" # "shop", "event", or ""
 func reset() -> void:
 	run_data = {}
 	is_active_run = false
+	current_slot_index = -1
 	autoplay_enabled = false
 	active_challenge = null
 	pending_overlay = ""
+
+func load_run_data(data: Dictionary) -> void:
+	run_data = data
+	is_active_run = true
+	SignalBus.run_started.emit()
 
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
@@ -219,6 +226,11 @@ func complete_node_visit(edge: Dictionary) -> bool:
 		
 	if not edge.get("isCleared", false):
 		edge["isCleared"] = true
+
+		# Auto-save after completing a node
+		if current_slot_index != -1:
+			SaveManager.save_game(current_slot_index)
+
 		return true # First clear!
 			
 	return false

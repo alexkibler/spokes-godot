@@ -108,7 +108,11 @@ func _ready() -> void:
 		current_surface = "asphalt"
 		_update_physics_for_surface_and_grade(0.0, current_surface)
 
-	TrainerService.data_received.connect(_on_trainer_data)
+	# Subscribe to SignalBus for hardware updates
+	SignalBus.trainer_power_updated.connect(_on_power_updated)
+	SignalBus.trainer_cadence_updated.connect(_on_cadence_updated)
+	SignalBus.trainer_speed_updated.connect(_on_speed_updated)
+
 	TrainerService.connect_trainer()
 	
 	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
@@ -123,7 +127,7 @@ func _ready() -> void:
 	# Spawn Ghosts
 	_spawn_ghosts()
 
-	RunManager.item_discovered.connect(_on_item_discovered)
+	SignalBus.item_discovered.connect(_on_item_discovered)
 	
 	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
 
@@ -510,7 +514,7 @@ func _animate_cyclist(node: Node2D, w_rot: float, vel: float, crank_rot: float =
 	# Update Sprites
 	for child in node.get_children():
 		if child is Sprite2D:
-			if child.name == "Crank":
+			if child.name == "Crank" or child.name == "BackPedal":
 				child.frame = crank_idx
 			else:
 				child.frame = wheel_idx
@@ -528,7 +532,7 @@ func _animate_cyclist(node: Node2D, w_rot: float, vel: float, crank_rot: float =
 			rider.position.y = base_y + bob
 	
 	# Ensure Bike parts stay stationary (at their base_y)
-	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Sprite2D"]:
+	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Handlebars", "BackPedal", "Sprite2D"]:
 		if node.has_node(node_name) and node_name != "Rider":
 			var child = node.get_node(node_name)
 			if child is Sprite2D:
@@ -592,8 +596,15 @@ func _on_ride_complete() -> void:
 	velocity_ms = 0.0
 	Engine.time_scale = 1.0
 	
-	if RunManager.item_discovered.is_connected(_on_item_discovered):
-		RunManager.item_discovered.disconnect(_on_item_discovered)
+	# Cleanup global signal connections
+	if SignalBus.item_discovered.is_connected(_on_item_discovered):
+		SignalBus.item_discovered.disconnect(_on_item_discovered)
+	if SignalBus.trainer_power_updated.is_connected(_on_power_updated):
+		SignalBus.trainer_power_updated.disconnect(_on_power_updated)
+	if SignalBus.trainer_cadence_updated.is_connected(_on_cadence_updated):
+		SignalBus.trainer_cadence_updated.disconnect(_on_cadence_updated)
+	if SignalBus.trainer_speed_updated.is_connected(_on_speed_updated):
+		SignalBus.trainer_speed_updated.disconnect(_on_speed_updated)
 	
 	var run = RunManager.get_run()
 	var current_node = null
@@ -661,16 +672,17 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
-func _on_trainer_data(data: Dictionary) -> void:
-	latest_power = data.get("power", 0.0)
-	if data.has("speed_kmh"):
-		raw_trainer_speed_ms = data["speed_kmh"] / 3.6
-	
-	if data.has("cadence"):
-		cadence = float(data["cadence"])
-		var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
-		if cadence_node:
-			cadence_node.text = str(round(cadence)) + " RPM"
+func _on_power_updated(p_watts: float) -> void:
+	latest_power = p_watts
+
+func _on_speed_updated(p_kmh: float) -> void:
+	raw_trainer_speed_ms = p_kmh / 3.6
+
+func _on_cadence_updated(p_rpm: float) -> void:
+	cadence = p_rpm
+	var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
+	if cadence_node:
+		cadence_node.text = str(round(cadence)) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

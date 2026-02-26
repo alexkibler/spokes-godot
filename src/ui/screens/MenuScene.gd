@@ -44,7 +44,7 @@ func _ready() -> void:
 			bt_btn.text = "PAIRING..."
 			bt_btn.disabled = true
 		)
-		TrainerService.connected.connect(func():
+		SignalBus.trainer_connected.connect(func():
 			bt_btn.text = "CONNECTED!"
 			bt_btn.disabled = true
 			_show_trainer_status()
@@ -57,6 +57,17 @@ func _ready() -> void:
 	
 	_on_dist_changed(dist_slider.value)
 
+func _exit_tree() -> void:
+	if SignalBus.trainer_power_updated.is_connected(self._on_trainer_power_updated):
+		SignalBus.trainer_power_updated.disconnect(self._on_trainer_power_updated)
+	if SignalBus.trainer_cadence_updated.is_connected(self._on_trainer_cadence_updated):
+		SignalBus.trainer_cadence_updated.disconnect(self._on_trainer_cadence_updated)
+	if SignalBus.trainer_connected.is_connected(_show_trainer_status):
+		# This one was connected with a lambda in _ready, 
+		# but if we used a method we could disconnect.
+		# For now, let's just make sure method connections are handled.
+		pass
+
 var status_label: Label
 
 func _show_trainer_status() -> void:
@@ -68,12 +79,29 @@ func _show_trainer_status() -> void:
 		$MarginContainer/VBoxContainer.add_child(status_label)
 		$MarginContainer/VBoxContainer.move_child(status_label, $MarginContainer/VBoxContainer/StartButton.get_index())
 		
-	if not TrainerService.data_received.is_connected(self._on_trainer_data_received):
-		TrainerService.data_received.connect(self._on_trainer_data_received)
+	if not SignalBus.trainer_power_updated.is_connected(self._on_trainer_power_updated):
+		SignalBus.trainer_power_updated.connect(self._on_trainer_power_updated)
+	if not SignalBus.trainer_cadence_updated.is_connected(self._on_trainer_cadence_updated):
+		SignalBus.trainer_cadence_updated.connect(self._on_trainer_cadence_updated)
 
-func _on_trainer_data_received(data: Dictionary) -> void:
+var _last_watts: float = 0
+var _last_rpm: float = 0
+
+func _on_trainer_power_updated(watts: float) -> void:
+	_last_watts = watts
+	_update_status_text()
+
+func _on_trainer_cadence_updated(rpm: float) -> void:
+	_last_rpm = rpm
+	_update_status_text()
+
+func _update_status_text() -> void:
 	if status_label:
-		status_label.text = "LIVE: %d W | %d RPM" % [int(data["power"]), int(data["cadence"])]
+		status_label.text = "LIVE: %d W | %d RPM" % [int(_last_watts), int(_last_rpm)]
+
+func _on_trainer_data_received(_data: Dictionary) -> void:
+	# Deprecated, using individual signals now
+	pass
 
 func _on_bt_connected() -> void:
 	pass

@@ -24,7 +24,7 @@ func _ready() -> void:
 		# Emergency start for testing
 		RunManager.start_new_run(3, 50.0, "normal", 200, 75.0, "imperial")
 	
-	RunManager.autoplay_changed.connect(_on_autoplay_changed)
+	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
 	hud.update_hud()
 	queue_redraw()
 	_check_autoplay()

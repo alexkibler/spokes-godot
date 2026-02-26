@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Procedural Algorithm Audit & Documentation Generator
 # This "test" runs simulations to generate a Markdown overview of core algorithms.

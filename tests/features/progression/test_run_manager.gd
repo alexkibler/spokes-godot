@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 # Tests ported from ~/Repos/spokes/src/core/roguelike/__tests__/RunManager.test.ts
 
@@ -71,8 +71,10 @@ func test_inventory():
 
 func test_apply_modifier():
 	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
+	watch_signals(SignalBus)
 	
 	RunManager.apply_modifier({"powerMult": 1.1})
+	assert_signal_emitted(SignalBus, "modifiers_changed", "should emit modifiers_changed on global bus")
 	assert_almost_eq(RunManager.get_run().modifiers.powerMult, 1.1, 0.0001)
 	RunManager.apply_modifier({"powerMult": 1.1})
 	assert_almost_eq(RunManager.get_run().modifiers.powerMult, 1.21, 0.0001)

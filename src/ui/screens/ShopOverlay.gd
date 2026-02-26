@@ -19,6 +19,9 @@ const CATALOG = [
 func _ready() -> void:
 	refresh_all()
 	
+	SignalBus.gold_changed.connect(func(_new_gold): refresh_all())
+	SignalBus.inventory_changed.connect(refresh_all)
+
 	if RunManager.autoplay_enabled:
 		var pb = ProgressBar.new()
 		pb.show_percentage = false

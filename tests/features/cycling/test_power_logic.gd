@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 func test_cyclist_physics_power_boost():
 	var stats = CyclistStats.new()

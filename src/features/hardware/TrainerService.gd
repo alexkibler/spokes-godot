@@ -156,16 +156,21 @@ func _on_js_data(args: Array) -> void:
 			"speed_kmh": float(args[2])
 		}
 		data_received.emit(data)
+		SignalBus.trainer_power_updated.emit(data["power"])
+		SignalBus.trainer_cadence_updated.emit(data["cadence"])
+		SignalBus.trainer_speed_updated.emit(data["speed_kmh"])
 
 func _on_js_connected(_args: Array) -> void:
 	is_connected_to_device = true
 	is_mock_mode = false
 	mock_timer.stop()
 	connected.emit()
+	SignalBus.trainer_connected.emit()
 
 func _on_js_disconnected(_args: Array) -> void:
 	is_connected_to_device = false
 	disconnected.emit()
+	SignalBus.trainer_disconnected.emit()
 
 func request_bluetooth_if_needed() -> void:
 	if OS.has_feature("web") and not is_connected_to_device:
@@ -179,10 +184,13 @@ func connect_trainer() -> void:
 		mock_cadence = float(randi_range(60, 110))
 		mock_timer.start()
 		connected.emit()
+		SignalBus.trainer_connected.emit()
+
 func disconnect_trainer() -> void:
 	is_connected_to_device = false
 	mock_timer.stop()
 	disconnected.emit()
+	SignalBus.trainer_disconnected.emit()
 
 func set_simulation_params(grade: float, crr: float, cwa: float) -> void:
 	if OS.has_feature("web") and not is_mock_mode and is_connected_to_device:
@@ -200,3 +208,6 @@ func _on_mock_tick() -> void:
 		"speed_kmh": 30.0
 	}
 	data_received.emit(data)
+	SignalBus.trainer_power_updated.emit(data["power"])
+	SignalBus.trainer_cadence_updated.emit(data["cadence"])
+	SignalBus.trainer_speed_updated.emit(data["speed_kmh"])

@@ -12,6 +12,7 @@ const ALL_SLOTS = ["helmet", "frame", "cranks", "pedals", "tires"]
 
 func _ready() -> void:
 	refresh_all()
+	SignalBus.inventory_changed.connect(refresh_all)
 
 func refresh_all() -> void:
 	_build_slots()

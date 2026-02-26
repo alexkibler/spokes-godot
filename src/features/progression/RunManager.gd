@@ -2,13 +2,6 @@ extends Node
 
 # Represents the RunManager.ts from the Phaser project
 
-signal run_started
-# signal run_ended
-# signal edge_completed
-signal modifiers_changed
-signal autoplay_changed(enabled: bool)
-signal item_discovered(item_id: String)
-
 var run_data: Dictionary = {}
 var is_active_run: bool = false
 var autoplay_enabled: bool = false
@@ -16,14 +9,21 @@ var autoplay_delay_ms: int = 2000
 var active_challenge: Variant = null
 var pending_overlay: String = "" # "shop", "event", or ""
 
+func reset() -> void:
+	run_data = {}
+	is_active_run = false
+	autoplay_enabled = false
+	active_challenge = null
+	pending_overlay = ""
+
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
-	autoplay_changed.emit(autoplay_enabled)
+	SignalBus.autoplay_changed.emit(autoplay_enabled)
 
 func set_autoplay_enabled(enabled: bool) -> void:
 	if autoplay_enabled != enabled:
 		autoplay_enabled = enabled
-		autoplay_changed.emit(autoplay_enabled)
+		SignalBus.autoplay_changed.emit(autoplay_enabled)
 
 func start_new_run(run_length: int, total_distance_km: float, difficulty: String, ftp_w: int, weight_kg: float, units: String) -> void:
 	run_data = {
@@ -54,10 +54,10 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		}
 	}
 	
-	preload("res://src/features/map/MapGenerator.gd").generate_hub_and_spoke_map(run_data)
+	load("res://src/features/map/MapGenerator.gd").generate_hub_and_spoke_map(run_data)
 	
 	is_active_run = true
-	run_started.emit()
+	SignalBus.run_started.emit()
 
 func is_edge_traversable(edge: Dictionary) -> bool:
 	if edge.get("requiresAllMedals", false):
@@ -288,6 +288,7 @@ func _compare_item_stats(new_def: Dictionary, old_def: Dictionary) -> float:
 func add_to_inventory(item_id: String) -> void:
 	run_data["inventory"].append(item_id)
 	
+	SignalBus.inventory_changed.emit()
 	if autoplay_enabled:
 		var def = ContentRegistry.get_item(item_id)
 		if def.has("slot"):
@@ -299,7 +300,7 @@ func add_to_inventory(item_id: String) -> void:
 				if _compare_item_stats(def, current_def) > 0:
 					equip_item(item_id)
 	else:
-		item_discovered.emit(item_id)
+		SignalBus.item_discovered.emit(item_id)
 
 func equip_item(item_id: String) -> bool:
 	var def = ContentRegistry.get_item(item_id)
@@ -318,8 +319,10 @@ func equip_item(item_id: String) -> bool:
 	run_data["inventory"].remove_at(idx)
 	run_data["equipped"][slot] = item_id
 	
+	SignalBus.inventory_changed.emit()
 	if def.has("modifier"):
-		apply_modifier(def["modifier"], def["label"] + " (equipped)")
+		var label = def.get("label", item_id)
+		apply_modifier(def["modifier"], label + " (equipped)")
 		
 	return true
 
@@ -332,7 +335,8 @@ func unequip_item(slot: String) -> String:
 	if def.has("modifier"):
 		_reverse_modifier(def["modifier"])
 		# Remove from log
-		var log_label = def["label"] + " (equipped)"
+		var label = def.get("label", item_id)
+		var log_label = label + " (equipped)"
 		for i in range(run_data["modifierLog"].size() - 1, -1, -1):
 			if run_data["modifierLog"][i]["label"] == log_label:
 				run_data["modifierLog"].remove_at(i)
@@ -340,7 +344,8 @@ func unequip_item(slot: String) -> String:
 				
 	run_data["equipped"].erase(slot)
 	run_data["inventory"].append(item_id)
-	modifiers_changed.emit()
+	SignalBus.modifiers_changed.emit()
+	SignalBus.inventory_changed.emit()
 	return item_id
 
 func _reverse_modifier(delta: Dictionary) -> void:
@@ -363,13 +368,15 @@ func apply_modifier(delta: Dictionary, label: String = "") -> void:
 		log_entry["label"] = label
 		run_data["modifierLog"].append(log_entry)
 		
-	modifiers_changed.emit()
+	SignalBus.modifiers_changed.emit()
 
 func spend_gold(amount: int) -> bool:
 	if run_data["gold"] >= amount:
 		run_data["gold"] -= amount
+		SignalBus.gold_changed.emit(run_data["gold"])
 		return true
 	return false
 
 func add_gold(amount: int) -> void:
 	run_data["gold"] += amount
+	SignalBus.gold_changed.emit(run_data["gold"])

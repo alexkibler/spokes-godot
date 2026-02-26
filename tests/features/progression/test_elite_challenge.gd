@@ -1,4 +1,4 @@
-extends "res://addons/gut/test.gd"
+extends GutTest
 
 func test_evaluate_threshold_push_success():
 	var challenge = EliteChallenge.new()

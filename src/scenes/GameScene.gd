@@ -403,7 +403,7 @@ func _update_hud(p_effective_power: float) -> void:
 	if hud_power_label:
 		hud_power_label.text = str(round(p_effective_power)) + " W"
 	if hud_speed_label:
-		var speed = CyclistPhysics.ms_to_kmh(velocity_ms) if SettingsManager.units == "metric" else CyclistPhysics.ms_to_mph(velocity_ms)
+		var speed = Units.ms_to_kmh(velocity_ms) if SettingsManager.units == "metric" else Units.ms_to_mph(velocity_ms)
 		var unit_suffix = " km/h" if SettingsManager.units == "metric" else " mph"
 		hud_speed_label.text = Units.format_fixed(speed, 1) + unit_suffix
 	if hud_dist_label:

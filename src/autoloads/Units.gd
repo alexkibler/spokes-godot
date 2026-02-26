@@ -32,6 +32,14 @@ func kg_to_lb(kg: float) -> float:
 func lb_to_kg(lb: float) -> float:
 	return lb * LB_TO_KG
 
+## Converts meters per second to kilometers per hour
+func ms_to_kmh(ms: float) -> float:
+	return ms * 3.6
+
+## Converts meters per second to miles per hour
+func ms_to_mph(ms: float) -> float:
+	return ms * 2.23694
+
 ## Formats a value for display, stripping trailing .0 for integers.
 func format_fixed(val: float, decimals: int = 1) -> String:
 	if is_close_to_integer(val):

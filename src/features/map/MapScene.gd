@@ -175,7 +175,7 @@ func _input(event: InputEvent) -> void:
 	
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_R:
-		var overlay = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
+			var overlay = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
 			add_child(overlay)
 			overlay.reward_selected.connect(func(): queue_redraw())
 

@@ -41,7 +41,7 @@ For faster iteration without waiting for GitHub Actions CI/CD:
 ```
 
 This script automates:
-1. Injecting the local Git commit hash into `src/autoloads/BuildInfo.gd`.
+1. Injecting the local Git commit hash into `src/core/BuildInfo.gd`.
 2. Headless Web export to `build/web/Web/`.
 3. Rebuilding the local Docker image and restarting the `spokes-godot` service.
 
@@ -60,18 +60,18 @@ The project uses GitHub Actions for continuous integration and deployment:
 ### Autoloads (Singletons)
 | Autoload | Path | Role |
 |---|---|---|
-| `Units` | `src/autoloads/Units.gd` | Unit conversion constants and formatting (Metric/Imperial). |
-| `ContentRegistry` | `src/autoloads/ContentRegistry.gd` | Database of items, rewards, and loot pools. |
-| `RunManager` | `src/autoloads/RunManager.gd` | Central run state: gold, inventory, visited nodes, active modifiers. |
-| `TrainerService` | `src/autoloads/TrainerService.gd` | Bluetooth FTMS bridge (JSBridge for Web, Mock for Desktop). |
-| `SettingsManager` | `src/autoloads/SettingsManager.gd` | Persistence for user settings (FTP, weight, units). |
+| `Units` | `src/core/Units.gd` | Unit conversion constants and formatting (Metric/Imperial). |
+| `ContentRegistry` | `src/features/progression/ContentRegistry.gd` | Database of items, rewards, and loot pools. |
+| `RunManager` | `src/features/progression/RunManager.gd` | Central run state: gold, inventory, visited nodes, active modifiers. |
+| `TrainerService` | `src/features/hardware/TrainerService.gd` | Bluetooth FTMS bridge (JSBridge for Web, Mock for Desktop). |
+| `SettingsManager` | `src/core/SettingsManager.gd` | Persistence for user settings (FTP, weight, units). |
 
-### Core Logic (`src/core/`)
-- **`CyclistPhysics.gd`**: The core math for acceleration, drag, and rolling resistance.
-- **`DraftingPhysics.gd`**: Logic for trailing and leading draft factors.
-- **`CourseProfile.gd`**: Grade and elevation lookup for procedural segments.
-- **`MapGenerator.gd`**: Generates the hub-and-spoke graph structure.
-- **`FitWriter.gd`**: Encodes ride telemetry into the `.fit` file format.
+### Core Logic
+- **`CyclistPhysics.gd`**: (`src/features/cycling/`) The core math for acceleration, drag, and rolling resistance.
+- **`DraftingPhysics.gd`**: (`src/features/cycling/`) Logic for trailing and leading draft factors.
+- **`CourseProfile.gd`**: (`src/features/map/`) Grade and elevation lookup for procedural segments.
+- **`MapGenerator.gd`**: (`src/features/map/`) Generates the hub-and-spoke graph structure.
+- **`FitWriter.gd`**: (`src/features/progression/`) Encodes ride telemetry into the `.fit` file format.
 
 ### Main Scenes (`src/scenes/`)
 - **`MenuScene.tscn`**: Entry point, run configuration.
@@ -88,7 +88,7 @@ The project uses GitHub Actions for continuous integration and deployment:
 - **Units**: Always use `Units` autoload for conversions to ensure consistency across the app. Base calculations should generally use Metric (m, m/s, kg).
 
 ### Testing Practices
-- **Mirroring**: Every file in `src/core/` or `src/autoloads/` should have a corresponding test file in `tests/` prefixed with `test_`.
+- **Mirroring**: Every file in `src/core/` or `src/features/` should have a corresponding test file in `tests/` prefixed with `test_`.
 - **TDD**: When porting or adding physics/math features, write a GUT test first to confirm parity or expected behavior.
 
 ### Godot-Specific Enhancements (Deviations from Phaser)

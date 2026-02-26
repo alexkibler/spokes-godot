@@ -55,7 +55,7 @@ jobs:
 
       - name: Inject Commit Hash
         run: |
-          sed -i 's/const COMMIT_HASH: String = "dev"/const COMMIT_HASH: String = "${{ github.sha }}"/' src/autoloads/BuildInfo.gd
+          sed -i 's/const COMMIT_HASH: String = "dev"/const COMMIT_HASH: String = "${{ github.sha }}"/' src/core/BuildInfo.gd
 
       - name: Web Export
         uses: firebelley/godot-export@v5.2.1

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running Tests
 
-Tests use the **GUT (Godot Unit Test)** framework (`addons/gut/`). Tests live in `tests/` and mirror the structure of `src/core/` and `src/autoloads/`.
+Tests use the **GUT (Godot Unit Test)** framework (`addons/gut/`). Tests live in `tests/` and mirror the structure of `src/core/` and `src/features/`.
 
 To run tests, open the project in the Godot editor and use the GUT panel, or run headlessly:
 
@@ -34,7 +34,7 @@ For faster iteration without waiting for GitHub Actions CI/CD:
 ```
 
 This script:
-1. Injects the current Git commit hash into `src/autoloads/BuildInfo.gd`.
+1. Injects the current Git commit hash into `src/core/BuildInfo.gd`.
 2. Exports the project for Web to `build/web/Web/`.
 3. Rebuilds the local Docker image and restarts the `spokes-godot` service in the `nginx-proxy-manager` stack.
 

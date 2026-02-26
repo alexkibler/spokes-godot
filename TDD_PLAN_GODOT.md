@@ -4,7 +4,7 @@
 This document outlines the strategy for implementing a comprehensive test suite in Godot, achieving parity with the original Phaser project. We will use GUT (Godot Unit Test) or a similar testing framework. The goal is to write failing tests based on Phaser's algorithms, then update the Godot codebase to pass them, ensuring core logic remains identical while accommodating intentional Godot-specific enhancements (e.g., Attacking and Leading Draft mechanics).
 
 ## 1. Core Physics (`CyclistPhysics`)
-*   **Target File:** `src/core/CyclistPhysics.gd`
+*   **Target File:** `src/features/cycling/CyclistPhysics.gd`
 *   **Parity Goals:**
     *   `calculate_acceleration` should produce identical results given the same power, speed, grade, and `physics_config`.
     *   Test positive acceleration (pedaling flat), negative acceleration (coasting flat), coasting downhill, and terminal velocity.
@@ -13,7 +13,7 @@ This document outlines the strategy for implementing a comprehensive test suite 
     *   Ensure the `mass_ratio` scaling for trainer feel doesn't break the core acceleration math (it should be applied before/outside `calculate_acceleration` or tested explicitly in `GameScene` tests).
 
 ## 2. Drafting & Attacking (`DraftingPhysics` & `GameScene`)
-*   **Target Files:** `src/core/DraftingPhysics.gd`, `src/scenes/GameScene.gd`
+*   **Target Files:** `src/features/cycling/DraftingPhysics.gd`, `src/features/cycling/GameScene.gd`
 *   **Parity Goals:**
     *   Trailing draft (`get_draft_factor`): Ensure it respects the `DRAFT_MAX_DISTANCE_M` (20m) and boundaries.
 *   **Godot Specifics (INTENTIONAL DEVIATIONS):**
@@ -24,7 +24,7 @@ This document outlines the strategy for implementing a comprehensive test suite 
     *   *Note:* These tests will explicitly document the Godot-exclusive state machine.
 
 ## 3. Course Geometry (`CourseProfile`)
-*   **Target File:** `src/core/CourseProfile.gd`
+*   **Target File:** `src/features/map/CourseProfile.gd`
 *   **Parity Goals:**
     *   `get_grade_at_distance`, `get_elevation_at_distance`, `get_surface_at_distance` must exactly match Phaser boundaries.
     *   Test distance wrapping (modulo course length).
@@ -32,7 +32,7 @@ This document outlines the strategy for implementing a comprehensive test suite 
     *   Test surface changes and `get_crr_for_surface`.
 
 ## 4. Run Management (`RunManager`)
-*   **Target File:** `src/autoloads/RunManager.gd`
+*   **Target File:** `src/features/progression/RunManager.gd`
 *   **Parity Goals:**
     *   Test initialization (`start_new_run`): zero gold, empty inventory, neutral modifiers (1.0, 0.0, 1.0).
     *   Test gold transactions (`add_gold`, `spend_gold`).
@@ -44,7 +44,7 @@ This document outlines the strategy for implementing a comprehensive test suite 
     *   `is_edge_traversable`: Test the "Spoke Gate" mechanic (`requiredMedal` and `requiresAllMedals`), which is unique to Godot's linear spoke progression.
 
 ## 5. Map Generation (`MapGenerator`)
-*   **Target File:** `src/core/MapGenerator.gd`
+*   **Target File:** `src/features/map/MapGenerator.gd`
 *   **Parity Goals:**
     *   Test `compute_num_spokes` based on total distance.
 *   **Godot Specifics:**
@@ -53,7 +53,7 @@ This document outlines the strategy for implementing a comprehensive test suite 
     *   Test the inclusion of random 'event' and 'hard' nodes on the linear spoke paths.
 
 ## 6. Centralized Utilities (`Units` & `ContentRegistry`)
-*   **Target Files:** `src/autoloads/Units.gd`, `src/autoloads/ContentRegistry.gd`
+*   **Target Files:** `src/core/Units.gd`, `src/features/progression/ContentRegistry.gd`
 *   **Parity Goals:**
     *   `Units`: Test exact precision of constants (`MI_TO_KM = 1.609344`). Test `format_fixed` and `is_close_to_integer` for floating-point jitter handling. Test speed conversions (`ms_to_kmh`).
     *   `ContentRegistry`: Test `register_item`, `get_item`, and weighted random `get_loot_pool` generation.

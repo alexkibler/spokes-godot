@@ -39,10 +39,11 @@ func _ready() -> void:
 			TrainerService.request_bluetooth_if_needed()
 			bt_btn.text = "PAIRING..."
 			bt_btn.disabled = true
-			if not TrainerService.connected.is_connected(self._on_bt_connected):
-				TrainerService.connected.connect(func():
-					bt_btn.text = "CONNECTED!"
-				, CONNECT_ONE_SHOT)
+		)
+		TrainerService.connected.connect(func():
+			bt_btn.text = "CONNECTED!"
+			bt_btn.disabled = true
+			_show_trainer_status()
 		)
 	
 	var vbox = $MarginContainer/VBoxContainer
@@ -51,6 +52,24 @@ func _ready() -> void:
 	vbox.move_child(bt_btn, start_btn.get_index())
 	
 	_on_dist_changed(dist_slider.value)
+
+var status_label: Label
+
+func _show_trainer_status() -> void:
+	if not status_label:
+		status_label = Label.new()
+		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		status_label.add_theme_color_override("font_color", Color.DARK_SLATE_GRAY)
+		status_label.add_theme_font_size_override("font_size", 24)
+		$MarginContainer/VBoxContainer.add_child(status_label)
+		$MarginContainer/VBoxContainer.move_child(status_label, $MarginContainer/VBoxContainer/StartButton.get_index())
+		
+	if not TrainerService.data_received.is_connected(self._on_trainer_data_received):
+		TrainerService.data_received.connect(self._on_trainer_data_received)
+
+func _on_trainer_data_received(data: Dictionary) -> void:
+	if status_label:
+		status_label.text = "LIVE: %d W | %d RPM" % [int(data["power"]), int(data["cadence"])]
 
 func _on_bt_connected() -> void:
 	pass

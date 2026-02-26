@@ -18,13 +18,16 @@ extends Node2D
 var wheel_rotation: float = 0.0
 var distance_m: float = 0.0
 var velocity_ms: float = 0.0
+var raw_trainer_speed_ms: float = 0.0
 var latest_power: float = 0.0
 var current_grade: float = 0.0
+var current_surface: String = "asphalt"
 var player_draft_factor: float = 0.0
 
 var ghosts: Array = [] # List of Dictionaries { "distance_m", "velocity_ms", "power_w", "node" }
 var ghost_scene = preload("res://src/scenes/CyclistVisuals.tscn")
 
+var base_physics: Dictionary = {}
 var physics_config: Dictionary = {}
 var run_modifiers: Dictionary = {}
 
@@ -51,25 +54,30 @@ func _ready() -> void:
 	# Initialize physics from settings
 	var weight_kg = SettingsManager.weight_kg
 	var mass_kg = weight_kg + 8.0
-	var base_cd_a = 0.416 * pow(weight_kg / 114.3, 0.66)
+	var cd_a = 0.416 * pow(weight_kg / 114.3, 0.66)
+	var crr = 0.0041
 	
-	physics_config = CyclistPhysics.get_default_config()
-	physics_config["massKg"] = mass_kg
-	physics_config["cdA"] = base_cd_a
+	base_physics = CyclistPhysics.get_default_config()
+	base_physics["massKg"] = mass_kg
+	base_physics["cdA"] = cd_a
+	base_physics["crr"] = crr
+	
+	physics_config = base_physics.duplicate()
 	
 	# Initialize Course from Active Edge
 	if RunManager.is_active_run:
 		var ae = RunManager.get_active_edge()
 		if not ae.is_empty():
 			course = ae["profile"]
-			var surface = CourseProfile.get_surface_at_distance(course, 0.0)
-			var crr_mult = CourseProfile.get_crr_for_surface(surface) / CourseProfile.get_crr_for_surface("asphalt")
-			physics_config["crr"] = physics_config["crr"] * crr_mult
+			current_surface = CourseProfile.get_surface_at_distance(course, 0.0)
+			_update_physics_for_surface_and_grade(0.0, current_surface)
 			_apply_biome_theming(ae)
 		run_modifiers = RunManager.run_data["modifiers"]
 	else:
 		course = CourseProfile.generate_course_profile(5.0, 0.05)
 		run_modifiers = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
+		current_surface = "asphalt"
+		_update_physics_for_surface_and_grade(0.0, current_surface)
 
 	TrainerService.data_received.connect(_on_trainer_data)
 	TrainerService.connect_trainer()
@@ -78,9 +86,22 @@ func _ready() -> void:
 	progress_bar.max_value = course.get("totalDistanceM", 1000.0)
 	progress_bar.value = 0.0
 	_build_elevation_graph()
+	get_viewport().size_changed.connect(_on_viewport_resized)
+	_on_viewport_resized()
 	
 	# Spawn Ghosts
 	_spawn_ghosts()
+
+func _update_physics_for_surface_and_grade(p_grade: float, p_surface: String) -> void:
+	current_grade = p_grade
+	current_surface = p_surface
+	
+	var crr_mult = CourseProfile.get_crr_for_surface(p_surface) / CourseProfile.get_crr_for_surface("asphalt")
+	var effective_crr = base_physics["crr"] * crr_mult * run_modifiers.get("crrMult", 1.0)
+	
+	physics_config = base_physics.duplicate()
+	physics_config["grade"] = p_grade
+	physics_config["crr"] = effective_crr
 
 func _spawn_ghosts() -> void:
 	# Spawn 3 ghosts with slightly different powers
@@ -124,7 +145,10 @@ func _apply_biome_theming(edge: Dictionary) -> void:
 func _build_elevation_graph() -> void:
 	elevation_line.clear_points()
 	var total_dist = course.get("totalDistanceM", 1000.0)
-	var container_size = Vector2(1240, 100)
+	var width = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
+	if width <= 0: width = 1240
+	
+	var container_size = Vector2(width, 100)
 	var points = 100
 	
 	var elev_points = []
@@ -141,7 +165,7 @@ func _build_elevation_graph() -> void:
 	var range_elev = max(10.0, max_elev - min_elev)
 	
 	for i in range(elev_points.size()):
-		var x = (float(i) / points) * 1240.0 
+		var x = (float(i) / points) * width
 		var y = container_size.y - ((elev_points[i] - min_elev) / range_elev) * container_size.y
 		elevation_line.add_point(Vector2(x, y))
 
@@ -159,14 +183,13 @@ func _get_elevation_at(p_course: Dictionary, p_dist: float) -> float:
 func _physics_process(delta: float) -> void:
 	if is_complete: return
 	
-	# 0. Autoplay Power
-	if RunManager.autoplay_enabled:
+	# 0. Autoplay Power (only if no real trainer is active)
+	if RunManager.autoplay_enabled and TrainerService.is_mock_mode:
 		var target_power = float(RunManager.run_data.get("ftpW", 200.0))
-		latest_power = lerp(latest_power, target_power, delta * 2.0)
+		latest_power = target_power
 	
-	# 1. Update Drafting & Surge Logic
+	# 1. Update Drafting Logic
 	var best_draft = 0.0
-	var close_behind = false
 	
 	for g in ghosts:
 		var gap_behind = g["distance_m"] - distance_m # Ghost is in front
@@ -178,11 +201,6 @@ func _physics_process(delta: float) -> void:
 		var push = DraftingPhysics.get_leading_draft_factor(gap_ahead)
 		
 		best_draft = max(best_draft, max(draft, push))
-		
-		# If we are close behind (within 4m) and moving faster, potential surge
-		if gap_behind > 0 and gap_behind < 4.0:
-			if velocity_ms > g["velocity_ms"] + 0.1:
-				close_behind = true
 				
 	player_draft_factor = best_draft
 	
@@ -193,30 +211,45 @@ func _physics_process(delta: float) -> void:
 			recovery_timer = RECOVERY_DURATION
 	elif recovery_timer > 0:
 		recovery_timer -= delta
-	elif close_behind and player_draft_factor > 0.15:
+	elif player_draft_factor > 0.01:
 		surge_timer = SURGE_DURATION
 	
 	# 2. Update Player Physics
-	current_grade = CourseProfile.get_grade_at_distance(course, distance_m)
-	physics_config["grade"] = current_grade
+	var new_grade = CourseProfile.get_grade_at_distance(course, distance_m)
+	var new_surface = CourseProfile.get_surface_at_distance(course, distance_m)
+	
+	if new_grade != current_grade or new_surface != current_surface:
+		_update_physics_for_surface_and_grade(new_grade, new_surface)
+		if new_surface != current_surface:
+			parallax.set_surface(new_surface)
 	
 	var draft_mods = run_modifiers.duplicate()
 	draft_mods["dragReduction"] = min(0.99, draft_mods.get("dragReduction", 0.0) + player_draft_factor)
 	
-	var effective_input_power = latest_power
+	var effective_power = latest_power
 	if surge_timer > 0:
-		effective_input_power *= SURGE_POWER_MULT
+		effective_power *= SURGE_POWER_MULT
 	elif recovery_timer > 0:
-		effective_input_power *= RECOVERY_POWER_MULT
-
-	var acceleration = CyclistPhysics.calculate_acceleration(
-		effective_input_power, 
-		velocity_ms, 
-		physics_config, 
-		draft_mods
-	)
+		effective_power *= RECOVERY_POWER_MULT
 	
-	velocity_ms += acceleration * delta
+	if not TrainerService.is_mock_mode:
+		# Directly tie in-game speed to the physical flywheel's speed (bypassing virtual inertia)
+		# We apply the surge/recovery multiplier to the speed itself so it actually feels like an "attack"
+		var target_speed = raw_trainer_speed_ms
+		if surge_timer > 0: target_speed *= 1.15 # 15% speed boost during attack
+		elif recovery_timer > 0: target_speed *= 0.90 # 10% speed penalty during recovery
+		
+		velocity_ms += (target_speed - velocity_ms) * delta * 5.0
+	else:
+		var acceleration = CyclistPhysics.calculate_acceleration(
+			effective_power, 
+			velocity_ms, 
+			physics_config, 
+			draft_mods
+		)
+		
+		velocity_ms += acceleration * delta
+	
 	velocity_ms = max(0.0, velocity_ms)
 	distance_m += velocity_ms * delta
 	
@@ -224,10 +257,15 @@ func _physics_process(delta: float) -> void:
 	for g in ghosts:
 		var g_dist = g["distance_m"]
 		var g_grade = CourseProfile.get_grade_at_distance(course, g_dist)
+		var g_surface = CourseProfile.get_surface_at_distance(course, g_dist)
+		
+		var g_crr_mult = CourseProfile.get_crr_for_surface(g_surface) / CourseProfile.get_crr_for_surface("asphalt")
+		
 		var g_config = physics_config.duplicate()
 		g_config["grade"] = g_grade
+		g_config["crr"] = base_physics["crr"] * g_crr_mult
 		
-		# Ghost also drafts (following)
+		# Ghost also drafts the player (following)
 		var g_draft = DraftingPhysics.get_draft_factor(distance_m - g_dist)
 		# Ghost also gets pushed (leading player)
 		g_draft = max(g_draft, DraftingPhysics.get_leading_draft_factor(g_dist - distance_m))
@@ -260,11 +298,20 @@ func _physics_process(delta: float) -> void:
 		_on_ride_complete()
 	
 	# 6. Update UI & Visuals
-	_update_hud()
+	_update_hud(effective_power)
 	_update_visuals(delta)
 	
 	if Engine.get_physics_frames() % 60 == 0:
-		TrainerService.set_simulation_params(current_grade, physics_config["crr"])
+		# Match Phaser's Trainer simulation parameters (scaling by massRatio)
+		var assumed_trainer_mass = 83.0
+		var mass_ratio = physics_config["massKg"] / assumed_trainer_mass
+		
+		var effective_grade = current_grade * mass_ratio
+		var effective_crr = physics_config["crr"] * mass_ratio
+		# CWA = CdA according to Phaser implementation (Rho scaling is commented out there)
+		var cwa = physics_config["cdA"]
+		
+		TrainerService.set_simulation_params(effective_grade, effective_crr, cwa)
 
 func _update_visuals(delta: float) -> void:
 	# Parallax scrolling
@@ -289,7 +336,21 @@ func _update_visuals(delta: float) -> void:
 	
 	# Update Player marker on elevation graph
 	var total_dist = course.get("totalDistanceM", 1.0)
-	player_marker.position.x = (distance_m / total_dist) * 1240.0
+	var graph_width = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
+	if graph_width <= 0: graph_width = 1240
+	player_marker.position.x = (distance_m / total_dist) * graph_width
+
+func _on_viewport_resized() -> void:
+	var vw = get_viewport_rect().size.x
+	var mirror_val = Vector2(max(1280, vw), 0)
+	if parallax:
+		for layer in parallax.get_children():
+			if layer is ParallaxLayer:
+				layer.motion_mirroring = mirror_val
+				for child in layer.get_children():
+					if child is Control:
+						child.custom_minimum_size.x = mirror_val.x
+	_build_elevation_graph()
 
 func _animate_cyclist(node: Node2D, w_rot: float, vel: float) -> void:
 	node.get_node("WheelBack").rotation = w_rot
@@ -324,6 +385,13 @@ func _on_ride_complete() -> void:
 
 func _on_trainer_data(data: Dictionary) -> void:
 	latest_power = data.get("power", 0.0)
+	if data.has("speed_kmh"):
+		raw_trainer_speed_ms = data["speed_kmh"] / 3.6
+	
+	if data.has("cadence"):
+		var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
+		if cadence_node:
+			cadence_node.text = str(round(data["cadence"])) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -331,9 +399,9 @@ func _input(event: InputEvent) -> void:
 		add_child(pause_menu)
 		get_viewport().set_input_as_handled()
 
-func _update_hud() -> void:
+func _update_hud(p_effective_power: float) -> void:
 	if hud_power_label:
-		hud_power_label.text = str(round(latest_power)) + " W"
+		hud_power_label.text = str(round(p_effective_power)) + " W"
 	if hud_speed_label:
 		var speed = CyclistPhysics.ms_to_kmh(velocity_ms) if SettingsManager.units == "metric" else CyclistPhysics.ms_to_mph(velocity_ms)
 		var unit_suffix = " km/h" if SettingsManager.units == "metric" else " mph"
@@ -358,25 +426,26 @@ func _update_hud() -> void:
 		draft_badge.modulate = Color.SKY_BLUE
 	elif player_draft_factor > 0.01:
 		draft_badge.visible = true
-		draft_badge.get_node("Label").text = "SLIPSTREAM -%d%% DRAG" % int(player_draft_factor * 100)
+		draft_badge.get_node("Label").text = "SLIPSTREAM  −%d%% DRAG" % int(player_draft_factor * 100)
 		draft_badge.modulate = Color.WHITE
 	else:
 		draft_badge.visible = false
 		
-	# Update Race Gap Panel
-	for child in race_gap_panel.get_children():
-		child.queue_free()
+	# Update Race Gap Panel (Only every 10 frames to prevent layout churn)
+	if Engine.get_physics_frames() % 10 == 0:
+		for child in race_gap_panel.get_children():
+			child.queue_free()
+			
+		# Sort ghosts by distance
+		var sorted_ghosts = ghosts.duplicate()
+		sorted_ghosts.sort_custom(func(a, b): return a["distance_m"] > b["distance_m"])
 		
-	# Sort ghosts by distance
-	var sorted_ghosts = ghosts.duplicate()
-	sorted_ghosts.sort_custom(func(a, b): return a["distance_m"] > b["distance_m"])
-	
-	for g in sorted_ghosts:
-		var gap = g["distance_m"] - distance_m
-		var l = Label.new()
-		var dist_str = "%+.1f m" % gap
-		l.text = g["label"] + ": " + dist_str
-		l.add_theme_font_size_override("font_size", 14)
-		if gap > 0: l.add_theme_color_override("font_color", Color.SALMON)
-		else: l.add_theme_color_override("font_color", Color.LIGHT_GREEN)
-		race_gap_panel.add_child(l)
+		for g in sorted_ghosts:
+			var gap = g["distance_m"] - distance_m
+			var l = Label.new()
+			var dist_str = "%+.1f m" % gap
+			l.text = g["label"] + ": " + dist_str
+			l.add_theme_font_size_override("font_size", 14)
+			if gap > 0: l.add_theme_color_override("font_color", Color.SALMON)
+			else: l.add_theme_color_override("font_color", Color.LIGHT_GREEN)
+			race_gap_panel.add_child(l)

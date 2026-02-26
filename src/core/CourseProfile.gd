@@ -31,16 +31,22 @@ static func get_elevation_at_distance(profile: Dictionary, distance_m: float) ->
     var total_dist = profile.get("totalDistanceM", 0.0)
     if total_dist <= 0: return 0.0
     
-    var wrapped = fmod(distance_m, total_dist)
-    if wrapped < 0: wrapped += total_dist
+    var num_wraps = floor(distance_m / total_dist)
+    var wrapped = distance_m - (num_wraps * total_dist)
+    
+    var total_elev = 0.0
+    for segment in profile.get("segments", []):
+        total_elev += segment["distanceM"] * segment["grade"]
+        
     var remaining = wrapped
-    var elevation = 0.0
+    var current_wrap_elev = 0.0
     for segment in profile.get("segments", []):
         var dist = min(remaining, segment["distanceM"])
-        elevation += dist * segment["grade"]
+        current_wrap_elev += dist * segment["grade"]
         if remaining <= segment["distanceM"]: break
         remaining -= segment["distanceM"]
-    return elevation
+        
+    return (num_wraps * total_elev) + current_wrap_elev
 
 static func get_surface_at_distance(profile: Dictionary, distance_m: float) -> String:
     var total_dist = profile.get("totalDistanceM", 0.0)

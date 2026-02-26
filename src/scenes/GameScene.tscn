@@ -47,6 +47,9 @@ color = Color(0.290196, 0.431373, 0.219608, 1)
 [node name="Environment" type="Node2D" parent="."]
 position = Vector2(0, 500)
 
+[node name="RoadFill" type="Polygon2D" parent="Environment"]
+color = Color(0.2, 0.2, 0.2, 1)
+
 [node name="Ground" type="Line2D" parent="Environment"]
 points = PackedVector2Array(-2000, 0, 5000, 0)
 width = 10.0

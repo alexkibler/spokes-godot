@@ -12,6 +12,7 @@ extends Node2D
 @onready var parallax: ParallaxBackground = $ParallaxBackground
 @onready var elevation_line: Line2D = $HUD/MarginContainer/VBoxContainer/ElevationContainer/ElevationLine
 @onready var player_marker: ColorRect = $HUD/MarginContainer/VBoxContainer/ElevationContainer/PlayerMarker
+@onready var ground_line: Line2D = $Environment/Ground
 @onready var draft_badge: PanelContainer = %DraftBadge
 @onready var race_gap_panel: VBoxContainer = %RaceGapPanel
 
@@ -158,6 +159,7 @@ func _apply_biome_theming(edge: Dictionary) -> void:
 	var color = SpokesTheme.BIOME_COLORS.get(spoke_id, Color.DARK_GREEN)
 	$ParallaxBackground/HillLayer/Hills.color = color.lerp(Color.BLACK, 0.2)
 	$ParallaxBackground/GroundLayer/Field.color = color.lerp(Color.BLACK, 0.4)
+	$Environment/RoadFill.color = color.lerp(Color.BLACK, 0.4)
 
 func _build_elevation_graph() -> void:
 	if not is_inside_tree() or course.is_empty(): return
@@ -173,7 +175,7 @@ func _build_elevation_graph() -> void:
 	var elev_points = []
 	for i in range(points + 1):
 		var d = (float(i) / points) * total_dist
-		elev_points.append(_get_elevation_at(course, d))
+		elev_points.append(CourseProfile.get_elevation_at_distance(course, d))
 	
 	var min_elev = elev_points[0]
 	var max_elev = elev_points[0]
@@ -193,17 +195,49 @@ func _build_elevation_graph() -> void:
 		var y = container_height - ((elev_points[i] - min_elev) / range_elev) * container_height
 		elevation_line.add_point(Vector2(x, y))
 
-func _get_elevation_at(p_course: Dictionary, p_dist: float) -> float:
-	var total_dist = p_course.get("totalDistanceM", 1.0)
-	# Use a small epsilon to avoid wrapping exactly at the boundary
-	var remaining = min(p_dist, total_dist - 0.001)
-	var elevation = 0.0
-	for segment in p_course.get("segments", []):
-		var dist = min(remaining, segment["distanceM"])
-		elevation += dist * segment["grade"]
-		if remaining <= segment["distanceM"]: break
-		remaining -= segment["distanceM"]
-	return elevation
+func _update_ground_line() -> void:
+	if course.is_empty(): return
+	
+	var vw = get_viewport_rect().size.x
+	if vw <= 0: vw = 1280
+	
+	var points = []
+	var start_x = -500.0 # Relative to environment (which is at x=0)
+	var end_x = vw + 500.0 
+	var step_x = 25.0   # pixels (0.25m per step at 100px/m)
+	
+	var total_dist = course.get("totalDistanceM", 1000.0)
+	var base_elev = CourseProfile.get_elevation_at_distance(course, distance_m)
+	
+	# Cache grades for extrapolation
+	var start_grade = CourseProfile.get_grade_at_distance(course, 0.0)
+	var end_grade = CourseProfile.get_grade_at_distance(course, total_dist - 0.1)
+	
+	for x in range(int(start_x), int(end_x) + int(step_x), int(step_x)):
+		var d = distance_m + (float(x) - 300.0) / 100.0
+		
+		var elev: float
+		if d < 0:
+			# Extrapolate backward from start
+			elev = d * start_grade
+		elif d > total_dist:
+			# Extrapolate forward from end
+			var final_elev = CourseProfile.get_elevation_at_distance(course, total_dist)
+			elev = final_elev + (d - total_dist) * end_grade
+		else:
+			elev = CourseProfile.get_elevation_at_distance(course, d)
+			
+		# Match the steepness scaling of the physics exaggeration (3.0 factor)
+		var y = -(elev - base_elev) * 100.0 * 3.0
+		points.append(Vector2(x, y))
+	
+	ground_line.points = PackedVector2Array(points)
+	
+	# Update RoadFill polygon to cover the area below the line
+	var poly_points = points.duplicate()
+	poly_points.append(Vector2(end_x, 1000.0)) # Far below screen
+	poly_points.append(Vector2(start_x, 1000.0))
+	$Environment/RoadFill.polygon = PackedVector2Array(poly_points)
 
 func _physics_process(delta: float) -> void:
 	if is_complete: return
@@ -360,22 +394,35 @@ func _update_visuals(delta: float) -> void:
 	# Parallax scrolling
 	parallax.scroll_offset.x -= velocity_ms * delta * 100.0
 	
-	# Rotate the environment
-	var target_rot = -atan(current_grade * 3.0) 
-	environment.rotation = lerp_angle(environment.rotation, target_rot, delta * 2.0)
+	# Deform road to match elevation graph
+	_update_ground_line()
 	
 	# Animate Player
 	wheel_rotation += velocity_ms * delta * 10.0
 	_animate_cyclist(player_cyclist, wheel_rotation, velocity_ms)
 	
+	# Position and Rotate Player on road (Pivot at player distance)
+	var p_grade = CourseProfile.get_grade_at_distance(course, distance_m)
+	player_cyclist.position.y = 0 
+	player_cyclist.rotation = lerp_angle(player_cyclist.rotation, -atan(p_grade * 3.0), delta * 10.0)
+	
 	# Animate and Position Ghosts
+	var base_elev = CourseProfile.get_elevation_at_distance(course, distance_m)
 	for g in ghosts:
 		var g_node = g["node"]
 		var relative_x = (g["distance_m"] - distance_m) * 100.0
 		g_node.position.x = 300.0 + relative_x
 		
+		var g_elev = CourseProfile.get_elevation_at_distance(course, g["distance_m"])
+		var g_grade = CourseProfile.get_grade_at_distance(course, g["distance_m"])
+		g_node.position.y = -(g_elev - base_elev) * 100.0 * 3.0
+		g_node.rotation = lerp_angle(g_node.rotation, -atan(g_grade * 3.0), delta * 10.0)
+		
 		g["wheel_rotation"] += g["velocity_ms"] * delta * 10.0
 		_animate_cyclist(g_node, g["wheel_rotation"], g["velocity_ms"])
+	
+	# Environment stays level as the ground itself is now deformed
+	environment.rotation = 0
 	
 	# Update Player marker on elevation graph
 	var total_dist = course.get("totalDistanceM", 1.0)

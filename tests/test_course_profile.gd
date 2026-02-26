@@ -73,8 +73,12 @@ func test_get_elevation_at_distance():
 	# After 500 m of −3% descent: 50 − 500 * 0.03 = 35 m
 	assert_almost_eq(CourseProfile.get_elevation_at_distance(simple_course, 2500.0), 35.0, 0.00001)
 	
-	# Elevation at 3000 m (modulo 3000 = 0) is 0
-	assert_almost_eq(CourseProfile.get_elevation_at_distance(simple_course, 3000.0), 0.0, 0.00001)
+	# Elevation at 3000 m is the accumulated elevation (20m), not wrapped to 0
+	assert_almost_eq(CourseProfile.get_elevation_at_distance(simple_course, 3000.0), 20.0, 0.00001)
+	
+	# it wraps around continuously
+	assert_almost_eq(CourseProfile.get_elevation_at_distance(simple_course, 6000.0), 40.0, 0.00001)
+	assert_almost_eq(CourseProfile.get_elevation_at_distance(simple_course, -3000.0), -20.0, 0.00001)
 
 # ─── getSurfaceAtDistance ─────────────────────────────────────────────────────
 

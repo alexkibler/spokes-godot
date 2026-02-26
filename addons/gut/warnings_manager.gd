@@ -9,14 +9,7 @@ const WARNING_LOOKUP = {
 	ERROR : 'ERROR'
 }
 
-const DIRECTORY_EXCLUDE = 0
-const DIRECTORY_INCLUDE = 1
-
 const GDSCRIPT_WARNING = 'debug/gdscript/warnings/'
-const DIRECTORY_RULES = 'debug/gdscript/warnings/directory_rules'
-
-const GUT_PATH = 'res://addons/gut'
-const DYNAMIC_FILES_PATH = 'res://addons/gut/not_a_real_file'
 
 
 # ---------------------------------------
@@ -72,18 +65,11 @@ static func enable_warnings(should=true):
 	ProjectSettings.set(str(GDSCRIPT_WARNING, 'enable'), should)
 
 
-static func exclude_gut(should=true):
-	var val = DIRECTORY_INCLUDE
-	if(should):
-		val = DIRECTORY_EXCLUDE
-	var dir_rules = ProjectSettings.get(DIRECTORY_RULES)
-	dir_rules[GUT_PATH] = val
-	ProjectSettings.set(DIRECTORY_RULES, dir_rules)
-
-static func exclude_dynamic_files():
-	var dir_rules = ProjectSettings.get(DIRECTORY_RULES)
-	dir_rules[DYNAMIC_FILES_PATH] = DIRECTORY_EXCLUDE
-	ProjectSettings.set(DIRECTORY_RULES, dir_rules)
+## Turn on/off excluding addons.  Use reset_warnings to restore the original value.
+static func exclude_addons(should=true):
+	if(disabled):
+		return
+	ProjectSettings.set(str(GDSCRIPT_WARNING, 'exclude_addons'), should)
 
 
 ## Resets warning settings to what they are set to in Project Settings

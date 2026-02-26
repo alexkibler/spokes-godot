@@ -9,8 +9,24 @@ extends CanvasLayer
 func _ready() -> void:
 	equip_button.pressed.connect(_on_equip_pressed)
 	autoplay_button.pressed.connect(_on_autoplay_pressed)
-	_update_autoplay_ui()
+
+	SignalBus.gold_changed.connect(_on_gold_changed)
+	SignalBus.modifiers_changed.connect(_on_modifiers_changed)
+	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
+
+	_update_autoplay_ui(RunManager.autoplay_enabled)
 	update_hud()
+
+func _on_gold_changed(new_gold: int) -> void:
+	gold_label.text = str(new_gold) + " g"
+
+func _on_modifiers_changed() -> void:
+	var run = RunManager.get_run()
+	if not run.is_empty():
+		_update_modifiers(run["modifiers"])
+
+func _on_autoplay_changed(enabled: bool) -> void:
+	_update_autoplay_ui(enabled)
 
 func _on_equip_pressed() -> void:
 	var overlay = load("res://src/ui/screens/EquipmentOverlay.tscn").instantiate()
@@ -19,10 +35,10 @@ func _on_equip_pressed() -> void:
 
 func _on_autoplay_pressed() -> void:
 	RunManager.toggle_autoplay()
-	_update_autoplay_ui()
+	# UI update handled by signal
 
-func _update_autoplay_ui() -> void:
-	if RunManager.autoplay_enabled:
+func _update_autoplay_ui(enabled: bool) -> void:
+	if enabled:
 		autoplay_button.text = "AUTOPLAY: ON"
 		autoplay_button.add_theme_color_override("font_color", Color.GOLD)
 	else:

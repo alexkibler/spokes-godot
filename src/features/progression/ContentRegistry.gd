@@ -1,4 +1,4 @@
-extends Node
+class_name ContentRegistry
 
 # Autoload: ContentRegistry.gd
 # Manages the database of items and rewards, and handles the loot pool.
@@ -10,25 +10,25 @@ const RARITY_WEIGHTS = {
 	"rare": 10,
 }
 
-var items: Dictionary = {} # ID -> Dictionary
-var rewards: Dictionary = {} # ID -> Dictionary
+static var items: Dictionary = {} # ID -> Dictionary
+static var rewards: Dictionary = {} # ID -> Dictionary
 
-func _ready() -> void:
+static func _static_init() -> void:
 	bootstrap()
 
-func register_item(def: Dictionary) -> void:
+static func register_item(def: Dictionary) -> void:
 	items[def["id"]] = def
 
-func register_reward(def: Dictionary) -> void:
+static func register_reward(def: Dictionary) -> void:
 	rewards[def["id"]] = def
 
-func get_item(id: String) -> Dictionary:
+static func get_item(id: String) -> Dictionary:
 	return items.get(id, {})
 
-func get_reward(id: String) -> Dictionary:
+static func get_reward(id: String) -> Dictionary:
 	return rewards.get(id, {})
 
-func get_loot_pool(count: int) -> Array:
+static func get_loot_pool(count: int) -> Array:
 	var pool = []
 	for r in rewards.values():
 		if not r.has("available") or r["available"].call(RunManager):
@@ -72,13 +72,13 @@ func get_loot_pool(count: int) -> Array:
 	return results
 
 ## Apply a reward by ID
-func apply_reward(reward_id: String) -> void:
+static func apply_reward(reward_id: String) -> void:
 	var r = get_reward(reward_id)
 	if r.has("apply"):
 		r["apply"].call(RunManager)
 
 # Factory method to populate with baseline content
-func bootstrap() -> void:
+static func bootstrap() -> void:
 	# --- Items ---
 	register_item({
 		"id": "aero_helmet",

@@ -108,7 +108,11 @@ func _ready() -> void:
 		current_surface = "asphalt"
 		_update_physics_for_surface_and_grade(0.0, current_surface)
 
-	TrainerService.data_received.connect(_on_trainer_data)
+	# Subscribe to SignalBus for hardware updates
+	SignalBus.trainer_power_updated.connect(_on_power_updated)
+	SignalBus.trainer_cadence_updated.connect(_on_cadence_updated)
+	SignalBus.trainer_speed_updated.connect(_on_speed_updated)
+
 	TrainerService.connect_trainer()
 	
 	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
@@ -661,16 +665,17 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
-func _on_trainer_data(data: Dictionary) -> void:
-	latest_power = data.get("power", 0.0)
-	if data.has("speed_kmh"):
-		raw_trainer_speed_ms = data["speed_kmh"] / 3.6
-	
-	if data.has("cadence"):
-		cadence = float(data["cadence"])
-		var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
-		if cadence_node:
-			cadence_node.text = str(round(cadence)) + " RPM"
+func _on_power_updated(p_watts: float) -> void:
+	latest_power = p_watts
+
+func _on_speed_updated(p_kmh: float) -> void:
+	raw_trainer_speed_ms = p_kmh / 3.6
+
+func _on_cadence_updated(p_rpm: float) -> void:
+	cadence = p_rpm
+	var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
+	if cadence_node:
+		cadence_node.text = str(round(cadence)) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

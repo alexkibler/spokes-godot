@@ -19,11 +19,13 @@ var pending_overlay: String = "" # "shop", "event", or ""
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
 	autoplay_changed.emit(autoplay_enabled)
+	SignalBus.autoplay_changed.emit(autoplay_enabled)
 
 func set_autoplay_enabled(enabled: bool) -> void:
 	if autoplay_enabled != enabled:
 		autoplay_enabled = enabled
 		autoplay_changed.emit(autoplay_enabled)
+		SignalBus.autoplay_changed.emit(autoplay_enabled)
 
 func start_new_run(run_length: int, total_distance_km: float, difficulty: String, ftp_w: int, weight_kg: float, units: String) -> void:
 	run_data = {
@@ -58,6 +60,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 	
 	is_active_run = true
 	run_started.emit()
+	SignalBus.run_started.emit()
 
 func is_edge_traversable(edge: Dictionary) -> bool:
 	if edge.get("requiresAllMedals", false):
@@ -288,6 +291,7 @@ func _compare_item_stats(new_def: Dictionary, old_def: Dictionary) -> float:
 func add_to_inventory(item_id: String) -> void:
 	run_data["inventory"].append(item_id)
 	
+	SignalBus.inventory_changed.emit()
 	if autoplay_enabled:
 		var def = ContentRegistry.get_item(item_id)
 		if def.has("slot"):
@@ -300,6 +304,7 @@ func add_to_inventory(item_id: String) -> void:
 					equip_item(item_id)
 	else:
 		item_discovered.emit(item_id)
+		SignalBus.item_discovered.emit(item_id)
 
 func equip_item(item_id: String) -> bool:
 	var def = ContentRegistry.get_item(item_id)
@@ -318,6 +323,7 @@ func equip_item(item_id: String) -> bool:
 	run_data["inventory"].remove_at(idx)
 	run_data["equipped"][slot] = item_id
 	
+	SignalBus.inventory_changed.emit()
 	if def.has("modifier"):
 		apply_modifier(def["modifier"], def["label"] + " (equipped)")
 		
@@ -341,6 +347,8 @@ func unequip_item(slot: String) -> String:
 	run_data["equipped"].erase(slot)
 	run_data["inventory"].append(item_id)
 	modifiers_changed.emit()
+	SignalBus.modifiers_changed.emit()
+	SignalBus.inventory_changed.emit()
 	return item_id
 
 func _reverse_modifier(delta: Dictionary) -> void:
@@ -364,12 +372,15 @@ func apply_modifier(delta: Dictionary, label: String = "") -> void:
 		run_data["modifierLog"].append(log_entry)
 		
 	modifiers_changed.emit()
+	SignalBus.modifiers_changed.emit()
 
 func spend_gold(amount: int) -> bool:
 	if run_data["gold"] >= amount:
 		run_data["gold"] -= amount
+		SignalBus.gold_changed.emit(run_data["gold"])
 		return true
 	return false
 
 func add_gold(amount: int) -> void:
 	run_data["gold"] += amount
+	SignalBus.gold_changed.emit(run_data["gold"])

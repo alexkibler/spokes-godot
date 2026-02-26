@@ -22,12 +22,11 @@ config/icon="res://icon.png"
 
 [autoload]
 
-Units="*res://src/core/Units.gd"
-ContentRegistry="*res://src/features/progression/ContentRegistry.gd"
 RunManager="*res://src/features/progression/RunManager.gd"
 TrainerService="*res://src/features/hardware/TrainerService.gd"
 SettingsManager="*res://src/core/SettingsManager.gd"
 BuildInfo="*res://src/core/BuildInfo.gd"
+SignalBus="*res://src/core/SignalBus.gd"
 
 [display]
 

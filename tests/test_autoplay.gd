@@ -265,11 +265,16 @@ func test_autoplay_set_explicit():
 
 func test_autoplay_signal_emission():
 	watch_signals(rm)
+	watch_signals(SignalBus)
+
 	rm.set_autoplay_enabled(true)
 	assert_signal_emitted(rm, "autoplay_changed", "Should emit signal on state change")
+	assert_signal_emitted(SignalBus, "autoplay_changed", "Should emit global signal on state change")
 	
 	rm.set_autoplay_enabled(true) # No change
 	assert_signal_emit_count(rm, "autoplay_changed", 1, "Should NOT emit if state is identical")
+	assert_signal_emit_count(SignalBus, "autoplay_changed", 1, "Should NOT emit global signal if state is identical")
 	
 	rm.set_autoplay_enabled(false)
 	assert_signal_emit_count(rm, "autoplay_changed", 2, "Should emit on second change")
+	assert_signal_emit_count(SignalBus, "autoplay_changed", 2, "Should emit global signal on second change")

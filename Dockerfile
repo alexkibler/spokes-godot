@@ -1,7 +1,7 @@
 FROM nginx:alpine
 
 # Copy the exported Godot Web files to the Nginx html directory
-COPY build/web /usr/share/nginx/html
+COPY build/web/Web /usr/share/nginx/html
 
 # Godot 4 Web builds require these headers for SharedArrayBuffer support.
 # Using a single-line printf to avoid Dockerfile multi-line parser issues.

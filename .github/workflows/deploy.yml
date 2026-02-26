@@ -18,10 +18,10 @@ jobs:
           lfs: true
 
       - name: Run GUT Tests
-        uses: nathan-h-woods/godot-gut-ci@v2.1.0
+        uses: ceceppa/godot-gut-ci@v0.3.0
         with:
           godot_version: '4.3'
-          project_path: '.'
+          gut_params: "-gdir=res://tests -ginclude_subdirs -gexit"
 
   build-and-push:
     needs: test

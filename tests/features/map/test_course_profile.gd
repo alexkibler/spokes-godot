@@ -85,27 +85,21 @@ func test_get_elevation_at_distance() -> void:
 
 func test_get_surface_at_distance() -> void:
 	var surface_course: CourseProfile = get_surface_course()
-	assert_eq(surface_course.get_surface_at_distance(0.0), "asphalt")
-	assert_eq(surface_course.get_surface_at_distance(250.0), "asphalt")
-	assert_eq(surface_course.get_surface_at_distance(750.0), "gravel")
-	assert_eq(surface_course.get_surface_at_distance(1250.0), "mud")
+	assert_eq(surface_course.get_surface_at_distance(0.0).name, "asphalt")
+	assert_eq(surface_course.get_surface_at_distance(250.0).name, "asphalt")
+	assert_eq(surface_course.get_surface_at_distance(750.0).name, "gravel")
+	assert_eq(surface_course.get_surface_at_distance(1250.0).name, "mud")
 	
 	# it('picks up the next segment exactly at the boundary')
-	assert_eq(surface_course.get_surface_at_distance(500.0), "gravel")
-	assert_eq(surface_course.get_surface_at_distance(1000.0), "mud")
+	assert_eq(surface_course.get_surface_at_distance(500.0).name, "gravel")
+	assert_eq(surface_course.get_surface_at_distance(1000.0).name, "mud")
 	
 	# it('wraps around to the start surface')
-	assert_eq(surface_course.get_surface_at_distance(2000.0), "asphalt")
+	assert_eq(surface_course.get_surface_at_distance(2000.0).name, "asphalt")
 
 # ─── getCrrForSurface ─────────────────────────────────────────────────────────
 
 func test_get_crr_for_surface() -> void:
-	assert_gt(CourseProfile.get_crr_for_surface("gravel"), CourseProfile.get_crr_for_surface("asphalt"))
-	assert_gt(CourseProfile.get_crr_for_surface("dirt"), CourseProfile.get_crr_for_surface("gravel"))
-	assert_gt(CourseProfile.get_crr_for_surface("mud"), CourseProfile.get_crr_for_surface("dirt"))
-	
-	# Default to asphalt
-	assert_eq(CourseProfile.get_crr_for_surface(), CourseProfile.get_crr_for_surface("asphalt"))
 	assert_gt(CourseProfile.get_crr_for_surface("gravel"), CourseProfile.get_crr_for_surface("asphalt"))
 	assert_gt(CourseProfile.get_crr_for_surface("dirt"), CourseProfile.get_crr_for_surface("gravel"))
 	assert_gt(CourseProfile.get_crr_for_surface("mud"), CourseProfile.get_crr_for_surface("dirt"))

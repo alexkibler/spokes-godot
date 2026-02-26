@@ -167,12 +167,12 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         var ip_id = "node_%s_ip" % spoke_id
         var boss_id = "node_%s_boss" % spoke_id
         
-        var mk_node = func(id: String, type: String, floor: int, radial: float, perp: float = 0.0):
+        var mk_node = func(id: String, type: String, p_floor: int, radial: float, perp: float = 0.0):
             var pos = get_pos.call(radial, perp)
             return {
                 "id": id,
                 "type": type,
-                "floor": floor,
+                "floor": p_floor,
                 "col": 0,
                 "x": pos["x"],
                 "y": pos["y"],

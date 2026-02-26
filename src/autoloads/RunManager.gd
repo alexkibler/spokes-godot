@@ -3,8 +3,8 @@ extends Node
 # Represents the RunManager.ts from the Phaser project
 
 signal run_started
-signal run_ended
-signal edge_completed
+# signal run_ended
+# signal edge_completed
 signal modifiers_changed
 signal autoplay_changed(enabled: bool)
 

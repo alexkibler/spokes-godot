@@ -78,14 +78,14 @@ static func generate_course_profile(distance_km: float, max_grade: float, surfac
         
         var pressure = clamp(net_elev_m / (total_m * max_grade * 1.0), -1.0, 1.0)
         var r = randf()
-        var sign = 0
+        var s_sign = 0
         
-        if pressure > 0.7: sign = -1
-        elif pressure < -0.7: sign = 1
-        elif r < 0.08: sign = 0
-        else: sign = 1 if (r < 0.55 - pressure * 0.2) else -1
+        if pressure > 0.7: s_sign = -1
+        elif pressure < -0.7: s_sign = 1
+        elif r < 0.08: s_sign = 0
+        else: s_sign = 1 if (r < 0.55 - pressure * 0.2) else -1
         
-        var grade = 0.0 if sign == 0 else sign * mags[randi() % mags.size()]
+        var grade = 0.0 if s_sign == 0 else s_sign * mags[randi() % mags.size()]
         
         segments.append({"distanceM": length, "grade": grade, "surface": surface})
         net_elev_m += length * grade
@@ -93,8 +93,8 @@ static func generate_course_profile(distance_km: float, max_grade: float, surfac
         
     if budget_m > 0:
         if segments.size() == 1:
-            var sign = 1 if randf() < 0.5 else -1
-            var grade = sign * mags[randi() % mags.size()]
+            var s_sign = 1 if randf() < 0.5 else -1
+            var grade = s_sign * mags[randi() % mags.size()]
             segments.append({"distanceM": budget_m, "grade": grade, "surface": surface})
         else:
             segments[segments.size() - 1]["distanceM"] += budget_m

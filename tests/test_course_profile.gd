@@ -1,4 +1,4 @@
-extends GutTest
+extends "res://addons/gut/test.gd"
 
 # Tests ported from ~/Repos/spokes/src/core/course/__tests__/CourseProfile.test.ts
 

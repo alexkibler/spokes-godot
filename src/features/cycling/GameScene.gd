@@ -596,8 +596,15 @@ func _on_ride_complete() -> void:
 	velocity_ms = 0.0
 	Engine.time_scale = 1.0
 	
-	if RunManager.item_discovered.is_connected(_on_item_discovered):
-		RunManager.item_discovered.disconnect(_on_item_discovered)
+	# Cleanup global signal connections
+	if SignalBus.item_discovered.is_connected(_on_item_discovered):
+		SignalBus.item_discovered.disconnect(_on_item_discovered)
+	if SignalBus.trainer_power_updated.is_connected(_on_power_updated):
+		SignalBus.trainer_power_updated.disconnect(_on_power_updated)
+	if SignalBus.trainer_cadence_updated.is_connected(_on_cadence_updated):
+		SignalBus.trainer_cadence_updated.disconnect(_on_cadence_updated)
+	if SignalBus.trainer_speed_updated.is_connected(_on_speed_updated):
+		SignalBus.trainer_speed_updated.disconnect(_on_speed_updated)
 	
 	var run = RunManager.get_run()
 	var current_node = null

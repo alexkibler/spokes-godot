@@ -36,6 +36,10 @@ func _ready() -> void:
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
 	_check_autoplay()
 
+func _exit_tree() -> void:
+	if SignalBus.autoplay_changed.is_connected(_on_autoplay_changed):
+		SignalBus.autoplay_changed.disconnect(_on_autoplay_changed)
+
 func _on_autoplay_changed(enabled: bool) -> void:
 	if enabled:
 		_check_autoplay()

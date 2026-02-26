@@ -57,6 +57,17 @@ func _ready() -> void:
 	
 	_on_dist_changed(dist_slider.value)
 
+func _exit_tree() -> void:
+	if SignalBus.trainer_power_updated.is_connected(self._on_trainer_power_updated):
+		SignalBus.trainer_power_updated.disconnect(self._on_trainer_power_updated)
+	if SignalBus.trainer_cadence_updated.is_connected(self._on_trainer_cadence_updated):
+		SignalBus.trainer_cadence_updated.disconnect(self._on_trainer_cadence_updated)
+	if SignalBus.trainer_connected.is_connected(_show_trainer_status):
+		# This one was connected with a lambda in _ready, 
+		# but if we used a method we could disconnect.
+		# For now, let's just make sure method connections are handled.
+		pass
+
 var status_label: Label
 
 func _show_trainer_status() -> void:

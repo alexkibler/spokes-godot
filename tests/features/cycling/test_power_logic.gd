@@ -1,5 +1,8 @@
 extends GutTest
 
+const PowerReceiverComponent = preload("res://src/features/cycling/components/PowerReceiverComponent.gd")
+const FatigueComponent = preload("res://src/features/cycling/components/FatigueComponent.gd")
+
 func test_cyclist_physics_power_boost():
 	var stats = CyclistStats.new()
 	var base_power = 200.0

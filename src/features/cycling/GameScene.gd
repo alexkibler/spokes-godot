@@ -299,7 +299,7 @@ func _physics_process(delta: float) -> void:
 			challenge_ever_stopped = true
 	
 	var current_surface = player_cyclist.current_surface
-	parallax.set_surface(current_surface)
+	_set_surface(current_surface)
 	
 	# 4. Record every second
 	var now = Time.get_ticks_msec()
@@ -441,6 +441,26 @@ func _on_item_discovered(item_id: String) -> void:
 	var overlay = load("res://src/ui/screens/DiscoveryOverlay.tscn").instantiate()
 	add_child(overlay)
 	overlay.setup(item_id)
+
+func _set_surface(surface: String) -> void:
+	var road_color = Color(0.2, 0.2, 0.2) # Default Asphalt
+	var field_color = SpokesTheme.BIOME_COLORS.get("plains", Color.DARK_GREEN).lerp(Color.BLACK, 0.4)
+	
+	match surface:
+		"gravel":
+			road_color = Color("#7a6b55")
+			field_color = Color("#5a5a40")
+		"dirt":
+			road_color = Color("#5d4037")
+			field_color = Color("#3e2723")
+		"mud":
+			road_color = Color("#3e2723")
+			field_color = Color("#1b1b1b")
+	
+	if has_node("Environment/RoadFill"):
+		$Environment/RoadFill.color = road_color
+	if has_node("ParallaxBackground/GroundLayer/Field"):
+		$ParallaxBackground/GroundLayer/Field.color = field_color
 
 func _on_ride_complete() -> void:
 	is_complete = true

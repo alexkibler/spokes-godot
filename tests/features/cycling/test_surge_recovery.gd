@@ -1,5 +1,7 @@
 extends GutTest
 
+const FatigueComponent = preload("res://src/features/cycling/components/FatigueComponent.gd")
+
 # Tests for the new FatigueComponent which manages the Surge/Recovery State Machine
 
 func test_surge_recovery_cycle():

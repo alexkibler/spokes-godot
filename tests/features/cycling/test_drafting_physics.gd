@@ -1,6 +1,7 @@
 extends GutTest
 
 # Tests for DraftingPhysics and the new DraftingComponent
+const DraftingComponent = preload("res://src/features/cycling/components/DraftingComponent.gd")
 
 func test_drafting_dropoff_curve():
 	print("

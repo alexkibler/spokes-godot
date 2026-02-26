@@ -2,13 +2,6 @@ extends Node
 
 # Represents the RunManager.ts from the Phaser project
 
-signal run_started
-# signal run_ended
-# signal edge_completed
-signal modifiers_changed
-signal autoplay_changed(enabled: bool)
-signal item_discovered(item_id: String)
-
 var run_data: Dictionary = {}
 var is_active_run: bool = false
 var autoplay_enabled: bool = false
@@ -18,13 +11,11 @@ var pending_overlay: String = "" # "shop", "event", or ""
 
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
-	autoplay_changed.emit(autoplay_enabled)
 	SignalBus.autoplay_changed.emit(autoplay_enabled)
 
 func set_autoplay_enabled(enabled: bool) -> void:
 	if autoplay_enabled != enabled:
 		autoplay_enabled = enabled
-		autoplay_changed.emit(autoplay_enabled)
 		SignalBus.autoplay_changed.emit(autoplay_enabled)
 
 func start_new_run(run_length: int, total_distance_km: float, difficulty: String, ftp_w: int, weight_kg: float, units: String) -> void:
@@ -56,10 +47,9 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		}
 	}
 	
-	preload("res://src/features/map/MapGenerator.gd").generate_hub_and_spoke_map(run_data)
+	load("res://src/features/map/MapGenerator.gd").generate_hub_and_spoke_map(run_data)
 	
 	is_active_run = true
-	run_started.emit()
 	SignalBus.run_started.emit()
 
 func is_edge_traversable(edge: Dictionary) -> bool:
@@ -303,7 +293,6 @@ func add_to_inventory(item_id: String) -> void:
 				if _compare_item_stats(def, current_def) > 0:
 					equip_item(item_id)
 	else:
-		item_discovered.emit(item_id)
 		SignalBus.item_discovered.emit(item_id)
 
 func equip_item(item_id: String) -> bool:
@@ -346,7 +335,6 @@ func unequip_item(slot: String) -> String:
 				
 	run_data["equipped"].erase(slot)
 	run_data["inventory"].append(item_id)
-	modifiers_changed.emit()
 	SignalBus.modifiers_changed.emit()
 	SignalBus.inventory_changed.emit()
 	return item_id
@@ -371,7 +359,6 @@ func apply_modifier(delta: Dictionary, label: String = "") -> void:
 		log_entry["label"] = label
 		run_data["modifierLog"].append(log_entry)
 		
-	modifiers_changed.emit()
 	SignalBus.modifiers_changed.emit()
 
 func spend_gold(amount: int) -> bool:

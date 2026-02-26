@@ -99,7 +99,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         edges.append({
             "from": from_id,
             "to": to_id,
-            "profile": preload("res://src/features/map/CourseProfile.gd").generate_course_profile(km, grade, surface),
+            "profile": load("res://src/features/map/CourseProfile.gd").generate_course_profile(km, grade, surface),
             "isCleared": false
         })
 

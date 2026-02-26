@@ -220,6 +220,24 @@ func _on_node_clicked(node: Dictionary) -> void:
 			_check_autoplay()
 		)
 		return
+		
+	if node["type"] == "hard":
+		var challenge = EliteChallenge.get_random_challenge()
+		var overlay = load("res://src/ui/EliteOverlay.tscn").instantiate()
+		add_child(overlay)
+		overlay.setup(challenge)
+		overlay.challenge_accepted.connect(func(accepted_challenge):
+			RunManager.active_challenge = accepted_challenge
+			# Use specialized elite profile
+			var max_g = RunManager.get_absolute_max_grade()
+			connecting_edge["profile"] = EliteChallenge.generate_elite_course_profile(accepted_challenge, max_g)
+			RunManager.set_active_edge(connecting_edge)
+			get_tree().change_scene_to_file("res://src/scenes/GameScene.tscn")
+		)
+		overlay.challenge_declined.connect(func():
+			_check_autoplay()
+		)
+		return
 
 	# Start the ride!
 	RunManager.set_active_edge(connecting_edge)

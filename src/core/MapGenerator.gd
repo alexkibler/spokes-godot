@@ -58,7 +58,21 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     var base_km = max(0.1, total_dist_km / total_run_weight)
     
     var difficulty = run_data.get("difficulty", "normal")
-    var diff_scale = 1.5 if difficulty == "hard" else (0.7 if difficulty == "easy" else 1.0)
+    var absolute_max_grade = {
+        "easy": 0.05,
+        "normal": 0.07,
+        "hard": 0.10
+    }.get(difficulty, 0.07)
+    
+    # Target max_grade values to hit elevation per 10 miles:
+    # Easy: <500ft -> ~0.015 avg max_grade
+    # Normal: 750-1000ft -> ~0.04 avg max_grade
+    # Hard: 1200-1500ft -> ~0.07 avg max_grade
+    var diff_config = {
+        "easy":   {"base_grade": 0.015, "hazard_mult": 0.1,  "rand_var": 0.005},
+        "normal": {"base_grade": 0.048, "hazard_mult": 0.25, "rand_var": 0.008},
+        "hard":   {"base_grade": 0.08,  "hazard_mult": 0.4,  "rand_var": 0.01}
+    }.get(difficulty, {"base_grade": 0.048, "hazard_mult": 0.25, "rand_var": 0.008})
     
     run_data["runLength"] = num_spokes
     
@@ -70,11 +84,17 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
                 target_node = n
                 break
         
-        var grade = base_max_grade * diff_scale
+        # Hazard grade (config["hazardGrade"]) is maxed at 0.15 (mountains)
+        var grade = diff_config["base_grade"] + (base_max_grade * diff_config["hazard_mult"])
+        grade += (randf() * 2.0 - 1.0) * diff_config["rand_var"]
+        grade = max(0.005, grade)
+        
         if target_node:
             if target_node["type"] == "hard": grade *= 1.5
             elif target_node["type"] == "boss": grade *= 2.0
             elif target_node["type"] == "finish": grade *= 2.5
+            
+        grade = min(grade, absolute_max_grade)
             
         edges.append({
             "from": from_id,
@@ -242,7 +262,10 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     run_data["currentNodeId"] = hub_node["id"]
     run_data["visitedNodeIds"] = [hub_node["id"]]
     
-    var total_map_dist = (num_spokes * weight_per_spoke + 2) * base_km * 1000.0
+    var total_map_dist = 0.0
+    for e in edges:
+        total_map_dist += e["profile"]["totalDistanceM"]
+    
     run_data["stats"]["totalMapDistanceM"] = total_map_dist
     
     print("[MAP GEN] spokes: %d, nodes: %d, edges: %d, total length: %.1fkm" % [

@@ -36,10 +36,9 @@ func _ready() -> void:
 		)
 
 func _pick_event() -> void:
-	var registry = get_node("/root/RewardManager").registry
 	var items = []
-	for id in registry.items:
-		var def = registry.get_item(id)
+	for id in ContentRegistry.items:
+		var def = ContentRegistry.get_item(id)
 		if def.has("slot"): items.append(def)
 		
 	if items.is_empty():

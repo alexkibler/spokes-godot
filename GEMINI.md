@@ -22,10 +22,10 @@ Tests are located in `res://tests/` and use the GUT framework.
 **Headless (CLI):**
 ```sh
 # Run all tests
-godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+"/Volumes/1TB/External Applications/Godot.app/Contents/MacOS/Godot" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
 
 # Run a specific test file
-godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_cyclist_physics.gd -gexit
+"/Volumes/1TB/External Applications/Godot.app/Contents/MacOS/Godot" --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_cyclist_physics.gd -gexit
 ```
 
 **In-Editor:**

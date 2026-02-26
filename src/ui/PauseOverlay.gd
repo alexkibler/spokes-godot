@@ -6,11 +6,15 @@ signal quit_requested
 @onready var resume_btn: Button = %ResumeButton
 @onready var quit_btn: Button = %QuitButton
 @onready var quit_map_btn: Button = %QuitMapButton
+@onready var autoplay_toggle: CheckButton = %AutoplayToggle
 
 func _ready() -> void:
 	resume_btn.pressed.connect(_on_resume_pressed)
 	quit_btn.pressed.connect(_on_quit_pressed)
 	quit_map_btn.pressed.connect(_on_quit_map_pressed)
+	
+	autoplay_toggle.button_pressed = RunManager.autoplay_enabled
+	autoplay_toggle.toggled.connect(_on_autoplay_toggled)
 	
 	# Only show "Quit to Map" if we are in a GameScene
 	quit_map_btn.visible = get_tree().current_scene.name == "GameScene"
@@ -35,6 +39,9 @@ func _on_quit_map_pressed() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://src/scenes/MapScene.tscn")
 	queue_free()
+
+func _on_autoplay_toggled(enabled: bool) -> void:
+	RunManager.set_autoplay_enabled(enabled)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

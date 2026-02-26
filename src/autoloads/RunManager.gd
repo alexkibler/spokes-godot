@@ -7,15 +7,22 @@ signal run_started
 # signal edge_completed
 signal modifiers_changed
 signal autoplay_changed(enabled: bool)
+signal item_discovered(item_id: String)
 
 var run_data: Dictionary = {}
 var is_active_run: bool = false
 var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
+var active_challenge: Dictionary = {}
 
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
 	autoplay_changed.emit(autoplay_enabled)
+
+func set_autoplay_enabled(enabled: bool) -> void:
+	if autoplay_enabled != enabled:
+		autoplay_enabled = enabled
+		autoplay_changed.emit(autoplay_enabled)
 
 func start_new_run(run_length: int, total_distance_km: float, difficulty: String, ftp_w: int, weight_kg: float, units: String) -> void:
 	run_data = {
@@ -66,6 +73,14 @@ func is_edge_traversable(edge: Dictionary) -> bool:
 
 func get_run() -> Dictionary:
 	return run_data
+
+func get_absolute_max_grade() -> float:
+	var diff = run_data.get("difficulty", "normal")
+	match diff:
+		"easy": return 0.05
+		"normal": return 0.07
+		"hard": return 0.10
+	return 0.07
 
 func export_data() -> Dictionary:
 	return run_data
@@ -187,70 +202,86 @@ func get_best_reward(rewards: Array) -> Dictionary:
 	var best_r = rewards[0]
 	var max_score = -999.0
 	
-	var current_node_id = run_data.get("currentNodeId", "")
-	var current_node = null
-	for n in run_data["nodes"]:
-		if n["id"] == current_node_id:
-			current_node = n
-			break
-			
-	# Identify current biome/spoke
-	var current_spoke = "plains"
-	if current_node:
-		current_spoke = current_node.get("metadata", {}).get("spokeId", "plains")
-
 	for r in rewards:
-		var score = 0.0
-		
-		# Base score by rarity
-		match r.get("rarity", "common"):
-			"common": score += 10.0
-			"uncommon": score += 25.0
-			"rare": score += 50.0
-			
-		var id = r["id"]
-		
-		# Heuristics: Power is high priority early on
-		if id.contains("power"):
-			score += 15.0
-			if run_data["visitedNodeIds"].size() < 15:
-				score += 10.0
-				
-		# Heuristics: Weight reduction for climbing biomes
-		if id.contains("weight"):
-			if current_spoke == "mountain" or current_spoke == "canyon":
-				score += 25.0
-			else:
-				score += 8.0
-				
-		# Heuristics: Aero for flat/fast biomes
-		if id.contains("aero"):
-			if current_spoke == "plains" or current_spoke == "coast":
-				score += 18.0
-			else:
-				score += 12.0
-				
-		# Items are usually better than raw stat boosts
-		if id.contains("item_"):
-			score += 15.0
-			
+		var score = _compute_reward_value(r)
 		if score > max_score:
 			max_score = score
 			best_r = r
 			
 	return best_r
 
-func spend_gold(amount: int) -> bool:
-	if run_data["gold"] >= amount:
-		run_data["gold"] -= amount
-		return true
-	return false
+func _compute_reward_value(r: Dictionary) -> float:
+	var benefit = _get_reward_net_benefit(r)
+	
+	# Penalize duplicates/downgrades
+	if benefit <= 0:
+		return -100.0
+		
+	# Score is the net benefit scaled for readability
+	var score = benefit * 100.0 
+	
+	# Add rarity as a tie-breaker
+	match r.get("rarity", "common"):
+		"common": score += 1.0
+		"uncommon": score += 2.0
+		"rare": score += 5.0
+		
+	return score
 
-func add_gold(amount: int) -> void:
-	run_data["gold"] += amount
+func _get_reward_net_benefit(r: Dictionary) -> float:
+	var reward_id = r["id"]
+	var is_item = reward_id.begins_with("item_")
+	
+	if is_item:
+		var item_id = reward_id.replace("item_", "")
+		var item_def = ContentRegistry.get_item(item_id)
+		
+		# Already in inventory? Worthless for autoplay
+		if item_id in run_data["inventory"]: return -1.0
+		
+		var slot = item_def.get("slot", "none")
+		var current_item_id = run_data["equipped"].get(slot, "")
+		
+		if current_item_id != "":
+			if current_item_id == item_id: return -1.0
+			var current_def = ContentRegistry.get_item(current_item_id)
+			return _compare_item_stats(item_def, current_def)
+		else:
+			# Empty slot, compare against baseline
+			return _compare_item_stats(item_def, {})
+	else:
+		# Stat boost. Compare against baseline (0.0 benefit)
+		return _compare_item_stats(r, {})
+
+func _compare_item_stats(new_def: Dictionary, old_def: Dictionary) -> float:
+	var benefit = 0.0
+	var n_mod = new_def.get("modifier", {})
+	var o_mod = old_def.get("modifier", {})
+	
+	# Power: 10x Weighting (1% = 0.1 benefit)
+	benefit += (n_mod.get("powerMult", 1.0) - o_mod.get("powerMult", 1.0)) * 10.0
+	# Weight: 6x Weighting (1% = 0.06 benefit)
+	benefit += (o_mod.get("weightMult", 1.0) - n_mod.get("weightMult", 1.0)) * 6.0
+	# Aero: 8x Weighting (1% = 0.08 benefit)
+	benefit += (n_mod.get("dragReduction", 0.0) - o_mod.get("dragReduction", 0.0)) * 8.0
+	
+	return benefit
 
 func add_to_inventory(item_id: String) -> void:
 	run_data["inventory"].append(item_id)
+	
+	if autoplay_enabled:
+		var def = ContentRegistry.get_item(item_id)
+		if def.has("slot"):
+			var current = run_data["equipped"].get(def["slot"], "")
+			if current == "":
+				equip_item(item_id)
+			else:
+				var current_def = ContentRegistry.get_item(current)
+				if _compare_item_stats(def, current_def) > 0:
+					equip_item(item_id)
+	else:
+		item_discovered.emit(item_id)
 
 func equip_item(item_id: String) -> bool:
 	var def = ContentRegistry.get_item(item_id)
@@ -315,3 +346,12 @@ func apply_modifier(delta: Dictionary, label: String = "") -> void:
 		run_data["modifierLog"].append(log_entry)
 		
 	modifiers_changed.emit()
+
+func spend_gold(amount: int) -> bool:
+	if run_data["gold"] >= amount:
+		run_data["gold"] -= amount
+		return true
+	return false
+
+func add_gold(amount: int) -> void:
+	run_data["gold"] += amount

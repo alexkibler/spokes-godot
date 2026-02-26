@@ -8,40 +8,65 @@ signal reward_selected
 @onready var card_container: HBoxContainer = $MarginContainer/VBoxContainer/CardContainer
 
 var current_rewards: Array = []
+var is_autoplay_selecting: bool = false
 
 func _ready() -> void:
 	# Pick 3 random rewards
 	current_rewards = ContentRegistry.get_loot_pool(3)
 	_render_cards()
 	
-	if RunManager.autoplay_enabled:
-		var best_r = RunManager.get_best_reward(current_rewards)
-		var best_idx = 0
-		for i in range(current_rewards.size()):
-			if current_rewards[i]["id"] == best_r["id"]:
-				best_idx = i
-				break
-				
-		# Add indicator after cards are rendered
+	RunManager.autoplay_changed.connect(_on_autoplay_changed)
+	_check_autoplay()
+
+func _on_autoplay_changed(enabled: bool) -> void:
+	if enabled:
+		_check_autoplay()
+
+func _check_autoplay() -> void:
+	if not RunManager.autoplay_enabled or is_autoplay_selecting:
+		return
+		
+	var best_r = RunManager.get_best_reward(current_rewards)
+	if best_r.is_empty(): return
+	
+	is_autoplay_selecting = true
+	var best_idx = 0
+	for i in range(current_rewards.size()):
+		if current_rewards[i]["id"] == best_r["id"]:
+			best_idx = i
+			break
+			
+	# Add indicator after cards are rendered
+	if card_container.get_child_count() > best_idx:
+		_start_autoplay_timer(best_idx, best_r["id"])
+	else:
+		# Wait for render
 		get_tree().process_frame.connect(func():
 			if card_container.get_child_count() > best_idx:
-				var target_card = card_container.get_child(best_idx)
-				var pb = ProgressBar.new()
-				pb.show_percentage = false
-				pb.custom_minimum_size.y = 8
-				pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				pb.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-				target_card.add_child(pb)
-				
-				var tween = create_tween()
-				tween.tween_property(pb, "value", 100.0, 2.0).from(0.0)
+				_start_autoplay_timer(best_idx, best_r["id"])
 		, CONNECT_ONE_SHOT)
 
-		# Auto-pick best card after delay
-		get_tree().create_timer(2.0).timeout.connect(func():
-			if is_inside_tree() and not best_r.is_empty():
-				_on_card_pressed(best_r["id"])
-		)
+func _start_autoplay_timer(idx: int, reward_id: String) -> void:
+	var target_card = card_container.get_child(idx)
+	var pb = ProgressBar.new()
+	pb.show_percentage = false
+	pb.custom_minimum_size.y = 8
+	pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pb.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	target_card.add_child(pb)
+	
+	var tween = create_tween()
+	tween.tween_property(pb, "value", 100.0, 2.0).from(0.0)
+
+	# Auto-pick best card after delay
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if is_inside_tree() and RunManager.autoplay_enabled:
+			_on_card_pressed(reward_id)
+		else:
+			# If autoplay was disabled during the timer, cleanup
+			is_autoplay_selecting = false
+			pb.queue_free()
+	)
 
 func _render_cards() -> void:
 	# Clear existing

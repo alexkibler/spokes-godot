@@ -13,13 +13,13 @@ Tests use the **GUT (Godot Unit Test)** framework (`addons/gut/`). Tests live in
 To run tests, open the project in the Godot editor and use the GUT panel, or run headlessly:
 
 ```sh
-# Run all tests headlessly (adjust path to your Godot binary)
-godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+# Run all tests headlessly
+"/Volumes/1TB/External Applications/Godot.app/Contents/MacOS/Godot" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
 ```
 
 To run a single test file:
 ```sh
-godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_cyclist_physics.gd -gexit
+"/Volumes/1TB/External Applications/Godot.app/Contents/MacOS/Godot" --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_cyclist_physics.gd -gexit
 ```
 
 Test files: `test_cyclist_physics.gd`, `test_course_profile.gd`, `test_run_manager.gd`, `test_map_generator.gd`, `test_units.gd`, `test_elite_challenge.gd`, `test_fit_writer.gd`.

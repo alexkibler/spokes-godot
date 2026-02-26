@@ -8,7 +8,7 @@ const ELITE_CHALLENGES = [
 	{
 		"id": "sustained_threshold",
 		"title": "Threshold Push",
-		"flavorText": "A steep switchback cuts across the ridge. A local rival blocks the road and sneers: "Bet you can't hold threshold the whole way up."",
+		"flavorText": "A steep switchback cuts across the ridge. A local rival blocks the road and sneers: \"Bet you can't hold threshold the whole way up.\"",
 		"conditionText": "Complete this ride with average power above 125% of your FTP ({ftp_watts} W).",
 		"condition": {"type": "avg_power_above_ftp_pct", "ftpMultiplier": 1.25},
 		"reward": {"type": "gold", "goldAmount": 120, "description": "earn 120 gold"}
@@ -16,7 +16,7 @@ const ELITE_CHALLENGES = [
 	{
 		"id": "sprint_peak",
 		"title": "Sprint Finish",
-		"flavorText": "The road levels out and a crowd lines the barriers. A hand-painted sign reads: "Town sprint — 200m." Your legs are fresh. Your ego is not.",
+		"flavorText": "The road levels out and a crowd lines the barriers. A hand-painted sign reads: \"Town sprint — 200m.\" Your legs are fresh. Your ego is not.",
 		"conditionText": "Hit a peak power above 250% of your FTP ({ftp_watts} W) at any point during this ride.",
 		"condition": {"type": "peak_power_above_ftp_pct", "ftpMultiplier": 2.50},
 		"reward": {"type": "item", "item": "tailwind", "description": "receive a Tailwind"}
@@ -24,7 +24,7 @@ const ELITE_CHALLENGES = [
 	{
 		"id": "no_stop",
 		"title": "Clean Ascent",
-		"flavorText": "A rain-slicked cobbled climb stretches ahead. A chalk message on the tarmac reads: "The old code demands you never unclip."",
+		"flavorText": "A rain-slicked cobbled climb stretches ahead. A chalk message on the tarmac reads: \"The old code demands you never unclip.\"",
 		"conditionText": "Complete this ride without coming to a full stop at any point.",
 		"condition": {"type": "complete_no_stop"},
 		"reward": {"type": "gold", "goldAmount": 40, "description": "earn 40 gold"}
@@ -40,7 +40,7 @@ const ELITE_CHALLENGES = [
 	{
 		"id": "vo2max_ramp",
 		"title": "Red Zone Ramp",
-		"flavorText": "The gradient ticks upward with every metre. A painted line on the road reads: "VO₂ or go home." Above it, someone has added: "Please go home."",
+		"flavorText": "The gradient ticks upward with every metre. A painted line on the road reads: \"VO₂ or go home.\" Above it, someone has added: \"Please go home.\"",
 		"conditionText": "Complete this ride with average power above 140% of your FTP ({ftp_watts} W).",
 		"condition": {"type": "avg_power_above_ftp_pct", "ftpMultiplier": 1.40},
 		"reward": {"type": "gold", "goldAmount": 200, "description": "earn 200 gold"}
@@ -69,11 +69,10 @@ static func evaluate_challenge(challenge: Dictionary, metrics: Dictionary) -> bo
 
 static func grant_challenge_reward(challenge: Dictionary) -> void:
 	var reward = challenge.get("reward", {})
-	var run_manager = Engine.get_main_loop().root.get_node("/root/RunManager")
 	if reward.get("type") == "gold":
-		run_manager.add_gold(reward.get("goldAmount", 0))
+		RunManager.add_gold(reward.get("goldAmount", 0))
 	elif reward.get("type") == "item":
-		run_manager.add_to_inventory(reward.get("item", ""))
+		RunManager.add_to_inventory(reward.get("item", ""))
 
 static func format_challenge_text(challenge: Dictionary, ftp_w: int) -> String:
 	var text = challenge.get("conditionText", "")
@@ -83,7 +82,7 @@ static func format_challenge_text(challenge: Dictionary, ftp_w: int) -> String:
 		text = text.replace("{ftp_watts}", str(threshold))
 	return text
 
-static func generate_elite_course_profile(challenge: Dictionary) -> Dictionary:
+static func generate_elite_course_profile(challenge: Dictionary, max_grade_limit: float = 0.10) -> Dictionary:
 	var segments = []
 	match challenge.get("id", ""):
 		"sustained_threshold":
@@ -126,7 +125,11 @@ static func generate_elite_course_profile(challenge: Dictionary) -> Dictionary:
 				{"distanceM": 200,  "grade": 0,    "surface": "asphalt"}
 			]
 		_:
-			return CourseProfile.generate_course_profile(2, 0.06, "asphalt")
+			return CourseProfile.generate_course_profile(2, max_grade_limit, "asphalt")
+	
+	# Clamp grades
+	for s in segments:
+		s["grade"] = clamp(s["grade"], -max_grade_limit, max_grade_limit)
 	
 	var total_dist = 0.0
 	for s in segments: total_dist += s["distanceM"]

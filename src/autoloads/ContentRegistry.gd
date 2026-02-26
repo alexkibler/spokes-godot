@@ -99,6 +99,7 @@ func bootstrap() -> void:
 		"label": "Leg Day",
 		"description": "+4% Power output",
 		"rarity": "common",
+		"modifier": {"powerMult": 1.04},
 		"apply": func(rm): rm.apply_modifier({"powerMult": 1.04}, "Leg Day")
 	})
 	
@@ -107,6 +108,7 @@ func bootstrap() -> void:
 		"label": "Slammed Stem",
 		"description": "-2% Aerodynamic drag",
 		"rarity": "common",
+		"modifier": {"dragReduction": 0.02},
 		"apply": func(rm): rm.apply_modifier({"dragReduction": 0.02}, "Slammed Stem")
 	})
 	
@@ -115,6 +117,7 @@ func bootstrap() -> void:
 		"label": "Carbon Cages",
 		"description": "-3% Total system weight",
 		"rarity": "common",
+		"modifier": {"weightMult": 0.97},
 		"apply": func(rm): rm.apply_modifier({"weightMult": 0.97}, "Carbon Cages")
 	})
 

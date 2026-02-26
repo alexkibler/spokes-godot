@@ -48,6 +48,13 @@ var ride_start_time: int = 0
 
 var is_dev_build: bool = false
 
+# Elite Challenge Tracking
+var challenge_power_sum: float = 0.0
+var challenge_tick_count: int = 0
+var challenge_peak_power: float = 0.0
+var challenge_ever_stopped: bool = false
+var challenge_start_time: int = 0
+
 func _ready() -> void:
 	ride_start_time = Time.get_ticks_msec()
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
@@ -68,16 +75,16 @@ func _ready() -> void:
 	
 	# Initialize Course from Active Edge
 	if RunManager.is_active_run:
+		run_modifiers = RunManager.run_data["modifiers"]
 		var ae = RunManager.get_active_edge()
 		if not ae.is_empty():
 			course = ae["profile"]
 			current_surface = CourseProfile.get_surface_at_distance(course, 0.0)
 			_update_physics_for_surface_and_grade(0.0, current_surface)
 			_apply_biome_theming(ae)
-		run_modifiers = RunManager.run_data["modifiers"]
 	else:
-		course = CourseProfile.generate_course_profile(5.0, 0.05)
 		run_modifiers = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
+		course = CourseProfile.generate_course_profile(5.0, 0.05)
 		current_surface = "asphalt"
 		_update_physics_for_surface_and_grade(0.0, current_surface)
 
@@ -93,6 +100,8 @@ func _ready() -> void:
 	
 	# Spawn Ghosts
 	_spawn_ghosts()
+
+	RunManager.item_discovered.connect(_on_item_discovered)
 
 	# Dev-only speed control
 	var hostname = JavaScriptBridge.eval("window.location.hostname")
@@ -191,10 +200,9 @@ func _get_elevation_at(p_course: Dictionary, p_dist: float) -> float:
 func _physics_process(delta: float) -> void:
 	if is_complete: return
 	
-	# 0. Autoplay Power (only if no real trainer is active)
-	if RunManager.autoplay_enabled and TrainerService.is_mock_mode:
-		var target_power = float(RunManager.run_data.get("ftpW", 200.0))
-		latest_power = target_power
+	# 0. Mock Power Simulation (if no real trainer is active)
+	if TrainerService.is_mock_mode:
+		latest_power = float(RunManager.run_data.get("ftpW", 200.0))
 	
 	# 1. Update Drafting Logic
 	var best_draft = 0.0
@@ -226,6 +234,14 @@ func _physics_process(delta: float) -> void:
 	var new_grade = CourseProfile.get_grade_at_distance(course, distance_m)
 	var new_surface = CourseProfile.get_surface_at_distance(course, distance_m)
 	
+	# Track metrics for Elite Challenges
+	if not RunManager.active_challenge.is_empty():
+		challenge_power_sum += latest_power
+		challenge_tick_count += 1
+		challenge_peak_power = max(challenge_peak_power, latest_power)
+		if velocity_ms < 0.1 and distance_m > 10.0: # Ignore very start
+			challenge_ever_stopped = true
+	
 	if new_grade != current_grade or new_surface != current_surface:
 		_update_physics_for_surface_and_grade(new_grade, new_surface)
 		if new_surface != current_surface:
@@ -234,21 +250,32 @@ func _physics_process(delta: float) -> void:
 	var draft_mods = run_modifiers.duplicate()
 	draft_mods["dragReduction"] = min(0.99, draft_mods.get("dragReduction", 0.0) + player_draft_factor)
 	
+	var power_mult = run_modifiers.get("powerMult", 1.0)
 	var effective_power = latest_power
 	if surge_timer > 0:
 		effective_power *= SURGE_POWER_MULT
 	elif recovery_timer > 0:
 		effective_power *= RECOVERY_POWER_MULT
 	
+	# Net power for HUD display and physics (includes stat boosts)
+	var net_power = effective_power * power_mult
+	
 	if not TrainerService.is_mock_mode:
 		# Directly tie in-game speed to the physical flywheel's speed (bypassing virtual inertia)
-		# We apply the surge/recovery multiplier to the speed itself so it actually feels like an "attack"
+		# We apply the surge/recovery multiplier and stat boosts to the speed
 		var target_speed = raw_trainer_speed_ms
-		if surge_timer > 0: target_speed *= 1.15 # 15% speed boost during attack
-		elif recovery_timer > 0: target_speed *= 0.90 # 10% speed penalty during recovery
+		
+		# Apply surge/recovery speed adjustments
+		if surge_timer > 0: target_speed *= 1.15
+		elif recovery_timer > 0: target_speed *= 0.90
+		
+		# Apply stat boost speed adjustment (Direct 1:1 boost)
+		target_speed *= power_mult
 		
 		velocity_ms += (target_speed - velocity_ms) * delta * 5.0
 	else:
+		# Mock mode uses the pure physics engine
+		# Note: CyclistPhysics.calculate_acceleration also applies powerMult from draft_mods
 		var acceleration = CyclistPhysics.calculate_acceleration(
 			effective_power, 
 			velocity_ms, 
@@ -306,7 +333,7 @@ func _physics_process(delta: float) -> void:
 		_on_ride_complete()
 	
 	# 6. Update UI & Visuals
-	_update_hud(effective_power)
+	_update_hud(net_power)
 	_update_visuals(delta)
 	
 	if Engine.get_physics_frames() % 60 == 0:
@@ -411,10 +438,20 @@ func _create_speed_control() -> void:
 		btn.pressed.connect(func(): Engine.time_scale = speed)
 		hbox.add_child(btn)
 
+func _on_item_discovered(item_id: String) -> void:
+	if RunManager.autoplay_enabled: return
+	
+	var overlay = load("res://src/ui/DiscoveryOverlay.tscn").instantiate()
+	add_child(overlay)
+	overlay.setup(item_id)
+
 func _on_ride_complete() -> void:
 	is_complete = true
 	velocity_ms = 0.0
 	Engine.time_scale = 1.0
+	
+	if RunManager.item_discovered.is_connected(_on_item_discovered):
+		RunManager.item_discovered.disconnect(_on_item_discovered)
 	
 	var run = RunManager.get_run()
 	var current_node = null
@@ -425,6 +462,25 @@ func _on_ride_complete() -> void:
 			
 	var is_first_clear = RunManager.complete_active_edge()
 	
+	# Evaluate Elite Challenge
+	if not RunManager.active_challenge.is_empty():
+		var metrics = {
+			"avgPowerW": challenge_power_sum / max(1, challenge_tick_count),
+			"peakPowerW": challenge_peak_power,
+			"everStopped": challenge_ever_stopped,
+			"elapsedSeconds": (Time.get_ticks_msec() - ride_start_time) / 1000.0,
+			"ftpW": RunManager.run_data.get("ftpW", 200)
+		}
+		
+		var success = EliteChallenge.evaluate_challenge(RunManager.active_challenge, metrics)
+		if success:
+			EliteChallenge.grant_challenge_reward(RunManager.active_challenge)
+			print("[ELITE] Challenge Succeeded!")
+		else:
+			print("[ELITE] Challenge Failed.")
+			
+		RunManager.active_challenge = {}
+
 	if current_node and current_node["type"] == "finish":
 		get_tree().change_scene_to_file("res://src/scenes/VictoryScene.tscn")
 		return

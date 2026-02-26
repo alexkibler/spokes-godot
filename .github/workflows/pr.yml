@@ -14,7 +14,7 @@ jobs:
           lfs: true
 
       - name: Run GUT Tests
-        uses: ceceppa/godot-gut-ci@v0.3.0
+        uses: ceceppa/godot-gut-ci@main
         with:
           godot_version: '4.3'
           gut_params: "-gdir=res://tests -ginclude_subdirs -gexit"

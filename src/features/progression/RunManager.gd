@@ -6,7 +6,7 @@ var run_data: Dictionary = {}
 var is_active_run: bool = false
 var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
-var active_challenge: Variant = null
+var active_challenge: EliteChallenge = null
 var pending_overlay: String = "" # "shop", "event", or ""
 
 func reset() -> void:
@@ -61,10 +61,10 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 
 func is_edge_traversable(edge: Dictionary) -> bool:
 	if edge.get("requiresAllMedals", false):
-		var medals_held = 0
-		for item in run_data["inventory"]:
+		var medals_held: int = 0
+		for item: String in run_data["inventory"]:
 			if item.begins_with("medal_"): medals_held += 1
-		var medals_needed = run_data["runLength"]
+		var medals_needed: int = run_data["runLength"]
 		return medals_held >= medals_needed
 	
 	if edge.has("requiredMedal"):
@@ -76,7 +76,7 @@ func get_run() -> Dictionary:
 	return run_data
 
 func get_absolute_max_grade() -> float:
-	var diff = run_data.get("difficulty", "normal")
+	var diff: String = run_data.get("difficulty", "normal")
 	match diff:
 		"easy": return 0.05
 		"normal": return 0.07
@@ -87,8 +87,8 @@ func export_data() -> Dictionary:
 	return run_data
 
 func set_active_edge(edge: Dictionary) -> void:
-	var current_id = run_data.get("currentNodeId", "")
-	var processed_edge = edge.duplicate()
+	var current_id: String = run_data.get("currentNodeId", "")
+	var processed_edge: Dictionary = edge.duplicate()
 	
 	# If we are going backwards (from 'to' to 'from'), invert the profile
 	if current_id == edge["to"]:
@@ -109,25 +109,25 @@ func get_active_edge() -> Dictionary:
 func get_next_autoplay_node() -> Dictionary:
 	if not is_active_run or run_data.get("currentNodeId", "") == "": return {}
 	
-	var current_id = run_data["currentNodeId"]
+	var current_id: String = run_data["currentNodeId"]
 	var current_node = null
-	for n in run_data["nodes"]:
+	for n: Dictionary in run_data["nodes"]:
 		if n["id"] == current_id:
 			current_node = n
 			break
 	if not current_node: return {}
 	
 	# Identify valid next steps (neighbors)
-	var neighbors = []
-	for edge in run_data["edges"]:
-		var target_id = ""
+	var neighbors: Array[Dictionary] = []
+	for edge: Dictionary in run_data["edges"]:
+		var target_id: String = ""
 		if edge["from"] == current_id: 
 			if is_edge_traversable(edge): target_id = edge["to"]
 		elif edge["to"] == current_id: 
 			if is_edge_traversable(edge): target_id = edge["from"]
 		
 		if target_id != "":
-			for n in run_data["nodes"]:
+			for n: Dictionary in run_data["nodes"]:
 				if n["id"] == target_id:
 					neighbors.append(n)
 					break
@@ -136,13 +136,13 @@ func get_next_autoplay_node() -> Dictionary:
 	
 	# Logic: Path toward the "Finish" node, but only if all medals are held.
 	# Otherwise, path toward unvisited "Boss" nodes.
-	var medals_held = 0
-	for item in run_data["inventory"]:
+	var medals_held: int = 0
+	for item: String in run_data["inventory"]:
 		if item.begins_with("medal_"): medals_held += 1
-	var medals_needed = run_data["runLength"]
+	var medals_needed: int = run_data["runLength"]
 	
-	var targets = []
-	for n in run_data["nodes"]:
+	var targets: Array[Dictionary] = []
+	for n: Dictionary in run_data["nodes"]:
 		if n["type"] == "finish" and medals_held >= medals_needed:
 			targets.append(n)
 		elif n["type"] == "boss" and not n["id"] in run_data["visitedNodeIds"]:
@@ -150,17 +150,17 @@ func get_next_autoplay_node() -> Dictionary:
 			
 	if targets.is_empty():
 		# Fallback: just pick the first unvisited neighbor or any neighbor
-		for n in neighbors:
+		for n: Dictionary in neighbors:
 			if not n["id"] in run_data["visitedNodeIds"]: return n
 		return neighbors[0]
 		
 	# Simple heuristic: Pick neighbor that reduces distance to the nearest target
-	var best_neighbor = neighbors[0]
-	var min_dist = 999.0
+	var best_neighbor: Dictionary = neighbors[0]
+	var min_dist: float = 999.0
 	
-	for n in neighbors:
-		for t in targets:
-			var d = Vector2(n["x"], n["y"]).distance_to(Vector2(t["x"], t["y"]))
+	for n: Dictionary in neighbors:
+		for t: Dictionary in targets:
+			var d: float = Vector2(n["x"], n["y"]).distance_to(Vector2(t["x"], t["y"]))
 			if d < min_dist:
 				min_dist = d
 				best_neighbor = n
@@ -168,25 +168,25 @@ func get_next_autoplay_node() -> Dictionary:
 	return best_neighbor
 
 func complete_active_edge() -> bool:
-	var ae = run_data.get("active_edge")
+	var ae: Dictionary = run_data.get("active_edge")
 	return complete_node_visit(ae)
 
 func complete_node_visit(edge: Dictionary) -> bool:
-	if not edge: return false
+	if edge.is_empty(): return false
 	
 	# Find destination node
-	var dest_id = edge["to"]
+	var dest_id: String = edge["to"]
 	if edge["to"] == run_data["currentNodeId"]:
 		dest_id = edge["from"]
 		
 	var dest_node = null
-	for n in run_data["nodes"]:
+	for n: Dictionary in run_data["nodes"]:
 		if n["id"] == dest_id:
 			dest_node = n
 			break
 			
 	# Award gold
-	var reward_gold = 25
+	var reward_gold: int = 25
 	if dest_node:
 		if dest_node["type"] == "boss": reward_gold = 100
 		elif dest_node["type"] == "finish": reward_gold = 500
@@ -194,8 +194,8 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	
 	# Award Medals for Bosses
 	if dest_node and dest_node["type"] == "boss":
-		var spoke_id = dest_node.get("metadata", {}).get("spokeId", "unknown")
-		var medal_id = "medal_" + spoke_id
+		var spoke_id: String = dest_node.get("metadata", {}).get("spokeId", "unknown")
+		var medal_id: String = "medal_" + spoke_id
 		if not medal_id in run_data["inventory"]:
 			run_data["inventory"].append(medal_id)
 			print("[RUN] Awarded Medal: ", medal_id)
@@ -214,14 +214,14 @@ func complete_node_visit(edge: Dictionary) -> bool:
 			
 	return false
 
-func get_best_reward(rewards: Array) -> Dictionary:
+func get_best_reward(rewards: Array[Dictionary]) -> Dictionary:
 	if rewards.is_empty(): return {}
 	
-	var best_r = rewards[0]
-	var max_score = -999.0
+	var best_r: Dictionary = rewards[0]
+	var max_score: float = -999.0
 	
-	for r in rewards:
-		var score = _compute_reward_value(r)
+	for r: Dictionary in rewards:
+		var score: float = _compute_reward_value(r)
 		if score > max_score:
 			max_score = score
 			best_r = r
@@ -229,14 +229,14 @@ func get_best_reward(rewards: Array) -> Dictionary:
 	return best_r
 
 func _compute_reward_value(r: Dictionary) -> float:
-	var benefit = _get_reward_net_benefit(r)
+	var benefit: float = _get_reward_net_benefit(r)
 	
 	# Penalize duplicates/downgrades
 	if benefit <= 0:
 		return -100.0
 		
 	# Score is the net benefit scaled for readability
-	var score = benefit * 100.0 
+	var score: float = benefit * 100.0
 	
 	# Add rarity as a tie-breaker
 	match r.get("rarity", "common"):
@@ -247,22 +247,22 @@ func _compute_reward_value(r: Dictionary) -> float:
 	return score
 
 func _get_reward_net_benefit(r: Dictionary) -> float:
-	var reward_id = r["id"]
-	var is_item = reward_id.begins_with("item_")
+	var reward_id: String = r["id"]
+	var is_item: bool = reward_id.begins_with("item_")
 	
 	if is_item:
-		var item_id = reward_id.replace("item_", "")
-		var item_def = ContentRegistry.get_item(item_id)
+		var item_id: String = reward_id.replace("item_", "")
+		var item_def: Dictionary = ContentRegistry.get_item(item_id)
 		
 		# Already in inventory? Worthless for autoplay
 		if item_id in run_data["inventory"]: return -1.0
 		
-		var slot = item_def.get("slot", "none")
-		var current_item_id = run_data["equipped"].get(slot, "")
+		var slot: String = item_def.get("slot", "none")
+		var current_item_id: String = run_data["equipped"].get(slot, "")
 		
 		if current_item_id != "":
 			if current_item_id == item_id: return -1.0
-			var current_def = ContentRegistry.get_item(current_item_id)
+			var current_def: Dictionary = ContentRegistry.get_item(current_item_id)
 			return _compare_item_stats(item_def, current_def)
 		else:
 			# Empty slot, compare against baseline
@@ -272,9 +272,9 @@ func _get_reward_net_benefit(r: Dictionary) -> float:
 		return _compare_item_stats(r, {})
 
 func _compare_item_stats(new_def: Dictionary, old_def: Dictionary) -> float:
-	var benefit = 0.0
-	var n_mod = new_def.get("modifier", {})
-	var o_mod = old_def.get("modifier", {})
+	var benefit: float = 0.0
+	var n_mod: Dictionary = new_def.get("modifier", {})
+	var o_mod: Dictionary = old_def.get("modifier", {})
 	
 	# Power: 10x Weighting (1% = 0.1 benefit)
 	benefit += (n_mod.get("powerMult", 1.0) - o_mod.get("powerMult", 1.0)) * 10.0
@@ -290,26 +290,26 @@ func add_to_inventory(item_id: String) -> void:
 	
 	SignalBus.inventory_changed.emit()
 	if autoplay_enabled:
-		var def = ContentRegistry.get_item(item_id)
+		var def: Dictionary = ContentRegistry.get_item(item_id)
 		if def.has("slot"):
-			var current = run_data["equipped"].get(def["slot"], "")
+			var current: String = run_data["equipped"].get(def["slot"], "")
 			if current == "":
 				equip_item(item_id)
 			else:
-				var current_def = ContentRegistry.get_item(current)
+				var current_def: Dictionary = ContentRegistry.get_item(current)
 				if _compare_item_stats(def, current_def) > 0:
 					equip_item(item_id)
 	else:
 		SignalBus.item_discovered.emit(item_id)
 
 func equip_item(item_id: String) -> bool:
-	var def = ContentRegistry.get_item(item_id)
+	var def: Dictionary = ContentRegistry.get_item(item_id)
 	if not def.has("slot"): return false
 	
-	var idx = run_data["inventory"].find(item_id)
+	var idx: int = run_data["inventory"].find(item_id)
 	if idx == -1: return false
 	
-	var slot = def["slot"]
+	var slot: String = def["slot"]
 	# Unequip current if any
 	if run_data["equipped"].has(slot):
 		unequip_item(slot)
@@ -321,23 +321,23 @@ func equip_item(item_id: String) -> bool:
 	
 	SignalBus.inventory_changed.emit()
 	if def.has("modifier"):
-		var label = def.get("label", item_id)
+		var label: String = def.get("label", item_id)
 		apply_modifier(def["modifier"], label + " (equipped)")
 		
 	return true
 
 func unequip_item(slot: String) -> String:
-	var item_id = run_data["equipped"].get(slot, "")
+	var item_id: String = run_data["equipped"].get(slot, "")
 	if item_id == "": return ""
 	
-	var def = ContentRegistry.get_item(item_id)
+	var def: Dictionary = ContentRegistry.get_item(item_id)
 	
 	if def.has("modifier"):
 		_reverse_modifier(def["modifier"])
 		# Remove from log
-		var label = def.get("label", item_id)
-		var log_label = label + " (equipped)"
-		for i in range(run_data["modifierLog"].size() - 1, -1, -1):
+		var label: String = def.get("label", item_id)
+		var log_label: String = label + " (equipped)"
+		for i: int in range(run_data["modifierLog"].size() - 1, -1, -1):
 			if run_data["modifierLog"][i]["label"] == log_label:
 				run_data["modifierLog"].remove_at(i)
 				break
@@ -349,7 +349,7 @@ func unequip_item(slot: String) -> String:
 	return item_id
 
 func _reverse_modifier(delta: Dictionary) -> void:
-	var m = run_data["modifiers"]
+	var m: Dictionary = run_data["modifiers"]
 	if delta.has("powerMult"): m["powerMult"] /= delta["powerMult"]
 	if delta.has("dragReduction"): m["dragReduction"] = max(0.0, m["dragReduction"] - delta["dragReduction"])
 	if delta.has("weightMult"): m["weightMult"] /= delta["weightMult"]
@@ -357,14 +357,14 @@ func _reverse_modifier(delta: Dictionary) -> void:
 
 func apply_modifier(delta: Dictionary, label: String = "") -> void:
 	if not is_active_run: return
-	var m = run_data["modifiers"]
+	var m: Dictionary = run_data["modifiers"]
 	if delta.has("powerMult"): m["powerMult"] *= delta["powerMult"]
 	if delta.has("dragReduction"): m["dragReduction"] = min(0.99, m["dragReduction"] + delta["dragReduction"])
 	if delta.has("weightMult"): m["weightMult"] = max(0.01, m["weightMult"] * delta["weightMult"])
 	if delta.has("crrMult"): m["crrMult"] = max(0.01, m["crrMult"] * delta["crrMult"])
 	
 	if label != "":
-		var log_entry = delta.duplicate()
+		var log_entry: Dictionary = delta.duplicate()
 		log_entry["label"] = label
 		run_data["modifierLog"].append(log_entry)
 		

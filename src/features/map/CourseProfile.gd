@@ -4,14 +4,14 @@ extends Resource
 # Port of CourseProfile.ts
 # Defines a cycling course as an ordered list of grade segments.
 
-const CRR_BY_SURFACE = {
+const CRR_BY_SURFACE: Dictionary = {
     "asphalt": 0.005, # smooth tarmac — baseline
     "gravel":  0.012, # packed gravel  — ~2.4× baseline
     "dirt":    0.020, # dirt track     — ~4×   baseline
     "mud":     0.040, # soft mud       — ~8×   baseline
 }
 
-@export var segments: Array = [] ## Array of Dictionaries {distanceM, grade, surface}
+@export var segments: Array[Dictionary] = [] ## Array of Dictionaries {distanceM, grade, surface}
 @export var total_distance_m: float = 0.0
 
 static func get_crr_for_surface(surface: String = "asphalt") -> float:
@@ -20,10 +20,10 @@ static func get_crr_for_surface(surface: String = "asphalt") -> float:
 func get_grade_at_distance(distance_m: float) -> float:
     if total_distance_m <= 0: return 0.0
     
-    var wrapped = fmod(distance_m, total_distance_m)
+    var wrapped: float = fmod(distance_m, total_distance_m)
     if wrapped < 0: wrapped += total_distance_m
-    var remaining = wrapped
-    for segment in segments:
+    var remaining: float = wrapped
+    for segment: Dictionary in segments:
         if remaining < segment["distanceM"]:
             return segment["grade"]
         remaining -= segment["distanceM"]
@@ -32,17 +32,17 @@ func get_grade_at_distance(distance_m: float) -> float:
 func get_elevation_at_distance(distance_m: float) -> float:
     if total_distance_m <= 0: return 0.0
     
-    var num_wraps = floor(distance_m / total_distance_m)
-    var wrapped = distance_m - (num_wraps * total_distance_m)
+    var num_wraps: float = floor(distance_m / total_distance_m)
+    var wrapped: float = distance_m - (num_wraps * total_distance_m)
     
-    var total_elev = 0.0
-    for segment in segments:
+    var total_elev: float = 0.0
+    for segment: Dictionary in segments:
         total_elev += segment["distanceM"] * segment["grade"]
         
-    var remaining = wrapped
-    var current_wrap_elev = 0.0
-    for segment in segments:
-        var dist = min(remaining, segment["distanceM"])
+    var remaining: float = wrapped
+    var current_wrap_elev: float = 0.0
+    for segment: Dictionary in segments:
+        var dist: float = min(remaining, segment["distanceM"])
         current_wrap_elev += dist * segment["grade"]
         if remaining <= segment["distanceM"]: break
         remaining -= segment["distanceM"]
@@ -52,46 +52,46 @@ func get_elevation_at_distance(distance_m: float) -> float:
 func get_surface_at_distance(distance_m: float) -> String:
     if total_distance_m <= 0: return "asphalt"
     
-    var wrapped = fmod(distance_m, total_distance_m)
+    var wrapped: float = fmod(distance_m, total_distance_m)
     if wrapped < 0: wrapped += total_distance_m
-    var remaining = wrapped
-    for segment in segments:
+    var remaining: float = wrapped
+    for segment: Dictionary in segments:
         if remaining < segment["distanceM"]:
             return segment.get("surface", "asphalt")
         remaining -= segment["distanceM"]
     return "asphalt"
 
 static func generate_course_profile(distance_km: float, max_grade: float, surface: String = "asphalt") -> CourseProfile:
-    var total_m = distance_km * 1000.0
-    var flat_end_m = clamp(total_m * 0.05, 50.0, 1500.0)
+    var total_m: float = distance_km * 1000.0
+    var flat_end_m: float = clamp(total_m * 0.05, 50.0, 1500.0)
     
-    var new_segments = []
+    var new_segments: Array[Dictionary] = []
     new_segments.append({"distanceM": flat_end_m, "grade": 0.0, "surface": surface})
     
-    var budget_m = total_m - 2.0 * flat_end_m
-    var net_elev_m = 0.0
+    var budget_m: float = total_m - 2.0 * flat_end_m
+    var net_elev_m: float = 0.0
     
-    var seg_max = clamp(total_m * 0.04, 200.0, 2500.0)
-    var seg_min = max(100.0, seg_max * 0.35)
+    var seg_max: float = clamp(total_m * 0.04, 200.0, 2500.0)
+    var seg_min: float = max(100.0, seg_max * 0.35)
     
-    var mags = [max_grade * 0.25, max_grade * 0.50, max_grade * 0.75, max_grade]
+    var mags: Array[float] = [max_grade * 0.25, max_grade * 0.50, max_grade * 0.75, max_grade]
     
     while budget_m >= seg_min:
-        var hi = min(seg_max, budget_m - seg_min)
+        var hi: float = min(seg_max, budget_m - seg_min)
         if hi <= 0: break
-        var lo = min(seg_min, hi)
-        var length = lo + randf() * max(0.0, hi - lo)
+        var lo: float = min(seg_min, hi)
+        var length: float = lo + randf() * max(0.0, hi - lo)
         
-        var pressure = clamp(net_elev_m / (total_m * max_grade * 1.0), -1.0, 1.0)
-        var r = randf()
-        var s_sign = 0
+        var pressure: float = clamp(net_elev_m / (total_m * max_grade * 1.0), -1.0, 1.0)
+        var r: float = randf()
+        var s_sign: int = 0
         
         if pressure > 0.7: s_sign = -1
         elif pressure < -0.7: s_sign = 1
         elif r < 0.08: s_sign = 0
         else: s_sign = 1 if (r < 0.55 - pressure * 0.2) else -1
         
-        var grade = 0.0 if s_sign == 0 else s_sign * mags[randi() % mags.size()]
+        var grade: float = 0.0 if s_sign == 0 else s_sign * mags[randi() % mags.size()]
         
         new_segments.append({"distanceM": length, "grade": grade, "surface": surface})
         net_elev_m += length * grade
@@ -99,30 +99,30 @@ static func generate_course_profile(distance_km: float, max_grade: float, surfac
         
     if budget_m > 0:
         if new_segments.size() == 1:
-            var s_sign = 1 if randf() < 0.5 else -1
-            var grade = s_sign * mags[randi() % mags.size()]
+            var s_sign: int = 1 if randf() < 0.5 else -1
+            var grade: float = float(s_sign) * mags[randi() % mags.size()]
             new_segments.append({"distanceM": budget_m, "grade": grade, "surface": surface})
         else:
             new_segments[new_segments.size() - 1]["distanceM"] += budget_m
             
     new_segments.append({"distanceM": flat_end_m, "grade": 0.0, "surface": surface})
     
-    var final_total = 0.0
-    for s in new_segments: final_total += s["distanceM"]
+    var final_total: float = 0.0
+    for s: Dictionary in new_segments: final_total += s["distanceM"]
     
-    var profile = CourseProfile.new()
+    var profile: CourseProfile = CourseProfile.new()
     profile.segments = new_segments
     profile.total_distance_m = final_total
     return profile
 
 func invert_course_profile() -> CourseProfile:
-    var reversed_segments = []
+    var reversed_segments: Array[Dictionary] = []
     for i in range(segments.size() - 1, -1, -1):
-        var seg = segments[i].duplicate()
+        var seg: Dictionary = segments[i].duplicate()
         seg["grade"] = -seg["grade"]
         reversed_segments.append(seg)
         
-    var profile = CourseProfile.new()
+    var profile: CourseProfile = CourseProfile.new()
     profile.segments = reversed_segments
     profile.total_distance_m = total_distance_m
     return profile

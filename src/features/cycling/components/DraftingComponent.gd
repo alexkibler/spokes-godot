@@ -22,7 +22,7 @@ func update_drafting(my_distance_m: float, nearby_entities: Array) -> void:
 
 	var best_draft: float = 0.0
 
-	for entity in nearby_entities:
+	for entity: Variant in nearby_entities:
 		var other_dist: float = 0.0
 		var other_stats: CyclistStats = null
 
@@ -38,17 +38,17 @@ func update_drafting(my_distance_m: float, nearby_entities: Array) -> void:
 		if other_stats == null:
 			continue
 
-		var gap_behind = other_dist - my_distance_m # They are in front
-		var gap_ahead = my_distance_m - other_dist  # They are behind
+		var gap_behind: float = other_dist - my_distance_m # They are in front
+		var gap_ahead: float = my_distance_m - other_dist  # They are behind
 
 		# Benefit from entity in front (standard draft)
 		if gap_behind > 0 and gap_behind < stats.draft_max_distance_m:
-			var draft = DraftingPhysics.get_draft_factor(stats, gap_behind)
+			var draft: float = DraftingPhysics.get_draft_factor(stats, gap_behind)
 			best_draft = max(best_draft, draft)
 
 		# Benefit from entity behind (push effect)
 		if gap_ahead > 0 and gap_ahead < stats.leading_draft_distance_m:
-			var push = DraftingPhysics.get_leading_draft_factor(stats, gap_ahead)
+			var push: float = DraftingPhysics.get_leading_draft_factor(stats, gap_ahead)
 			best_draft = max(best_draft, push)
 
 	if abs(best_draft - current_draft_factor) > 0.001:

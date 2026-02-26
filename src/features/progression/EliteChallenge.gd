@@ -21,18 +21,18 @@ extends Resource
 @export var reward_description: String = ""
 
 static func create(data: Dictionary) -> EliteChallenge:
-    var c = EliteChallenge.new()
+    var c: EliteChallenge = EliteChallenge.new()
     c.id = data.get("id", "")
     c.title = data.get("title", "")
     c.flavor_text = data.get("flavorText", "")
     c.condition_text = data.get("conditionText", "")
 
-    var cond = data.get("condition", {})
+    var cond: Dictionary = data.get("condition", {})
     c.condition_type = cond.get("type", "")
     c.ftp_multiplier = cond.get("ftpMultiplier", 1.0)
     c.time_limit_seconds = float(cond.get("timeLimitSeconds", 0.0))
 
-    var rew = data.get("reward", {})
+    var rew: Dictionary = data.get("reward", {})
     c.reward_type = rew.get("type", "")
     c.reward_amount = rew.get("goldAmount", 0)
     c.reward_item = rew.get("item", "")
@@ -42,7 +42,7 @@ static func create(data: Dictionary) -> EliteChallenge:
 static func get_all_challenges() -> Array[EliteChallenge]:
     var challenges: Array[EliteChallenge] = []
 
-    var data_list = [
+    var data_list: Array[Dictionary] = [
         {
             "id": "sustained_threshold",
             "title": "Threshold Push",
@@ -85,13 +85,13 @@ static func get_all_challenges() -> Array[EliteChallenge]:
         }
     ]
 
-    for d in data_list:
+    for d: Dictionary in data_list:
         challenges.append(EliteChallenge.create(d))
 
     return challenges
 
 static func get_random_challenge() -> EliteChallenge:
-    var all_challenges = get_all_challenges()
+    var all_challenges: Array[EliteChallenge] = get_all_challenges()
     return all_challenges[randi() % all_challenges.size()]
 
 func evaluate(metrics: Dictionary) -> bool:
@@ -113,14 +113,14 @@ func grant_reward() -> void:
         RunManager.add_to_inventory(reward_item)
 
 func format_text(ftp_w: int) -> String:
-    var text = condition_text
+    var text: String = condition_text
     if ftp_multiplier > 0: # crude check if it's relevant
-        var threshold = int(round(ftp_w * ftp_multiplier))
+        var threshold: int = int(round(float(ftp_w) * ftp_multiplier))
         text = text.replace("{ftp_watts}", str(threshold))
     return text
 
 func generate_course_profile(max_grade_limit: float = 0.10) -> CourseProfile:
-    var segments = []
+    var segments: Array[Dictionary] = []
     match id:
         "sustained_threshold":
             segments = [
@@ -165,13 +165,13 @@ func generate_course_profile(max_grade_limit: float = 0.10) -> CourseProfile:
             return CourseProfile.generate_course_profile(2, max_grade_limit, "asphalt")
 
     # Clamp grades
-    for s in segments:
+    for s: Dictionary in segments:
         s["grade"] = clamp(s["grade"], -max_grade_limit, max_grade_limit)
 
-    var total_dist = 0.0
-    for s in segments: total_dist += s["distanceM"]
+    var total_dist: float = 0.0
+    for s: Dictionary in segments: total_dist += s["distanceM"]
 
-    var profile = CourseProfile.new()
+    var profile: CourseProfile = CourseProfile.new()
     profile.segments = segments
     profile.total_distance_m = total_dist
     return profile

@@ -15,6 +15,10 @@ func _ready() -> void:
 	ftp_input.value = SettingsManager.ftp_w
 	weight_input.value = SettingsManager.weight_kg
 	
+	# Auto-select on focus for SpinBoxes
+	ftp_input.get_line_edit().select_all_on_focus = true
+	weight_input.get_line_edit().select_all_on_focus = true
+	
 	units_toggle.clear()
 	units_toggle.add_item("Imperial (mi/lb)")
 	units_toggle.add_item("Metric (km/kg)")

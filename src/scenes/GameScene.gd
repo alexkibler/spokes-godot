@@ -46,6 +46,8 @@ var fit_writer: FitWriter
 var last_record_ms: int = 0
 var ride_start_time: int = 0
 
+var is_dev_build: bool = false
+
 func _ready() -> void:
 	ride_start_time = Time.get_ticks_msec()
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
@@ -91,6 +93,12 @@ func _ready() -> void:
 	
 	# Spawn Ghosts
 	_spawn_ghosts()
+
+	# Dev-only speed control
+	var hostname = JavaScriptBridge.eval("window.location.hostname")
+	if typeof(hostname) == TYPE_STRING and hostname.begins_with("spokesdev"):
+		is_dev_build = true
+		_create_speed_control()
 
 func _update_physics_for_surface_and_grade(p_grade: float, p_surface: String) -> void:
 	current_grade = p_grade
@@ -359,9 +367,38 @@ func _animate_cyclist(node: Node2D, w_rot: float, vel: float) -> void:
 	var bob = sin(Time.get_ticks_msec() * 0.01) * (3.0 if vel > 1.0 else 0.5)
 	node.get_node("Rider").position.y = -65 + bob
 
+func _create_speed_control() -> void:
+	var panel = PanelContainer.new()
+	panel.name = "SpeedControl"
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.6)
+	style.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	panel.position = Vector2(-220, -60)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 6)
+	panel.add_child(hbox)
+
+	var lbl = Label.new()
+	lbl.text = "SPEED:"
+	lbl.add_theme_font_size_override("font_size", 14)
+	hbox.add_child(lbl)
+
+	for speed in [1.0, 2.0, 5.0, 10.0]:
+		var btn = Button.new()
+		btn.text = "%gx" % speed
+		btn.add_theme_font_size_override("font_size", 14)
+		btn.pressed.connect(func(): Engine.time_scale = speed)
+		hbox.add_child(btn)
+
+	$HUD.add_child(panel)
+
 func _on_ride_complete() -> void:
 	is_complete = true
 	velocity_ms = 0.0
+	Engine.time_scale = 1.0
 	
 	var run = RunManager.get_run()
 	var current_node = null

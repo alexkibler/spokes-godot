@@ -55,14 +55,14 @@ func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array
 	draft_factor = drafting.get_draft_factor()
 
 	surge.process_surge(delta, draft_factor)
-	var fatigue_mult: float = surge.get_power_multiplier()
+	var surge_mult: float = surge.get_power_multiplier()
 
 	# 3. Calculate Physics Modifiers
 	var physics_modifiers: Dictionary = run_modifiers.duplicate()
 	physics_modifiers["dragReduction"] = min(0.99, physics_modifiers.get("dragReduction", 0.0) + draft_factor)
 	
-	# Centralize Power Scaling: Combine fatigue and run modifiers
-	physics_modifiers["powerMult"] = physics_modifiers.get("powerMult", 1.0) * fatigue_mult
+	# Centralize Power Scaling: Combine surge and run modifiers
+	physics_modifiers["powerMult"] = physics_modifiers.get("powerMult", 1.0) * surge_mult
 	effective_power = raw_power * physics_modifiers["powerMult"] # Store for HUD/UI
 
 	# 4. Update Physics

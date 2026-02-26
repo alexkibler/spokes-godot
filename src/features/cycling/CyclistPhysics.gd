@@ -8,7 +8,7 @@ const G: float = 9.80665
 ## Compute the forces and resulting acceleration (m/s²) for a given power and velocity.
 ##
 ## Modifiers:
-## - 'powerMult': Multiplicative scaling for effective power (combined items + fatigue).
+## - 'powerMult': Multiplicative scaling for effective power (combined items + surge).
 ## - 'weightMult': Multiplicative scaling for effective mass.
 ## - 'crrMult': Multiplicative scaling for rolling resistance (combined surface + items).
 ## - 'dragReduction': Additive reduction factor for CdA (0.0 to 0.99).

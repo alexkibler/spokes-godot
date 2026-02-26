@@ -251,7 +251,7 @@ func _physics_process(delta: float) -> void:
 	if TrainerService.is_mock_mode:
 		# In mock mode, we feed the mock power to the player's component
 		var ftp: float = float(RunManager.run_data.get("ftpW", 200.0))
-		player_cyclist.power_receiver.set_power_manual(ftp)
+		player_cyclist.hardware_receiver.set_power_manual(ftp)
 	
 	# 1. Gather all cyclists for drafting
 	var all_entities: Array[Cyclist] = []
@@ -272,7 +272,7 @@ func _physics_process(delta: float) -> void:
 	
 	# Elite Challenge Tracking
 	if RunManager.active_challenge != null:
-		var latest_power: float = player_cyclist.power_receiver.get_power()
+		var latest_power: float = player_cyclist.hardware_receiver.get_power()
 		challenge_power_sum += latest_power
 		challenge_tick_count += 1
 		challenge_peak_power = max(challenge_peak_power, latest_power)

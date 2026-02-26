@@ -59,7 +59,7 @@ func test_run_manager_modifier_stacking() -> void:
 	# 1.1 * 1.1 = 1.21
 	assert_almost_eq(RunManager.run_data["modifiers"]["powerMult"], 1.21, 0.01)
 
-func test_power_receiver_smoothing() -> void:
+func test_hardware_receiver_smoothing() -> void:
 	var pr: HardwareReceiverComponent = HardwareReceiverComponent.new()
 	pr.smoothing_factor = 0.5
 

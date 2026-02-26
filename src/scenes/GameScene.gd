@@ -390,6 +390,17 @@ func _create_speed_control() -> void:
 		var btn = Button.new()
 		btn.text = "%gx" % speed
 		btn.add_theme_font_size_override("font_size", 14)
+		btn.add_theme_color_override("font_color", Color.WHITE)
+		var btn_style = StyleBoxFlat.new()
+		btn_style.bg_color = Color(0.2, 0.2, 0.2, 0.9)
+		btn_style.set_corner_radius_all(4)
+		btn.add_theme_stylebox_override("normal", btn_style)
+		var btn_hover = btn_style.duplicate()
+		btn_hover.bg_color = Color(0.4, 0.4, 0.4, 0.9)
+		btn.add_theme_stylebox_override("hover", btn_hover)
+		var btn_pressed = btn_style.duplicate()
+		btn_pressed.bg_color = Color(1.0, 0.6, 0.0, 0.9)
+		btn.add_theme_stylebox_override("pressed", btn_pressed)
 		btn.pressed.connect(func(): Engine.time_scale = speed)
 		hbox.add_child(btn)
 

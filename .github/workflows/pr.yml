@@ -17,6 +17,7 @@ jobs:
         uses: ceceppa/godot-gut-ci@main
         with:
           godot_version: '4.3'
+          import_project: true
           gut_params: "-gdir=res://tests -ginclude_subdirs -gexit"
 
       - name: Web Export

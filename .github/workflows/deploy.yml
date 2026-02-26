@@ -18,10 +18,10 @@ jobs:
           lfs: true
 
       - name: Run GUT Tests
-        uses: mike-ee/godot-gut-action@v2
+        uses: nathan-h-woods/godot-gut-ci@v2.1.0
         with:
-          godot_version: 4.3-stable
-          gut_test_directory: res://tests
+          godot_version: '4.3'
+          project_path: '.'
 
   build-and-push:
     needs: test

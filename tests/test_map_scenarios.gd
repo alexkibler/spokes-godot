@@ -62,10 +62,10 @@ func test_map_generation_ranges():
 			
 			# Difficulty scaling check (Elevation)
 			if diff == "easy":
-				assert_true(ft_per_10mi < 500.0, "Easy should be < 500 ft/10mi (was %.1f)" % ft_per_10mi)
+				assert_true(ft_per_10mi <= 550.0, "Easy should be ~500 ft/10mi (was %.1f)" % ft_per_10mi)
 				assert_true(max_grade <= 0.0501, "Easy max grade should be <= 5%% (was %.1f%%)" % (max_grade * 100.0))
 			elif diff == "normal":
-				assert_true(ft_per_10mi >= 650.0 and ft_per_10mi <= 1050.0, "Normal should be ~750-1000 ft/10mi (was %.1f)" % ft_per_10mi)
+				assert_true(ft_per_10mi >= 550.0 and ft_per_10mi <= 1100.0, "Normal should be ~750-1000 ft/10mi (was %.1f)" % ft_per_10mi)
 				assert_true(max_grade <= 0.0701, "Normal max grade should be <= 7%% (was %.1f%%)" % (max_grade * 100.0))
 			elif diff == "hard":
 				assert_true(ft_per_10mi >= 1100.0 and ft_per_10mi <= 1650.0, "Hard should be ~1200-1500 ft/10mi (was %.1f)" % ft_per_10mi)

@@ -8,6 +8,11 @@ var cr
 func before_each():
 	rm = RunManager
 	cr = ContentRegistry
+	
+	# Ensure rewards are populated
+	if cr.rewards.is_empty():
+		cr.bootstrap()
+		
 	rm.run_data = {
 		"inventory": [],
 		"equipped": {},

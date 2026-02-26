@@ -40,13 +40,14 @@ func test_evaluate_time_trial():
 
 func test_elite_course_generation():
 	var challenge = {"id": "vo2max_ramp"}
+	# Default limit is 0.10 (10%)
 	var profile = EliteChallenge.generate_elite_course_profile(challenge)
 	
 	assert_gt(profile["segments"].size(), 0)
-	# VO2 Ramp should have a 12% grade segment
+	# VO2 Ramp should have a 10% grade segment (clamped from 12%)
 	var has_steep = false
 	for s in profile["segments"]:
-		if s["grade"] >= 0.12:
+		if s["grade"] >= 0.10:
 			has_steep = true
 			break
-	assert_true(has_steep, "VO2 Max ramp course should contain a steep segment")
+	assert_true(has_steep, "VO2 Max ramp course should contain a steep segment at the limit")

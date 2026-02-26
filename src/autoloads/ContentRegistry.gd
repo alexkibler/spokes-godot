@@ -32,6 +32,9 @@ func get_loot_pool(count: int) -> Array:
 	var pool = []
 	for r in rewards.values():
 		if not r.has("available") or r["available"].call(RunManager):
+			# Note: We use global RunManager for now as most rewards are static,
+			# but check if we should be using a passed rm?
+			# Actually, RewardManager usually calls this.
 			pool.append(r)
 			
 	var results = []
@@ -50,13 +53,15 @@ func get_loot_pool(count: int) -> Array:
 		
 		var total_weight = 0
 		for r in candidates:
-			total_weight += RARITY_WEIGHTS.get(r["rarity"], 10)
+			var rarity = r.get("rarity", "common")
+			total_weight += RARITY_WEIGHTS.get(rarity, 10)
 			
 		var rand = randf() * total_weight
 		var picked = candidates[candidates.size() - 1]
 		
 		for r in candidates:
-			rand -= RARITY_WEIGHTS.get(r["rarity"], 10)
+			var rarity = r.get("rarity", "common")
+			rand -= RARITY_WEIGHTS.get(rarity, 10)
 			if rand <= 0:
 				picked = r
 				break

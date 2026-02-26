@@ -17,12 +17,16 @@ jobs:
         with:
           lfs: true
 
-      - name: Run GUT Tests
-        uses: ceceppa/godot-gut-ci@main
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
         with:
-          godot_version: '4.3'
-          import_project: true
-          gut_params: "-gdir=res://tests -ginclude_subdirs -gexit -gprefix=test_ -gsuffix=.gd"
+          version: 4.3.0
+
+      - name: Import Assets
+        run: godot --headless --import --path .
+
+      - name: Run GUT Tests
+        run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit -gprefix=test_ -gsuffix=.gd
 
   build-and-push:
     needs: test

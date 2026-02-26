@@ -36,7 +36,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_cyc
 
 ## CI/CD Pipeline
 The project uses GitHub Actions for continuous integration and deployment:
-- **Unit Testing**: GUT tests are executed on every push and pull request using `ceceppa/godot-gut-ci`.
+- **Unit Testing**: GUT tests are executed on every push and pull request using `chickensoft-games/setup-godot` and manual GUT CLI commands.
 - **Deployment Gating**: The Docker build and push to GHCR will **only** proceed if the unit tests pass.
 - **PR Validation**: Pull requests must pass all tests before they can be merged.
 

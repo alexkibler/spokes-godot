@@ -1,0 +1,167 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/features/cycling/GameScene.gd" id="1_x1x1x"]
+[ext_resource type="PackedScene" path="res://src/features/cycling/CyclistVisuals.tscn" id="2_c2c2c"]
+
+[node name="GameScene" type="Node2D"]
+script = ExtResource("1_x1x1x")
+
+[node name="ParallaxBackground" type="ParallaxBackground" parent="."]
+
+[node name="SkyLayer" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_mirroring = Vector2(1280, 0)
+
+[node name="Sky" type="ColorRect" parent="ParallaxBackground/SkyLayer"]
+custom_minimum_size = Vector2(1280, 720)
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.447059, 0.619608, 0.772549, 1)
+
+[node name="MountainLayer" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.1, 0.1)
+motion_mirroring = Vector2(1280, 0)
+
+[node name="Mountains" type="Polygon2D" parent="ParallaxBackground/MountainLayer"]
+position = Vector2(0, 400)
+polygon = PackedVector2Array(0, 100, 200, -150, 400, 50, 600, -200, 900, 100, 1100, -100, 1280, 100, 1280, 320, 0, 320)
+color = Color(0.721569, 0.666667, 0.588235, 1)
+
+[node name="HillLayer" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.3, 0.3)
+motion_mirroring = Vector2(1280, 0)
+
+[node name="Hills" type="Polygon2D" parent="ParallaxBackground/HillLayer"]
+position = Vector2(0, 450)
+polygon = PackedVector2Array(0, 50, 150, -50, 350, 20, 550, -80, 800, 40, 1050, -30, 1280, 50, 1280, 270, 0, 270)
+color = Color(0.478431, 0.580392, 0.411765, 1)
+
+[node name="GroundLayer" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_mirroring = Vector2(1280, 0)
+
+[node name="Field" type="ColorRect" parent="ParallaxBackground/GroundLayer"]
+offset_top = 500.0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.290196, 0.431373, 0.219608, 1)
+
+[node name="Environment" type="Node2D" parent="."]
+position = Vector2(0, 500)
+
+[node name="RoadFill" type="Polygon2D" parent="Environment"]
+color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="Ground" type="Line2D" parent="Environment"]
+points = PackedVector2Array(-2000, 0, 5000, 0)
+width = 10.0
+default_color = Color(0.3, 0.3, 0.35, 1)
+
+[node name="PlayerCyclist" parent="Environment" instance=ExtResource("2_c2c2c")]
+position = Vector2(300, 0)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/MarginContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Stats" type="VBoxContainer" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PowerValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 64
+text = "0 W"
+
+[node name="CadenceValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "0 RPM"
+
+[node name="SpeedValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 32
+text = "0.0 km/h"
+
+[node name="GradeValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "Grade: 0%"
+
+[node name="DistValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 32
+text = "0.00 km"
+
+[node name="DraftBadge" type="PanelContainer" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+
+[node name="Label" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/DraftBadge"]
+layout_mode = 2
+text = "SLIPSTREAM -20% DRAG"
+
+[node name="RaceGapPanel" type="VBoxContainer" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+
+[node name="Spacer" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ElevationContainer" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="HUD/MarginContainer/VBoxContainer/ElevationContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="ElevationLine" type="Line2D" parent="HUD/MarginContainer/VBoxContainer/ElevationContainer"]
+width = 3.0
+default_color = Color(1, 1, 1, 0.8)
+
+[node name="PlayerMarker" type="ColorRect" parent="HUD/MarginContainer/VBoxContainer/ElevationContainer"]
+layout_mode = 0
+offset_right = 4.0
+offset_bottom = 100.0
+color = Color(1, 0.8, 0, 1)
+
+[node name="ProgressBar" type="ProgressBar" parent="HUD/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+value = 50.0
+show_percentage = false

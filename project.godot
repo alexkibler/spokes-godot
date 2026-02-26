@@ -16,18 +16,18 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Spokes"
 config/description="2D roguelike cycling simulator"
-run/main_scene="res://src/scenes/MenuScene.tscn"
+run/main_scene="res://src/ui/screens/MenuScene.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.png"
 
 [autoload]
 
-Units="*res://src/autoloads/Units.gd"
-ContentRegistry="*res://src/autoloads/ContentRegistry.gd"
-RunManager="*res://src/autoloads/RunManager.gd"
-TrainerService="*res://src/autoloads/TrainerService.gd"
-SettingsManager="*res://src/autoloads/SettingsManager.gd"
-BuildInfo="*res://src/autoloads/BuildInfo.gd"
+Units="*res://src/core/Units.gd"
+ContentRegistry="*res://src/features/progression/ContentRegistry.gd"
+RunManager="*res://src/features/progression/RunManager.gd"
+TrainerService="*res://src/features/hardware/TrainerService.gd"
+SettingsManager="*res://src/core/SettingsManager.gd"
+BuildInfo="*res://src/core/BuildInfo.gd"
 
 [display]
 

@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/components/MapHUD.gd" id="1_h1h1h"]
+
+[node name="MapHUD" type="CanvasLayer"]
+script = ExtResource("1_h1h1h")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+mouse_filter = 2
+
+[node name="TopLeft" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="FloorLabel" type="Label" parent="MarginContainer/TopLeft"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "FLOOR 0"
+
+[node name="EquipButton" type="Button" parent="MarginContainer/TopLeft"]
+layout_mode = 2
+text = "EQUIPMENT"
+
+[node name="AutoplayButton" type="Button" parent="MarginContainer/TopLeft"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "AUTOPLAY: OFF"
+
+[node name="TopRight" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="GoldLabel" type="Label" parent="MarginContainer/TopRight"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "GOLD"
+horizontal_alignment = 2
+
+[node name="GoldValue" type="Label" parent="MarginContainer/TopRight"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.843137, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 32
+text = "0 g"
+horizontal_alignment = 2
+
+[node name="TopCenter" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="ModifierContainer" type="HBoxContainer" parent="MarginContainer/TopCenter"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1

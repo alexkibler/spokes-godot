@@ -1,0 +1,103 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/EventOverlay.gd" id="1_e1e1e"]
+
+[node name="EventOverlay" type="CanvasLayer"]
+script = ExtResource("1_e1e1e")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0, 0.1, 0.85)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(500, 400)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="EventLayout" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/EventLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "EVENT"
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/EventLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "Something happens..."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="AttemptButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/EventLayout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+text = "ATTEMPT"
+
+[node name="LeaveButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/EventLayout"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+text = "LEAVE"
+
+[node name="OutcomePanel" type="PanelContainer" parent="CenterContainer/PanelContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/PanelContainer/OutcomePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/PanelContainer/OutcomePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="OutcomeTitle" type="Label" parent="CenterContainer/PanelContainer/OutcomePanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "SUCCESS"
+horizontal_alignment = 1
+
+[node name="OutcomeDesc" type="Label" parent="CenterContainer/PanelContainer/OutcomePanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Result description."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="CloseButton" type="Button" parent="CenterContainer/PanelContainer/OutcomePanel/Margin/VBox"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "CONTINUE"
+
+[connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/EventLayout/AttemptButton" to="." method="_on_attempt_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/EventLayout/LeaveButton" to="." method="_on_leave_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/OutcomePanel/Margin/VBox/CloseButton" to="." method="_on_close_pressed"]

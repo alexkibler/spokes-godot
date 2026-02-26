@@ -14,11 +14,17 @@ func _add_version_watermark() -> void:
 	add_child(layer)
 	
 	var margin = MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_bottom", 10)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE # Don't block clicks
 	layer.add_child(margin)
+	
+	# Explicitly set anchoring to bottom-right
+	margin.layout_mode = 1 # Use Anchors
+	margin.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	margin.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	margin.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
 	
 	var watermark = Label.new()
 	watermark.text = "v: " + COMMIT_HASH.left(7)

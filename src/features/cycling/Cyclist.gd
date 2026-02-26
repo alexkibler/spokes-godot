@@ -36,29 +36,22 @@ func _ready() -> void:
 	# Ghosts will have their power set manually via PowerReceiver.
 	if not is_player:
 		# Disconnect signal if it was auto-connected by PowerReceiver (it connects in _ready)
-		# Actually, PowerReceiver connects to SignalBus. We might want to disable that for ghosts.
-		# For now, let's assume we can override it or use a separate component for ghosts later.
-		# But since PowerReceiver listens to a GLOBAL signal, all instances will hear it.
-		# FIX: We should probably make PowerReceiver have an 'active' flag or just not use it for ghosts if they don't need real hardware input.
-		# For this refactor, let's just let it be, but we will manually set power for ghosts which overrides the listener in `_physics_process` if we wanted to.
-		# However, PowerReceiver.set_power_manual emits the signal.
-		# A cleaner way is to disconnect the signal in PowerReceiver if not needed, but PowerReceiver doesn't know about 'is_player'.
-		# Let's disconnect it here if it's not the player.
-		SignalBus.trainer_power_updated.disconnect(power_receiver._on_power_updated)
+		if SignalBus.trainer_power_updated.is_connected(power_receiver._on_power_updated):
+			SignalBus.trainer_power_updated.disconnect(power_receiver._on_power_updated)
 
-func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array, run_modifiers: Dictionary = {}) -> void:
+func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array[Cyclist], run_modifiers: Dictionary = {}) -> void:
 	# 1. Gather Inputs
-	var raw_power = power_receiver.get_power()
+	var raw_power: float = power_receiver.get_power()
 
 	# 2. Update Components
 	drafting.update_drafting(distance_m, nearby_entities)
 	draft_factor = drafting.get_draft_factor()
 
 	fatigue.process_fatigue(delta, draft_factor)
-	var fatigue_mult = fatigue.get_power_multiplier()
+	var fatigue_mult: float = fatigue.get_power_multiplier()
 
 	# 3. Calculate Physics Modifiers
-	var physics_modifiers = run_modifiers.duplicate()
+	var physics_modifiers: Dictionary = run_modifiers.duplicate()
 	physics_modifiers["dragReduction"] = min(0.99, physics_modifiers.get("dragReduction", 0.0) + draft_factor)
 
 	# Apply Fatigue Multiplier to effective power calculation
@@ -70,12 +63,12 @@ func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array
 	current_surface = course.get_surface_at_distance(distance_m)
 
 	# Adjust Crr based on surface
-	var base_crr = 0.0041 # Default fallback
+	var base_crr: float = 0.0041 # Default fallback
 	if stats: base_crr = stats.crr # Or store base separately
 	# Re-calculating Crr every frame might be overkill but follows previous logic
 	# Actually, stats.crr is mutated in GameScene. We should probably avoid mutating shared resources if possible.
 	# But here we have a unique stats instance per cyclist usually.
-	var crr_mult = CourseProfile.get_crr_for_surface(current_surface) / CourseProfile.get_crr_for_surface("asphalt")
+	var crr_mult: float = CourseProfile.get_crr_for_surface(current_surface) / CourseProfile.get_crr_for_surface("asphalt")
 	# We can't easily mutate stats.crr cleanly without backing it up.
 	# For now, we rely on CyclistPhysics taking 'modifiers' or we just mutate it.
 	# CyclistPhysics uses stats.crr. Let's mutate it but resetting it might be needed?
@@ -84,10 +77,10 @@ func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array
 	# var crr: float = stats.crr
 	# It doesn't look like it takes a Crr modifier in the dictionary.
 	# So we must mutate stats.crr temporarily.
-	var original_crr = stats.crr
+	var original_crr: float = stats.crr
 	stats.crr = stats.crr * crr_mult * run_modifiers.get("crrMult", 1.0)
 
-	var acceleration = CyclistPhysics.calculate_acceleration(
+	var acceleration: float = CyclistPhysics.calculate_acceleration(
 		effective_power,
 		velocity_ms,
 		stats,

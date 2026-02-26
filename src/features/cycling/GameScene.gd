@@ -144,7 +144,7 @@ func _spawn_ghosts() -> void:
 	var offsets: Array[float] = [0.95, 1.05, 1.15]
 	var labels: Array[String] = ["ROOKIE", "PRO", "ELITE"]
 	
-	for i in range(3):
+	for i: int in range(3):
 		var g_node: Cyclist = cyclist_scene.instantiate()
 		g_node.is_player = false
 		g_node.label = labels[i]
@@ -157,10 +157,10 @@ func _spawn_ghosts() -> void:
 		g_node.distance_m = 10.0 + i * 5.0
 		g_node.velocity_ms = 0.0
 
-		# Set Power (Manual)
-		g_node.get_node("PowerReceiver").set_power_manual(base_power * offsets[i])
-
 		environment.add_child(g_node)
+
+		# Set Power (Manual)
+		g_node.power_receiver.set_power_manual(base_power * offsets[i])
 		
 		# Style the ghost
 		var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
@@ -193,7 +193,7 @@ func _build_elevation_graph() -> void:
 	var points: int = 100
 	
 	var elev_points: Array[float] = []
-	for i in range(points + 1):
+	for i: int in range(points + 1):
 		var d: float = (float(i) / points) * total_dist
 		elev_points.append(course.get_elevation_at_distance(d))
 	
@@ -210,7 +210,7 @@ func _build_elevation_graph() -> void:
 	min_elev -= padding
 	range_elev += padding * 2.0
 	
-	for i in range(elev_points.size()):
+	for i: int in range(elev_points.size()):
 		var x: float = (float(i) / points) * width
 		if travel_direction < 0:
 			x = width - x
@@ -238,8 +238,9 @@ func _update_ground_line() -> void:
 	
 	var player_anchor_x: float = vw - 300.0 if travel_direction < 0 else 300.0
 	
-	for x in range(int(start_x), int(end_x) + int(step_x), int(step_x)):
-		var d: float = distance_m + travel_direction * (float(x) - player_anchor_x) / 100.0
+	for x_int: int in range(int(start_x), int(end_x) + int(step_x), int(step_x)):
+		var x: float = float(x_int)
+		var d: float = distance_m + travel_direction * (x - player_anchor_x) / 100.0
 		
 		var elev: float
 		if d < 0:
@@ -274,7 +275,7 @@ func _physics_process(delta: float) -> void:
 		player_cyclist.power_receiver.set_power_manual(ftp)
 	
 	# 1. Gather all cyclists for drafting
-	var all_entities: Array = []
+	var all_entities: Array[Cyclist] = []
 	# For player, nearby are ghosts
 	for g: Cyclist in ghosts:
 		all_entities.append(g)
@@ -284,7 +285,7 @@ func _physics_process(delta: float) -> void:
 	
 	# For Ghosts, nearby is player + other ghosts
 	for g: Cyclist in ghosts:
-		var nearby: Array = [player_cyclist]
+		var nearby: Array[Cyclist] = [player_cyclist]
 		for other: Cyclist in ghosts:
 			if other != g: nearby.append(other)
 		# Ghosts don't have run modifiers
@@ -475,7 +476,7 @@ func _on_ride_complete() -> void:
 		SignalBus.trainer_speed_updated.disconnect(_on_speed_updated)
 	
 	var run: Dictionary = RunManager.get_run()
-	var current_node = null
+	var current_node: Dictionary = {}
 	for n: Dictionary in run["nodes"]:
 		if n["id"] == run["currentNodeId"]:
 			current_node = n
@@ -502,7 +503,7 @@ func _on_ride_complete() -> void:
 			
 		RunManager.active_challenge = null
 
-	if current_node and current_node["type"] == "finish":
+	if not current_node.is_empty() and current_node["type"] == "finish":
 		get_tree().change_scene_to_file("res://src/features/progression/VictoryScene.tscn")
 		return
 
@@ -511,16 +512,18 @@ func _on_ride_complete() -> void:
 		get_tree().change_scene_to_file("res://src/features/map/MapScene.tscn")
 
 	if is_first_clear:
-		var overlay = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
+		var overlay: Node = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
 		add_child(overlay)
 		
 		# Show boss medal if applicable
-		var is_boss: bool = current_node and current_node["type"] == "boss"
-		overlay.setup(is_boss)
+		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
+		if overlay.has_method("setup"):
+			overlay.setup(is_boss)
 		
-		overlay.reward_selected.connect(func() -> void:
-			_check_and_show_pending_overlay(on_overlay_closed)
-		)
+		if overlay.has_signal("reward_selected"):
+			overlay.reward_selected.connect(func() -> void:
+				_check_and_show_pending_overlay(on_overlay_closed)
+			)
 	else:
 		_check_and_show_pending_overlay(on_overlay_closed)
 
@@ -529,13 +532,15 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 	RunManager.pending_overlay = "" # Clear it immediately
 	
 	if pending == "shop":
-		var overlay = load("res://src/ui/screens/ShopOverlay.tscn").instantiate()
+		var overlay: Node = load("res://src/ui/screens/ShopOverlay.tscn").instantiate()
 		add_child(overlay)
-		overlay.closed.connect(callback)
+		if overlay.has_signal("closed"):
+			overlay.closed.connect(callback)
 	elif pending == "event":
-		var overlay = load("res://src/ui/screens/EventOverlay.tscn").instantiate()
+		var overlay: Node = load("res://src/ui/screens/EventOverlay.tscn").instantiate()
 		add_child(overlay)
-		overlay.closed.connect(callback)
+		if overlay.has_signal("closed"):
+			overlay.closed.connect(callback)
 	else:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
@@ -545,13 +550,13 @@ func _on_speed_updated(p_kmh: float) -> void:
 
 func _on_cadence_updated(p_rpm: float) -> void:
 	player_cyclist.cadence = p_rpm
-	var cadence_node: Label = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
+	var cadence_node: Label = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false) as Label
 	if cadence_node:
 		cadence_node.text = str(round(p_rpm)) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		var pause_menu = load("res://src/ui/screens/PauseOverlay.tscn").instantiate()
+		var pause_menu: Node = load("res://src/ui/screens/PauseOverlay.tscn").instantiate()
 		add_child(pause_menu)
 		get_viewport().set_input_as_handled()
 

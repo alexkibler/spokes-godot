@@ -11,7 +11,7 @@ func _ready() -> void:
     load_settings()
 
 func save_settings() -> void:
-    var config = ConfigFile.new()
+    var config: ConfigFile = ConfigFile.new()
     config.set_value("user", "ftp_w", ftp_w)
     config.set_value("user", "weight_kg", weight_kg)
     config.set_value("user", "units", units)
@@ -19,8 +19,8 @@ func save_settings() -> void:
     config.save(SAVE_PATH)
 
 func load_settings() -> void:
-    var config = ConfigFile.new()
-    var err = config.load(SAVE_PATH)
+    var config: ConfigFile = ConfigFile.new()
+    var err: Error = config.load(SAVE_PATH)
     if err == OK:
         ftp_w = config.get_value("user", "ftp_w", 200)
         weight_kg = config.get_value("user", "weight_kg", 75.0)

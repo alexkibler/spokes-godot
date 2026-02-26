@@ -4,16 +4,16 @@ const FatigueComponent = preload("res://src/features/cycling/components/FatigueC
 
 # Tests for the new FatigueComponent which manages the Surge/Recovery State Machine
 
-func test_surge_recovery_cycle():
-	var fc = FatigueComponent.new()
-	var delta = 1.0 # 1 second steps
+func test_surge_recovery_cycle() -> void:
+	var fc: FatigueComponent = FatigueComponent.new()
+	var delta: float = 1.0 # 1 second steps
 	
 	# Initial state
 	assert_eq(fc.get_state(), "normal", "Should be normal initially")
 	assert_eq(fc.get_power_multiplier(), 1.0, "Multiplier should be 1.0")
 	
 	# Enter draft (> 0.01)
-	var draft_factor = 0.05
+	var draft_factor: float = 0.05
 	fc.process_fatigue(delta, draft_factor)
 	
 	# Should trigger surge
@@ -47,9 +47,9 @@ func test_surge_recovery_cycle():
 
 	fc.free()
 
-func test_no_double_trigger():
-	var fc = FatigueComponent.new()
-	var delta = 1.0
+func test_no_double_trigger() -> void:
+	var fc: FatigueComponent = FatigueComponent.new()
+	var delta: float = 1.0
 	
 	# Trigger surge
 	fc.process_fatigue(delta, 0.10)

@@ -18,7 +18,7 @@ var recovery_timer: float = 0.0
 ## Processes the state machine. Should be called every physics frame.
 ## 'draft_factor' is used to trigger surges (when > 0.01).
 func process_fatigue(delta: float, draft_factor: float) -> void:
-	var previous_state = get_state()
+	var previous_state: String = get_state()
 
 	if surge_timer > 0:
 		surge_timer -= delta
@@ -29,7 +29,7 @@ func process_fatigue(delta: float, draft_factor: float) -> void:
 	elif draft_factor > 0.01:
 		surge_timer = surge_duration
 
-	var new_state = get_state()
+	var new_state: String = get_state()
 	if new_state != previous_state:
 		state_changed.emit(new_state)
 

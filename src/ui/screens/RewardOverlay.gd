@@ -92,18 +92,18 @@ func _start_autoplay_timer(idx: int, reward_id: String) -> void:
 
 func _render_cards() -> void:
 	# Clear existing
-	for child in card_container.get_children():
+	for child: Node in card_container.get_children():
 		child.queue_free()
 		
 	for r: Dictionary in current_rewards:
 		var card: Button = Button.new()
 		card.custom_minimum_size = Vector2(280, 400)
-		card.text = r["label"] + "\n\n" + r["description"] + "\n\n[" + r["rarity"].to_upper() + "]"
+		card.text = str(r["label"]) + "\n\n" + str(r["description"]) + "\n\n[" + str(r["rarity"]).to_upper() + "]"
 		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		
 		# Rarity Colors
 		var color: Color = Color.WHITE
-		match r["rarity"]:
+		match str(r["rarity"]):
 			"common": color = Color("#bdc3c7")   # Silver
 			"uncommon": color = Color("#3498db") # Blue
 			"rare": color = Color("#f1c40f")     # Gold

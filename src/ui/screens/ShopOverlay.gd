@@ -48,14 +48,15 @@ func refresh_all() -> void:
 	_build_inventory()
 
 func _build_catalog() -> void:
-	for child in catalog_container.get_children():
+	for child: Node in catalog_container.get_children():
 		child.queue_free()
 		
 	var run: Dictionary = RunManager.get_run()
 	
 	for item: Dictionary in CATALOG:
 		var owned_count: int = 0
-		for inv_id: String in run["inventory"]:
+		var inventory: Array = run["inventory"]
+		for inv_id: String in inventory:
 			if inv_id == item["id"]: owned_count += 1
 			
 		var price: int = int(float(item["price"]) * pow(1.5, owned_count))
@@ -77,12 +78,13 @@ func _build_catalog() -> void:
 		catalog_container.add_child(btn)
 
 func _build_inventory() -> void:
-	for child in inventory_container.get_children():
+	for child: Node in inventory_container.get_children():
 		child.queue_free()
 		
 	var run: Dictionary = RunManager.get_run()
 	var counts: Dictionary = {}
-	for id: String in run["inventory"]:
+	var inventory: Array = run["inventory"]
+	for id: String in inventory:
 		counts[id] = counts.get(id, 0) + 1
 		
 	if counts.is_empty():

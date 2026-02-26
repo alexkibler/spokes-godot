@@ -25,13 +25,13 @@ func test_autoplay_no_medals_starts_at_hub() -> void:
 	rm.run_data["currentNodeId"] = "node_hub"
 	
 	var next_node: Dictionary = rm.get_next_autoplay_node()
-	assert_not_null(next_node, "Should find a next node from hub")
+	assert_false(next_node.is_empty(), "Should find a next node from hub")
 	assert_eq(next_node["id"], "node_plains_s1", "Autoplay should head into the first unlocked spoke")
 
 func test_autoplay_seeks_boss() -> void:
 	rm.run_data["currentNodeId"] = "node_plains_s1"
 	var next_node: Dictionary = rm.get_next_autoplay_node()
-	assert_not_null(next_node)
+	assert_false(next_node.is_empty())
 	assert_eq(next_node["id"], "node_plains_s2")
 
 func test_autoplay_with_all_medals_seeks_finish() -> void:
@@ -39,13 +39,14 @@ func test_autoplay_with_all_medals_seeks_finish() -> void:
 	rm.run_data["inventory"] = ["medal_plains", "medal_coast"]
 	
 	var next_node: Dictionary = rm.get_next_autoplay_node()
-	assert_not_null(next_node)
+	assert_false(next_node.is_empty())
 	assert_eq(next_node["id"], "node_final_boss")
 
 func test_autoplay_avoids_locked_paths() -> void:
 	rm.run_data["currentNodeId"] = "node_hub"
 	var valid_edges: Array[Dictionary] = []
-	for e: Dictionary in rm.run_data["edges"]:
+	var edges: Array = rm.run_data["edges"]
+	for e: Dictionary in edges:
 		if not (e["from"] == "node_hub" and e["to"] == "node_plains_s1"):
 			valid_edges.append(e)
 	rm.run_data["edges"] = valid_edges
@@ -55,14 +56,15 @@ func test_autoplay_avoids_locked_paths() -> void:
 
 func test_autoplay_fallback_when_no_targets() -> void:
 	var new_nodes: Array[Dictionary] = []
-	for n: Dictionary in rm.run_data["nodes"]:
+	var nodes: Array = rm.run_data["nodes"]
+	for n: Dictionary in nodes:
 		if n["type"] != "boss" and n["type"] != "finish":
 			new_nodes.append(n)
 	rm.run_data["nodes"] = new_nodes
 	rm.run_data["currentNodeId"] = "node_hub"
 	
 	var next_node: Dictionary = rm.get_next_autoplay_node()
-	assert_not_null(next_node)
+	assert_false(next_node.is_empty())
 	assert_eq(next_node["id"], "node_plains_s1")
 
 func test_autoplay_reward_selection_avoids_duplicates() -> void:
@@ -85,7 +87,7 @@ func test_autoplay_reward_selection_prefers_better_item() -> void:
 	cr.register_reward({
 		"id": "item_pro_frame_test",
 		"label": "Pro Frame",
-		"apply": func(rm: Node) -> void: rm.add_to_inventory("pro_frame_test")
+		"apply": func(rm_node: Node) -> void: rm_node.add_to_inventory("pro_frame_test")
 	})
 	var reward_b: Dictionary = ContentRegistry.get_reward("item_pro_frame_test")
 	
@@ -107,7 +109,7 @@ func test_autoplay_prefers_net_stat_gain() -> void:
 	})
 	cr.register_reward({
 		"id": "item_pro_helmet_test",
-		"apply": func(rm: Node) -> void: rm.add_to_inventory("pro_helmet_test")
+		"apply": func(rm_node: Node) -> void: rm_node.add_to_inventory("pro_helmet_test")
 	})
 	var reward_a: Dictionary = cr.get_reward("item_pro_helmet_test")
 	var reward_b: Dictionary = cr.get_reward("stat_aero_1") # +2% permanent
@@ -159,7 +161,7 @@ func test_autoplay_backtracking_prevention() -> void:
 	var next: Dictionary = rm.get_next_autoplay_node()
 	assert_eq(next["id"], "node_plains_ie")
 	
-	rm.run_data["visitedNodeIds"].append("node_plains_ie")
+	(rm.run_data["visitedNodeIds"] as Array).append("node_plains_ie")
 	rm.run_data["currentNodeId"] = "node_plains_ie"
 	next = rm.get_next_autoplay_node()
 	assert_ne(next["id"], "node_plains_s2")

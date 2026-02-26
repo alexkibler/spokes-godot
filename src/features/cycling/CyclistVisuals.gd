@@ -25,38 +25,39 @@ func update_animation(delta: float, velocity: float, cadence_rpm: float) -> void
 
 func _animate_parts(velocity: float) -> void:
 	# Frame Index for Wheels/Chain/Frame (Speed-based)
-	var wheel_idx = 0
+	var wheel_idx: int = 0
 	if velocity > 0.1:
 		wheel_idx = int(fmod(_wheel_rotation, 2.0 * PI) / (2.0 * PI) * wheel_frames)
 		if wheel_idx < 0: wheel_idx += wheel_frames
 
 	# Frame Index for Crank (Cadence-based)
-	var crank_idx = int(fmod(_crank_rotation, 2.0 * PI) / (2.0 * PI) * crank_frames)
+	var crank_idx: int = int(fmod(_crank_rotation, 2.0 * PI) / (2.0 * PI) * crank_frames)
 	if crank_idx < 0: crank_idx += crank_frames
 
 	# Update Sprites
-	for child in get_children():
+	for child: Node in get_children():
 		if child is Sprite2D:
-			if child.name == "Crank" or child.name == "BackPedal":
-				child.frame = crank_idx
+			var s: Sprite2D = child as Sprite2D
+			if s.name == "Crank" or s.name == "BackPedal":
+				s.frame = crank_idx
 			else:
-				child.frame = wheel_idx
+				s.frame = wheel_idx
 
 	# Bob ONLY the Rider (the person)
-	var bob = 0.0
+	var bob: float = 0.0
 	if velocity > 0.1:
 		bob = sin(Time.get_ticks_msec() * 0.01) * 3.0
 
-	for node_name in ["Rider", "RiderPoly"]:
+	for node_name: String in ["Rider", "RiderPoly"]:
 		if has_node(node_name):
-			var rider = get_node(node_name)
-			var base_y = -45.0 if rider is Sprite2D else -62.0
+			var rider: Node = get_node(node_name)
+			var base_y: float = -45.0 if rider is Sprite2D else -62.0
 			rider.position.y = base_y + bob
 
 	# Ensure Bike parts stay stationary (at their base_y)
-	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Handlebars", "BackPedal"]:
+	for node_name: String in ["Frame", "Crank", "Chain", "Wheels", "Handlebars", "BackPedal"]:
 		if has_node(node_name):
-			var child = get_node(node_name)
+			var child: Node = get_node(node_name)
 			if child is Sprite2D:
 				child.position.y = -45.0
 

@@ -78,7 +78,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     
     # Helper for adding edges
     var add_edge: Callable = func(from_id: String, to_id: String, km: float, base_max_grade: float, surface: String = "asphalt") -> void:
-        var target_node = null
+        var target_node: Dictionary = {}
         for n: Dictionary in nodes:
             if n["id"] == to_id:
                 target_node = n
@@ -89,7 +89,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         grade += (randf() * 2.0 - 1.0) * diff_config["rand_var"]
         grade = max(0.005, grade)
         
-        if target_node:
+        if not target_node.is_empty():
             if target_node["type"] == "hard": grade *= 1.5
             elif target_node["type"] == "boss": grade *= 2.0
             elif target_node["type"] == "finish": grade *= 2.5
@@ -265,7 +265,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     
     var total_map_dist: float = 0.0
     for e: Dictionary in edges:
-        total_map_dist += e["profile"].total_distance_m
+        total_map_dist += (e["profile"] as CourseProfile).total_distance_m
     
     run_data["stats"]["totalMapDistanceM"] = total_map_dist
     

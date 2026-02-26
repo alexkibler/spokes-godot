@@ -80,12 +80,12 @@ func test_generate_hub_and_spoke_map_structure() -> void:
 	# round(20/20) = 1. clamp(1, 2, 8) = 2.
 	assert_eq(num_spokes, 2)
 	
-	var hub = null
+	var hub: Dictionary = {}
 	for n: Dictionary in run_data.nodes:
 		if n.id == "node_hub":
 			hub = n
 			break
-	assert_not_null(hub)
+	assert_false(hub.is_empty())
 	
 	# Hub connects to num_spokes spoke-starts + final boss
 	assert_eq(hub.connectedTo.size(), num_spokes + 1)
@@ -112,7 +112,7 @@ func test_generate_hub_and_spoke_map_counts() -> void:
 	# MapGenerator.gd: const NODES_PER_SPOKE = 2
 	var nodes_per_biome: int = 2 + 6
 	# Total nodes = 1 hub + numSpokes*nodesPerBiome + 1 final boss
-	assert_eq(run_data.nodes.size(), 1 + num_spokes * nodes_per_biome + 1)
+	assert_eq((run_data.nodes as Array).size(), 1 + num_spokes * nodes_per_biome + 1)
 	
 	var shop_nodes: Array[Dictionary] = []
 	var boss_nodes: Array[Dictionary] = []
@@ -148,14 +148,14 @@ func test_connectivity() -> void:
 	}
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
-	var start_node = null
-	var finish_node = null
+	var start_node: Dictionary = {}
+	var finish_node: Dictionary = {}
 	for n: Dictionary in run_data.nodes:
 		if n.type == "start": start_node = n
 		if n.type == "finish": finish_node = n
 		
-	assert_not_null(start_node)
-	assert_not_null(finish_node)
+	assert_false(start_node.is_empty())
+	assert_false(finish_node.is_empty())
 	
 	# BFS to ensure finish is reachable from start
 	var adjacency: Dictionary = {}

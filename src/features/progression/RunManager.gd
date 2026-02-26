@@ -54,7 +54,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		}
 	}
 	
-	load("res://src/features/map/MapGenerator.gd").generate_hub_and_spoke_map(run_data)
+	(load("res://src/features/map/MapGenerator.gd") as GDScript).generate_hub_and_spoke_map(run_data)
 	
 	is_active_run = true
 	SignalBus.run_started.emit()
@@ -62,13 +62,15 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 func is_edge_traversable(edge: Dictionary) -> bool:
 	if edge.get("requiresAllMedals", false):
 		var medals_held: int = 0
-		for item: String in run_data["inventory"]:
+		var inventory: Array = run_data["inventory"]
+		for item: String in inventory:
 			if item.begins_with("medal_"): medals_held += 1
 		var medals_needed: int = run_data["runLength"]
 		return medals_held >= medals_needed
 	
 	if edge.has("requiredMedal"):
-		return edge["requiredMedal"] in run_data["inventory"]
+		var inventory: Array = run_data["inventory"]
+		return edge["requiredMedal"] in inventory
 		
 	return true
 
@@ -92,7 +94,7 @@ func set_active_edge(edge: Dictionary) -> void:
 	
 	# If we are going backwards (from 'to' to 'from'), invert the profile
 	if current_id == edge["to"]:
-		processed_edge["profile"] = edge["profile"].invert_course_profile()
+		processed_edge["profile"] = (edge["profile"] as CourseProfile).invert_course_profile()
 		processed_edge["direction"] = "backward"
 		processed_edge["actual_from"] = edge["to"]
 		processed_edge["actual_to"] = edge["from"]
@@ -110,16 +112,18 @@ func get_next_autoplay_node() -> Dictionary:
 	if not is_active_run or run_data.get("currentNodeId", "") == "": return {}
 	
 	var current_id: String = run_data["currentNodeId"]
-	var current_node = null
-	for n: Dictionary in run_data["nodes"]:
+	var current_node: Dictionary = {}
+	var nodes: Array = run_data["nodes"]
+	for n: Dictionary in nodes:
 		if n["id"] == current_id:
 			current_node = n
 			break
-	if not current_node: return {}
+	if current_node.is_empty(): return {}
 	
 	# Identify valid next steps (neighbors)
 	var neighbors: Array[Dictionary] = []
-	for edge: Dictionary in run_data["edges"]:
+	var edges: Array = run_data["edges"]
+	for edge: Dictionary in edges:
 		var target_id: String = ""
 		if edge["from"] == current_id: 
 			if is_edge_traversable(edge): target_id = edge["to"]
@@ -127,7 +131,7 @@ func get_next_autoplay_node() -> Dictionary:
 			if is_edge_traversable(edge): target_id = edge["from"]
 		
 		if target_id != "":
-			for n: Dictionary in run_data["nodes"]:
+			for n: Dictionary in nodes:
 				if n["id"] == target_id:
 					neighbors.append(n)
 					break
@@ -137,21 +141,23 @@ func get_next_autoplay_node() -> Dictionary:
 	# Logic: Path toward the "Finish" node, but only if all medals are held.
 	# Otherwise, path toward unvisited "Boss" nodes.
 	var medals_held: int = 0
-	for item: String in run_data["inventory"]:
+	var inventory: Array = run_data["inventory"]
+	for item: String in inventory:
 		if item.begins_with("medal_"): medals_held += 1
 	var medals_needed: int = run_data["runLength"]
 	
 	var targets: Array[Dictionary] = []
-	for n: Dictionary in run_data["nodes"]:
+	var visited: Array = run_data["visitedNodeIds"]
+	for n: Dictionary in nodes:
 		if n["type"] == "finish" and medals_held >= medals_needed:
 			targets.append(n)
-		elif n["type"] == "boss" and not n["id"] in run_data["visitedNodeIds"]:
+		elif n["type"] == "boss" and not n["id"] in visited:
 			targets.append(n)
 			
 	if targets.is_empty():
 		# Fallback: just pick the first unvisited neighbor or any neighbor
 		for n: Dictionary in neighbors:
-			if not n["id"] in run_data["visitedNodeIds"]: return n
+			if not n["id"] in visited: return n
 		return neighbors[0]
 		
 	# Simple heuristic: Pick neighbor that reduces distance to the nearest target
@@ -168,7 +174,7 @@ func get_next_autoplay_node() -> Dictionary:
 	return best_neighbor
 
 func complete_active_edge() -> bool:
-	var ae: Dictionary = run_data.get("active_edge")
+	var ae: Dictionary = run_data.get("active_edge", {})
 	return complete_node_visit(ae)
 
 func complete_node_visit(edge: Dictionary) -> bool:
@@ -179,33 +185,36 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	if edge["to"] == run_data["currentNodeId"]:
 		dest_id = edge["from"]
 		
-	var dest_node = null
-	for n: Dictionary in run_data["nodes"]:
+	var dest_node: Dictionary = {}
+	var nodes: Array = run_data["nodes"]
+	for n: Dictionary in nodes:
 		if n["id"] == dest_id:
 			dest_node = n
 			break
 			
 	# Award gold
 	var reward_gold: int = 25
-	if dest_node:
+	if not dest_node.is_empty():
 		if dest_node["type"] == "boss": reward_gold = 100
 		elif dest_node["type"] == "finish": reward_gold = 500
 	add_gold(reward_gold)
 	
 	# Award Medals for Bosses
-	if dest_node and dest_node["type"] == "boss":
+	if not dest_node.is_empty() and dest_node["type"] == "boss":
 		var spoke_id: String = dest_node.get("metadata", {}).get("spokeId", "unknown")
 		var medal_id: String = "medal_" + spoke_id
-		if not medal_id in run_data["inventory"]:
-			run_data["inventory"].append(medal_id)
+		var inventory: Array = run_data["inventory"]
+		if not medal_id in inventory:
+			inventory.append(medal_id)
 			print("[RUN] Awarded Medal: ", medal_id)
 
 	# Advance current node
 	run_data["currentNodeId"] = dest_id
-	if not dest_id in run_data["visitedNodeIds"]:
-		run_data["visitedNodeIds"].append(dest_id)
+	var visited: Array = run_data["visitedNodeIds"]
+	if not dest_id in visited:
+		visited.append(dest_id)
 		
-	if dest_node:
+	if not dest_node.is_empty():
 		dest_node["isUsed"] = true
 		
 	if not edge.get("isCleared", false):
@@ -255,10 +264,12 @@ func _get_reward_net_benefit(r: Dictionary) -> float:
 		var item_def: Dictionary = ContentRegistry.get_item(item_id)
 		
 		# Already in inventory? Worthless for autoplay
-		if item_id in run_data["inventory"]: return -1.0
+		var inventory: Array = run_data["inventory"]
+		if item_id in inventory: return -1.0
 		
 		var slot: String = item_def.get("slot", "none")
-		var current_item_id: String = run_data["equipped"].get(slot, "")
+		var equipped: Dictionary = run_data["equipped"]
+		var current_item_id: String = equipped.get(slot, "")
 		
 		if current_item_id != "":
 			if current_item_id == item_id: return -1.0
@@ -286,13 +297,15 @@ func _compare_item_stats(new_def: Dictionary, old_def: Dictionary) -> float:
 	return benefit
 
 func add_to_inventory(item_id: String) -> void:
-	run_data["inventory"].append(item_id)
+	var inventory: Array = run_data["inventory"]
+	inventory.append(item_id)
 	
 	SignalBus.inventory_changed.emit()
 	if autoplay_enabled:
 		var def: Dictionary = ContentRegistry.get_item(item_id)
 		if def.has("slot"):
-			var current: String = run_data["equipped"].get(def["slot"], "")
+			var equipped: Dictionary = run_data["equipped"]
+			var current: String = equipped.get(def["slot"], "")
 			if current == "":
 				equip_item(item_id)
 			else:
@@ -306,18 +319,20 @@ func equip_item(item_id: String) -> bool:
 	var def: Dictionary = ContentRegistry.get_item(item_id)
 	if not def.has("slot"): return false
 	
-	var idx: int = run_data["inventory"].find(item_id)
+	var inventory: Array = run_data["inventory"]
+	var idx: int = inventory.find(item_id)
 	if idx == -1: return false
 	
 	var slot: String = def["slot"]
 	# Unequip current if any
-	if run_data["equipped"].has(slot):
+	var equipped: Dictionary = run_data["equipped"]
+	if equipped.has(slot):
 		unequip_item(slot)
 		# Re-fetch index as unequip might shift inventory
-		idx = run_data["inventory"].find(item_id)
+		idx = inventory.find(item_id)
 		
-	run_data["inventory"].remove_at(idx)
-	run_data["equipped"][slot] = item_id
+	inventory.remove_at(idx)
+	equipped[slot] = item_id
 	
 	SignalBus.inventory_changed.emit()
 	if def.has("modifier"):
@@ -327,7 +342,8 @@ func equip_item(item_id: String) -> bool:
 	return true
 
 func unequip_item(slot: String) -> String:
-	var item_id: String = run_data["equipped"].get(slot, "")
+	var equipped: Dictionary = run_data["equipped"]
+	var item_id: String = equipped.get(slot, "")
 	if item_id == "": return ""
 	
 	var def: Dictionary = ContentRegistry.get_item(item_id)
@@ -337,13 +353,15 @@ func unequip_item(slot: String) -> String:
 		# Remove from log
 		var label: String = def.get("label", item_id)
 		var log_label: String = label + " (equipped)"
-		for i: int in range(run_data["modifierLog"].size() - 1, -1, -1):
-			if run_data["modifierLog"][i]["label"] == log_label:
-				run_data["modifierLog"].remove_at(i)
+		var mod_log: Array = run_data["modifierLog"]
+		for i: int in range(mod_log.size() - 1, -1, -1):
+			if mod_log[i]["label"] == log_label:
+				mod_log.remove_at(i)
 				break
 				
-	run_data["equipped"].erase(slot)
-	run_data["inventory"].append(item_id)
+	equipped.erase(slot)
+	var inventory: Array = run_data["inventory"]
+	inventory.append(item_id)
 	SignalBus.modifiers_changed.emit()
 	SignalBus.inventory_changed.emit()
 	return item_id
@@ -366,17 +384,22 @@ func apply_modifier(delta: Dictionary, label: String = "") -> void:
 	if label != "":
 		var log_entry: Dictionary = delta.duplicate()
 		log_entry["label"] = label
-		run_data["modifierLog"].append(log_entry)
+		var mod_log: Array = run_data["modifierLog"]
+		mod_log.append(log_entry)
 		
 	SignalBus.modifiers_changed.emit()
 
 func spend_gold(amount: int) -> bool:
-	if run_data["gold"] >= amount:
-		run_data["gold"] -= amount
-		SignalBus.gold_changed.emit(run_data["gold"])
+	var current_gold: int = run_data["gold"]
+	if current_gold >= amount:
+		current_gold -= amount
+		run_data["gold"] = current_gold
+		SignalBus.gold_changed.emit(current_gold)
 		return true
 	return false
 
 func add_gold(amount: int) -> void:
-	run_data["gold"] += amount
-	SignalBus.gold_changed.emit(run_data["gold"])
+	var current_gold: int = run_data["gold"]
+	current_gold += amount
+	run_data["gold"] = current_gold
+	SignalBus.gold_changed.emit(current_gold)

@@ -15,25 +15,16 @@ var current_draft_factor: float = 0.0
 ## Updates the draft factor based on a list of nearby entities.
 ## Each entity is expected to be a Node2D (or dictionary from ghosts) with 'distance_m' and 'stats'.
 ## 'my_distance_m' is the current linear distance of the owner along the track.
-func update_drafting(my_distance_m: float, nearby_entities: Array) -> void:
+func update_drafting(my_distance_m: float, nearby_entities: Array[Cyclist]) -> void:
 	if not stats:
 		push_warning("DraftingComponent: No CyclistStats assigned!")
 		return
 
 	var best_draft: float = 0.0
 
-	for entity: Variant in nearby_entities:
-		var other_dist: float = 0.0
-		var other_stats: CyclistStats = null
-
-		# Handle both Dictionary (ghosts) and Object (other players/AI)
-		if entity is Dictionary:
-			other_dist = entity.get("distance_m", 0.0)
-			other_stats = entity.get("stats")
-		elif entity is Node and "distance_m" in entity:
-			other_dist = entity.distance_m
-			if "stats" in entity:
-				other_stats = entity.stats
+	for entity: Cyclist in nearby_entities:
+		var other_dist: float = entity.distance_m
+		var other_stats: CyclistStats = entity.stats
 
 		if other_stats == null:
 			continue

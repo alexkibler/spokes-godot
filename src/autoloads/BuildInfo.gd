@@ -7,7 +7,7 @@ const COMMIT_HASH: String = "dev"
 
 func _ready() -> void:
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("console.log('Spokes: BuildInfo autoload initializing...')")
+		JavaScriptBridge.eval("console.log('Spokes: BuildInfo initializing [TS: 1772121300]...')")
 	_add_version_watermark.call_deferred()
 
 func _add_version_watermark() -> void:
@@ -36,4 +36,4 @@ func _add_version_watermark() -> void:
 	margin.add_child(watermark)
 	
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("console.log('Spokes: Watermark added to bottom-right')")
+		JavaScriptBridge.eval("console.log('Spokes: Watermark added to bottom-right [TS: 1772121300]')")

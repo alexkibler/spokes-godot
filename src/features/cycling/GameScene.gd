@@ -20,17 +20,12 @@ extends Node2D
 var player_cyclist: Cyclist
 
 var wheel_rotation: float = 0.0 # Kept for parallax scrolling only? No, parallax uses player velocity.
-var raw_trainer_speed_ms: float = 0.0
-# var latest_power: float = 0.0 # Handled by PowerReceiverComponent
+# var latest_power: float = 0.0 # Handled by HardwareReceiverComponent
 var travel_direction: float = 1.0 # 1.0 for L->R, -1.0 for R->L
-# var cadence: float = 90.0 # Handled by Cyclist / SignalBus
-# var crank_rotation: float = 0.0 # Handled by Visuals
+var run_modifiers: Dictionary = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
 
 var ghosts: Array[Cyclist] = [] # List of Cyclist entities
-var cyclist_scene = preload("res://src/features/cycling/Cyclist.tscn")
-
-var base_crr: float = 0.0041
-var run_modifiers: Dictionary = { "powerMult": 1.0, "dragReduction": 0.0, "weightMult": 1.0, "crrMult": 1.0 }
+var cyclist_scene: PackedScene = preload("res://src/features/cycling/Cyclist.tscn")
 
 var course: CourseProfile = null
 var is_complete: bool = false
@@ -60,13 +55,7 @@ func _ready() -> void:
 	environment.add_child(player_cyclist)
 
 	# Initialize stats from settings
-	var weight_kg: float = SettingsManager.weight_kg
-	var stats: CyclistStats = CyclistStats.new()
-	stats.mass_kg = weight_kg + 8.0
-	stats.cda = 0.416 * pow(weight_kg / 114.3, 0.66)
-	stats.crr = 0.0041
-	base_crr = stats.crr
-	player_cyclist.stats = stats
+	player_cyclist.setup(true, CyclistStats.create_from_weight(SettingsManager.weight_kg), "Player", Color.WHITE)
 	
 	# Initialize Course from Active Edge
 	if RunManager.is_active_run:
@@ -103,15 +92,11 @@ func _ready() -> void:
 		course = CourseProfile.generate_course_profile(5.0, 0.05)
 
 	# Subscribe to SignalBus for hardware updates
-	# PlayerCyclist's PowerReceiverComponent listens to trainer_power_updated automatically.
-	# We listen here for cadence to pass to player? Or let SignalBus handle it?
-	# GameScene manages cadence for display HUD.
-	SignalBus.trainer_cadence_updated.connect(_on_cadence_updated)
-	SignalBus.trainer_speed_updated.connect(_on_speed_updated)
-
+	# PlayerCyclist's HardwareReceiverComponent handles telemetry automatically.
 	TrainerService.connect_trainer()
 	
-	player_cyclist.cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
+	if TrainerService.is_mock_mode:
+		player_cyclist.hardware_receiver.set_cadence_manual(TrainerService.mock_cadence)
 	
 	# Setup UI
 	progress_bar.max_value = course.total_distance_m
@@ -146,25 +131,19 @@ func _spawn_ghosts() -> void:
 	
 	for i: int in range(3):
 		var g_node: Cyclist = cyclist_scene.instantiate()
-		g_node.is_player = false
-		g_node.label = labels[i]
+		environment.add_child(g_node) # Add to tree first so @onready are ready
 
-		# Set Stats
 		var g_stats: CyclistStats = player_cyclist.stats.duplicate()
-		g_node.stats = g_stats
+		var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+		
+		g_node.setup(false, g_stats, labels[i], color)
 
 		# Set Initial State
 		g_node.distance_m = 10.0 + i * 5.0
 		g_node.velocity_ms = 0.0
 
-		environment.add_child(g_node)
-
 		# Set Power (Manual)
-		g_node.power_receiver.set_power_manual(base_power * offsets[i])
-		
-		# Style the ghost
-		var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
-		g_node.set_color(color)
+		g_node.hardware_receiver.set_power_manual(base_power * offsets[i])
 		
 		ghosts.append(g_node)
 
@@ -309,8 +288,8 @@ func _physics_process(delta: float) -> void:
 		last_record_ms = now
 		fit_writer.add_record({
 			"timestampMs": Time.get_unix_time_from_system() * 1000,
-			"powerW": player_cyclist.power_receiver.get_power(),
-			"cadenceRpm": player_cyclist.cadence,
+			"powerW": player_cyclist.hardware_receiver.get_power(),
+			"cadenceRpm": player_cyclist.hardware_receiver.get_cadence(),
 			"speedMs": player_cyclist.velocity_ms,
 			"distanceM": player_cyclist.distance_m
 		})
@@ -324,17 +303,12 @@ func _physics_process(delta: float) -> void:
 	_update_visuals(delta)
 	
 	if Engine.get_physics_frames() % 60 == 0:
-		# Match Phaser's Trainer simulation parameters (scaling by massRatio)
-		var assumed_trainer_mass: float = 83.0
-		var mass_ratio: float = player_cyclist.stats.mass_kg / assumed_trainer_mass
-
-		var effective_grade: float = player_cyclist.current_grade * mass_ratio
-		var effective_crr: float = player_cyclist.stats.crr * mass_ratio
-		
-		# CWA = CdA according to Phaser implementation (Rho scaling is commented out there)
-		var cwa: float = player_cyclist.stats.cda
-		
-		TrainerService.set_simulation_params(effective_grade, effective_crr, cwa)
+		var trainer_params: Dictionary = player_cyclist.get_trainer_resistance_params()
+		TrainerService.set_simulation_params(
+			trainer_params["grade"], 
+			trainer_params["crr"], 
+			trainer_params["cwa"]
+		)
 
 func _update_visuals(delta: float) -> void:
 	# Parallax scrolling
@@ -469,11 +443,6 @@ func _on_ride_complete() -> void:
 	# Cleanup global signal connections
 	if SignalBus.item_discovered.is_connected(_on_item_discovered):
 		SignalBus.item_discovered.disconnect(_on_item_discovered)
-	# Power/Cadence/Speed connected to SignalBus are handled via components or local connections
-	if SignalBus.trainer_cadence_updated.is_connected(_on_cadence_updated):
-		SignalBus.trainer_cadence_updated.disconnect(_on_cadence_updated)
-	if SignalBus.trainer_speed_updated.is_connected(_on_speed_updated):
-		SignalBus.trainer_speed_updated.disconnect(_on_speed_updated)
 	
 	var run: Dictionary = RunManager.get_run()
 	var current_node: Dictionary = {}
@@ -545,11 +514,9 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
-func _on_speed_updated(p_kmh: float) -> void:
-	raw_trainer_speed_ms = p_kmh / 3.6
-
 func _on_cadence_updated(p_rpm: float) -> void:
-	player_cyclist.cadence = p_rpm
+	# Note: player_cyclist.hardware_receiver handles the value internally.
+	# We just trigger the HUD update logic.
 	var cadence_node: Label = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false) as Label
 	if cadence_node:
 		cadence_node.text = str(round(p_rpm)) + " RPM"
@@ -577,7 +544,7 @@ func _update_hud(p_effective_power: float) -> void:
 		progress_bar.value = player_cyclist.distance_m
 		
 	# Update Draft/Surge Badge
-	var state: String = player_cyclist.fatigue.get_state()
+	var state: String = player_cyclist.surge.get_state()
 
 	if state == "surge":
 		draft_badge.visible = true

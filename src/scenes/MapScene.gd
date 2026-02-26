@@ -150,8 +150,13 @@ func _find_node(nodes: Array, id: String) -> Dictionary:
 
 func _input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
+		print("[INPUT DEBUG] Event Type: ", event.get_class(), " Pressed: ", event.is_pressed())
+		print("[INPUT DEBUG] Raw Position: ", event.position)
+		
 		var run = RunManager.get_run()
-		if run.is_empty(): return
+		if run.is_empty(): 
+			print("[INPUT DEBUG] Run is empty, ignoring click")
+			return
 		
 		var viewport_size = get_viewport().get_visible_rect().size
 		var center = viewport_size / 2.0
@@ -160,10 +165,19 @@ func _input(event: InputEvent) -> void:
 		# For ScreenTouch, use event.position. For Mouse, make_input_local(event).position is safer.
 		var click_pos = event.position
 		
+		print("[INPUT DEBUG] Viewport Size: ", viewport_size, " Center: ", center, " Scale Factor: ", scale_factor)
+		print("[INPUT DEBUG] Final Click Pos: ", click_pos)
+		
 		# Check node clicks
 		for node in run["nodes"]:
 			var pos = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
-			if click_pos.distance_to(pos) < 25.0:
+			var dist = click_pos.distance_to(pos)
+			
+			if dist < 100.0:
+				print("[INPUT DEBUG] Node ", node["id"], " type: ", node["type"], " at screen pos: ", pos, " Distance: ", dist)
+				
+			if dist < 25.0:
+				print("[INPUT DEBUG] CLICK HIT! Calling _on_node_clicked for ", node["id"])
 				_on_node_clicked(node)
 				return
 	

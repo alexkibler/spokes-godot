@@ -185,7 +185,8 @@ func disconnect_trainer() -> void:
 
 func set_simulation_params(grade: float, crr: float, cwa: float) -> void:
     if OS.has_feature("web") and not is_mock_mode and is_connected_to_device:
-        JavaScriptBridge.eval("window.setFTMSGrade(%f, %f, %f);" % [grade, crr, cwa])
+        var js_call = "window.setFTMSGrade(" + str(grade) + ", " + str(crr) + ", " + str(cwa) + ");"
+        JavaScriptBridge.eval(js_call)
 
 func _on_mock_tick() -> void:
     if not is_connected_to_device or not is_mock_mode: 

@@ -12,28 +12,28 @@ func _ready() -> void:
 
 func _add_version_watermark() -> void:
 	var layer = CanvasLayer.new()
-	layer.layer = 128 # Max layer
+	layer.layer = 128 # Very high layer
 	add_child(layer)
 	
-	var bg = ColorRect.new()
-	bg.color = Color.MAGENTA # Extreme contrast
-	bg.custom_minimum_size = Vector2(200, 40)
-	layer.add_child(bg)
+	var margin = MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE # Don't block clicks
+	layer.add_child(margin)
+	
+	# Explicitly set anchoring to bottom-right
+	margin.layout_mode = 1 # Use Anchors
+	margin.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	margin.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	margin.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
 	
 	var watermark = Label.new()
-	# Hardcode string to rule out empty variable issues
-	watermark.text = "VER: " + COMMIT_HASH.left(7) + " (TEST)"
-	watermark.add_theme_font_size_override("font_size", 20)
-	watermark.add_theme_color_override("font_color", Color.WHITE)
+	watermark.text = "v: " + COMMIT_HASH.left(7)
+	watermark.add_theme_font_size_override("font_size", 14)
+	watermark.add_theme_color_override("font_color", Color(0, 0, 0, 0.4)) # Semi-transparent black
 	watermark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(watermark)
-	
-	# Center text in BG
-	watermark.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	
-	# Position the whole thing in top-left
-	bg.layout_mode = 1
-	bg.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 50)
+	margin.add_child(watermark)
 	
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("console.log('Spokes: Watermark added to tree')")
+		JavaScriptBridge.eval("console.log('Spokes: Watermark added to bottom-right')")

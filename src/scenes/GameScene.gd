@@ -368,43 +368,48 @@ func _animate_cyclist(node: Node2D, w_rot: float, vel: float) -> void:
 	node.get_node("Rider").position.y = -65 + bob
 
 func _create_speed_control() -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 10
+	add_child(layer)
+
 	var panel = PanelContainer.new()
-	panel.name = "SpeedControl"
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	panel.position = Vector2(20, -60)
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0.6)
+	style.bg_color = Color(0, 0, 0, 0.8)
 	style.set_corner_radius_all(6)
+	style.set_content_margin_all(8)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	panel.position = Vector2(-220, -60)
+	layer.add_child(panel)
 
 	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 6)
+	hbox.add_theme_constant_override("separation", 8)
 	panel.add_child(hbox)
 
 	var lbl = Label.new()
 	lbl.text = "SPEED:"
-	lbl.add_theme_font_size_override("font_size", 14)
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color.WHITE)
 	hbox.add_child(lbl)
 
 	for speed in [1.0, 2.0, 5.0, 10.0]:
 		var btn = Button.new()
 		btn.text = "%gx" % speed
-		btn.add_theme_font_size_override("font_size", 14)
+		btn.custom_minimum_size = Vector2(48, 32)
+		btn.add_theme_font_size_override("font_size", 16)
 		btn.add_theme_color_override("font_color", Color.WHITE)
-		var btn_style = StyleBoxFlat.new()
-		btn_style.bg_color = Color(0.2, 0.2, 0.2, 0.9)
-		btn_style.set_corner_radius_all(4)
-		btn.add_theme_stylebox_override("normal", btn_style)
-		var btn_hover = btn_style.duplicate()
-		btn_hover.bg_color = Color(0.4, 0.4, 0.4, 0.9)
-		btn.add_theme_stylebox_override("hover", btn_hover)
-		var btn_pressed = btn_style.duplicate()
-		btn_pressed.bg_color = Color(1.0, 0.6, 0.0, 0.9)
-		btn.add_theme_stylebox_override("pressed", btn_pressed)
+		var s_normal = StyleBoxFlat.new()
+		s_normal.bg_color = Color(0.25, 0.25, 0.25, 1.0)
+		s_normal.set_corner_radius_all(4)
+		btn.add_theme_stylebox_override("normal", s_normal)
+		var s_hover = s_normal.duplicate()
+		s_hover.bg_color = Color(0.45, 0.45, 0.45, 1.0)
+		btn.add_theme_stylebox_override("hover", s_hover)
+		var s_pressed = s_normal.duplicate()
+		s_pressed.bg_color = Color(1.0, 0.55, 0.0, 1.0)
+		btn.add_theme_stylebox_override("pressed", s_pressed)
 		btn.pressed.connect(func(): Engine.time_scale = speed)
 		hbox.add_child(btn)
-
-	$HUD.add_child(panel)
 
 func _on_ride_complete() -> void:
 	is_complete = true

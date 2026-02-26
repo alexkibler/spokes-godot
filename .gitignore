@@ -2,3 +2,4 @@
 .godot/
 *.translation
 *.mono/
+.DS_Store

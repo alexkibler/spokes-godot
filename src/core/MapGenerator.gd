@@ -51,9 +51,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     var edges = []
     
     var total_dist_km = run_data.get("totalDistanceKm", 50.0)
-    var num_spokes = run_data.get("runLength", 0)
-    if num_spokes <= 0:
-        num_spokes = compute_num_spokes(total_dist_km)
+    var num_spokes = compute_num_spokes(total_dist_km)
     
     var weight_per_spoke = NODES_PER_SPOKE + 4.5
     var total_run_weight = num_spokes * weight_per_spoke + 2

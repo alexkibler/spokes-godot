@@ -9,6 +9,13 @@ var autoplay_delay_ms: int = 2000
 var active_challenge: Variant = null
 var pending_overlay: String = "" # "shop", "event", or ""
 
+func reset() -> void:
+	run_data = {}
+	is_active_run = false
+	autoplay_enabled = false
+	active_challenge = null
+	pending_overlay = ""
+
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
 	SignalBus.autoplay_changed.emit(autoplay_enabled)
@@ -314,7 +321,8 @@ func equip_item(item_id: String) -> bool:
 	
 	SignalBus.inventory_changed.emit()
 	if def.has("modifier"):
-		apply_modifier(def["modifier"], def["label"] + " (equipped)")
+		var label = def.get("label", item_id)
+		apply_modifier(def["modifier"], label + " (equipped)")
 		
 	return true
 
@@ -327,7 +335,8 @@ func unequip_item(slot: String) -> String:
 	if def.has("modifier"):
 		_reverse_modifier(def["modifier"])
 		# Remove from log
-		var log_label = def["label"] + " (equipped)"
+		var label = def.get("label", item_id)
+		var log_label = label + " (equipped)"
 		for i in range(run_data["modifierLog"].size() - 1, -1, -1):
 			if run_data["modifierLog"][i]["label"] == log_label:
 				run_data["modifierLog"].remove_at(i)

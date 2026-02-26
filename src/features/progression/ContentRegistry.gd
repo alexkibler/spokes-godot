@@ -16,6 +16,11 @@ static var rewards: Dictionary = {} # ID -> Dictionary
 static func _static_init() -> void:
 	bootstrap()
 
+static func reset() -> void:
+	items.clear()
+	rewards.clear()
+	bootstrap()
+
 static func register_item(def: Dictionary) -> void:
 	items[def["id"]] = def
 

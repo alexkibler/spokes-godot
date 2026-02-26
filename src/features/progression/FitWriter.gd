@@ -52,35 +52,35 @@ func _fit_crc(data: PackedByteArray) -> int:
     return crc
 
 func export_fit() -> PackedByteArray:
-    var buf = PackedByteArray()
+    var buf: PackedByteArray = PackedByteArray()
     
     # Helpers
-    var w8 = func(v: int) -> void: buf.append(v & 0xFF)
-    var w16 = func(v: int) -> void:
+    var w8: Callable = func(v: int) -> void: buf.append(v & 0xFF)
+    var w16: Callable = func(v: int) -> void:
         buf.append(v & 0xFF)
         buf.append((v >> 8) & 0xFF)
-    var w32 = func(v: int) -> void:
+    var w32: Callable = func(v: int) -> void:
         buf.append(v & 0xFF)
         buf.append((v >> 8) & 0xFF)
         buf.append((v >> 16) & 0xFF)
         buf.append((v >> 24) & 0xFF)
         
-    var write_def = func(local_type: int, global_mesg_num: int, fields: Array) -> void:
+    var write_def: Callable = func(local_type: int, global_mesg_num: int, fields: Array) -> void:
         w8.call(0x40 | local_type)
         w8.call(0x00)
         w8.call(0x00) # Little-endian
         w16.call(global_mesg_num)
         w8.call(fields.size())
-        for f in fields:
+        for f: Array in fields:
             w8.call(f[0]) # field num
-            var bt = f[1]
-            var size = 1
+            var bt: int = f[1]
+            var size: int = 1
             if bt == T_UINT16: size = 2
             elif bt == T_UINT32: size = 4
             w8.call(size)
             w8.call(bt)
             
-    var write_val = func(bt: int, v) -> void:
+    var write_val: Callable = func(bt: int, v: Variant) -> void:
         var raw: int = INVALID[bt] if v == null else int(round(v))
         if bt == T_UINT8 or bt == T_ENUM: w8.call(raw)
         elif bt == T_UINT16: w16.call(raw)
@@ -143,7 +143,7 @@ func export_fit() -> PackedByteArray:
     
     # Assemble Header
     var data_size: int = buf.size()
-    var header = PackedByteArray()
+    var header: PackedByteArray = PackedByteArray()
     header.append(0x0E) # size
     header.append(0x10) # protocol
     header.append(0x54) # profile LE
@@ -158,7 +158,7 @@ func export_fit() -> PackedByteArray:
     header.append(h_crc & 0xFF)
     header.append((h_crc >> 8) & 0xFF)
     
-    var full_buf = header + buf
+    var full_buf: PackedByteArray = header + buf
     var f_crc: int = _fit_crc(full_buf)
     full_buf.append(f_crc & 0xFF)
     full_buf.append((f_crc >> 8) & 0xFF)

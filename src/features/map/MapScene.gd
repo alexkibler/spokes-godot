@@ -2,7 +2,7 @@ extends Node2D
 
 # Port of MapScene.ts visualization
 
-@onready var hud: CanvasLayer = $MapHUD
+@onready var hud: CanvasLayer = $MapHUD as CanvasLayer
 
 var is_selecting: bool = false
 var autoplay_timer: float = 0.0
@@ -25,7 +25,7 @@ func _ready() -> void:
 		RunManager.start_new_run(3, 50.0, "normal", 200, 75.0, "imperial")
 	
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
-	hud.update_hud()
+	hud.call("update_hud")
 	queue_redraw()
 	_check_autoplay()
 
@@ -37,7 +37,7 @@ func _draw() -> void:
 	var run: Dictionary = RunManager.get_run()
 	if run.is_empty(): return
 	
-	hud.update_hud()
+	hud.call("update_hud")
 	
 	# Use fixed reference for world-space drawing
 	# This matches the Camera2D position at (640, 360)
@@ -45,9 +45,9 @@ func _draw() -> void:
 	var scale_factor: float = 600.0 # 0.8 * 750 (approx)
 	
 	# Draw edges
-	for edge: Dictionary in run["edges"]:
-		var from_node: Dictionary = _find_node(run["nodes"], edge["from"])
-		var to_node: Dictionary = _find_node(run["nodes"], edge["to"])
+	for edge: Dictionary in (run["edges"] as Array):
+		var from_node: Dictionary = _find_node(run["nodes"] as Array, edge["from"])
+		var to_node: Dictionary = _find_node(run["nodes"] as Array, edge["to"])
 		
 		if not from_node.is_empty() and not to_node.is_empty():
 			var p1: Vector2 = center + (Vector2(from_node["x"], from_node["y"]) - Vector2(0.5, 0.5)) * scale_factor
@@ -159,12 +159,16 @@ func _input(event: InputEvent) -> void:
 		var scale_factor: float = 600.0
 		
 		# Translate Screen/Viewport position to World position
-		var world_click_pos: Vector2 = get_canvas_transform().affine_inverse() * event.position
+		var event_pos: Vector2 = Vector2.ZERO
+		if event is InputEventMouseButton: event_pos = (event as InputEventMouseButton).position
+		elif event is InputEventScreenTouch: event_pos = (event as InputEventScreenTouch).position
 		
-		print("[INPUT DEBUG] Screen Pos: ", event.position, " -> World Pos: ", world_click_pos)
+		var world_click_pos: Vector2 = get_canvas_transform().affine_inverse() * event_pos
+		
+		print("[INPUT DEBUG] Screen Pos: ", event_pos, " -> World Pos: ", world_click_pos)
 		
 		# Check node clicks
-		for node: Dictionary in run["nodes"]:
+		for node: Dictionary in (run["nodes"] as Array):
 			var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 			var dist: float = world_click_pos.distance_to(pos)
 			
@@ -173,15 +177,15 @@ func _input(event: InputEvent) -> void:
 				_on_node_clicked(node)
 				return
 	
-	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_R:
-			var overlay: Node = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
+	if event is InputEventKey and (event as InputEventKey).pressed:
+		if (event as InputEventKey).keycode == KEY_R:
+			var overlay: Node = (load("res://src/ui/screens/RewardOverlay.tscn") as PackedScene).instantiate()
 			add_child(overlay)
 			if overlay.has_signal("reward_selected"):
-				overlay.reward_selected.connect(func() -> void: queue_redraw())
+				overlay.connect("reward_selected", func() -> void: queue_redraw())
 
 	if event.is_action_pressed("ui_cancel"):
-		var pause_menu: Node = load("res://src/ui/screens/PauseOverlay.tscn").instantiate()
+		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
 		add_child(pause_menu)
 		get_viewport().set_input_as_handled()
 
@@ -191,7 +195,7 @@ func _on_node_clicked(node: Dictionary) -> void:
 	
 	# 1. Find the connecting edge
 	var connecting_edge: Dictionary = {}
-	for edge: Dictionary in run["edges"]:
+	for edge: Dictionary in (run["edges"] as Array):
 		if (edge["from"] == run["currentNodeId"] and edge["to"] == node["id"]) or \
 		   (edge["to"] == run["currentNodeId"] and edge["from"] == node["id"]):
 			connecting_edge = edge
@@ -222,12 +226,12 @@ func _on_node_clicked(node: Dictionary) -> void:
 			RunManager.pending_overlay = "event"
 		elif node["type"] == "hard":
 			var challenge: EliteChallenge = EliteChallenge.get_random_challenge()
-			var overlay: Node = load("res://src/ui/screens/EliteOverlay.tscn").instantiate()
+			var overlay: Node = (load("res://src/ui/screens/EliteOverlay.tscn") as PackedScene).instantiate()
 			add_child(overlay)
 			if overlay.has_method("setup"):
-				overlay.setup(challenge)
+				overlay.call("setup", challenge)
 			if overlay.has_signal("challenge_accepted"):
-				overlay.challenge_accepted.connect(func(accepted_challenge: EliteChallenge) -> void:
+				overlay.connect("challenge_accepted", func(accepted_challenge: EliteChallenge) -> void:
 					RunManager.active_challenge = accepted_challenge
 					# Use specialized elite profile
 					var max_g: float = RunManager.get_absolute_max_grade()
@@ -241,7 +245,7 @@ func _on_node_clicked(node: Dictionary) -> void:
 					get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
 				)
 			if overlay.has_signal("challenge_declined"):
-				overlay.challenge_declined.connect(func() -> void:
+				overlay.connect("challenge_declined", func() -> void:
 					_check_autoplay()
 				)
 			return

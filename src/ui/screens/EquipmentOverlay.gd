@@ -25,7 +25,7 @@ func _build_slots() -> void:
 	var run: Dictionary = RunManager.get_run()
 	
 	for slot: String in ALL_SLOTS:
-		var equipped_id: String = run["equipped"].get(slot, "")
+		var equipped_id: String = (run["equipped"] as Dictionary).get(slot, "")
 		var slot_panel: PanelContainer = PanelContainer.new()
 		slot_panel.custom_minimum_size = Vector2(120, 100)
 		

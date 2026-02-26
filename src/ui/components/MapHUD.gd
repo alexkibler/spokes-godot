@@ -29,10 +29,10 @@ func _on_autoplay_changed(enabled: bool) -> void:
 	_update_autoplay_ui(enabled)
 
 func _on_equip_pressed() -> void:
-	var overlay: Node = load("res://src/ui/screens/EquipmentOverlay.tscn").instantiate()
+	var overlay: Node = (load("res://src/ui/screens/EquipmentOverlay.tscn") as PackedScene).instantiate()
 	add_child(overlay)
 	if overlay.has_signal("closed"):
-		overlay.closed.connect(func() -> void: update_hud())
+		overlay.connect("closed", func() -> void: update_hud())
 
 func _on_autoplay_pressed() -> void:
 	RunManager.toggle_autoplay()

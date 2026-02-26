@@ -56,6 +56,17 @@ static func calculate_acceleration(
 	
 	return net_force / effective_mass
 
+## Calculates the effective grade, Crr, and CWA parameters to send to the FTMS Smart Trainer
+static func get_trainer_simulation_params(stats: CyclistStats, current_grade: float) -> Dictionary:
+	var assumed_trainer_mass: float = 83.0
+	var mass_ratio: float = stats.mass_kg / assumed_trainer_mass
+	
+	return {
+		"grade": current_grade * mass_ratio,
+		"crr": stats.crr * mass_ratio,
+		"cwa": stats.cda 
+	}
+
 static func ms_to_kmh(ms: float) -> float:
 	return ms * 3.6
 

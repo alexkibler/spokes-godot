@@ -44,8 +44,8 @@ static func format_fixed(val: float, decimals: int = 1) -> String:
 		return str(int(round(val)))
 	
 	# Round to requested decimals manually
-	var multiplier = pow(10, decimals)
-	var rounded_val = round(val * multiplier) / multiplier
+	var multiplier: float = pow(10.0, float(decimals))
+	var rounded_val: float = round(val * multiplier) / multiplier
 	
 	# After rounding, it might have become an integer
 	if is_close_to_integer(rounded_val):

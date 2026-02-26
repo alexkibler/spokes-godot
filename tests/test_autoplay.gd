@@ -80,7 +80,7 @@ func test_autoplay_reward_selection_prefers_better_item() -> void:
 	ContentRegistry.register_reward({
 		"id": "item_pro_frame_test",
 		"label": "Pro Frame",
-		"apply": func(rm_node: Node) -> void: rm_node.add_to_inventory("pro_frame_test")
+		"apply": func(rm_node: Node) -> void: rm_node.call("add_to_inventory", "pro_frame_test")
 	})
 	var reward_b: Dictionary = ContentRegistry.get_reward("item_pro_frame_test")
 	
@@ -102,7 +102,7 @@ func test_autoplay_prefers_net_stat_gain() -> void:
 	})
 	ContentRegistry.register_reward({
 		"id": "item_pro_helmet_test",
-		"apply": func(rm_node: Node) -> void: rm_node.add_to_inventory("pro_helmet_test")
+		"apply": func(rm_node: Node) -> void: rm_node.call("add_to_inventory", "pro_helmet_test")
 	})
 	var reward_a: Dictionary = ContentRegistry.get_reward("item_pro_helmet_test")
 	var reward_b: Dictionary = ContentRegistry.get_reward("stat_aero_1") # +2% permanent
@@ -113,7 +113,7 @@ func test_autoplay_prefers_net_stat_gain() -> void:
 func test_autoplay_automatic_equip_on_grant() -> void:
 	RunManager.autoplay_enabled = true
 	RunManager.add_to_inventory("aero_helmet")
-	assert_eq(RunManager.run_data["equipped"].get("helmet"), "aero_helmet")
+	assert_eq((RunManager.run_data["equipped"] as Dictionary).get("helmet"), "aero_helmet")
 	
 	ContentRegistry.register_item({
 		"id": "super_helmet_test",
@@ -121,7 +121,7 @@ func test_autoplay_automatic_equip_on_grant() -> void:
 		"modifier": {"dragReduction": 0.10}
 	})
 	RunManager.add_to_inventory("super_helmet_test")
-	assert_eq(RunManager.run_data["equipped"].get("helmet"), "super_helmet_test")
+	assert_eq((RunManager.run_data["equipped"] as Dictionary).get("helmet"), "super_helmet_test")
 
 func test_autoplay_pathfinding_complex_navigation() -> void:
 	RunManager.run_data["currentNodeId"] = "node_hub"

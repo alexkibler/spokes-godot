@@ -99,7 +99,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         edges.append({
             "from": from_id,
             "to": to_id,
-            "profile": load("res://src/features/map/CourseProfile.gd").generate_course_profile(km, grade, surface),
+            "profile": CourseProfile.generate_course_profile(km, grade, surface),
             "isCleared": false
         })
 
@@ -160,14 +160,14 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
                         if e["from"] == hub_node["id"] and e["to"] == node_id:
                             e["requiredMedal"] = "medal_" + prev_spoke_id
                             break
-                hub_node["connectedTo"].append(node_id)
+                (hub_node["connectedTo"] as Array).append(node_id)
             else:
                 var prev_id: String = spoke_node_ids[i-2]
                 add_edge.call(prev_id, node_id, base_km, 0.04)
                 # find prev node
                 for n: Dictionary in nodes:
                     if n["id"] == prev_id:
-                        n["connectedTo"].append(node_id)
+                        (n["connectedTo"] as Array).append(node_id)
                         break
 
         # 2b. Island mini-DAG
@@ -213,26 +213,26 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         add_edge.call(last_spoke_id, ie_id, base_km, 0.04)
         for n: Dictionary in nodes:
             if n["id"] == last_spoke_id:
-                n["connectedTo"].append(ie_id)
+                (n["connectedTo"] as Array).append(ie_id)
                 break
                 
         # entry -> left/center/right
         add_edge.call(ie_id, il_id, base_km, 0.05)
         add_edge.call(ie_id, ic_id, base_km, 0.03)
         add_edge.call(ie_id, ir_id, base_km, 0.05)
-        ie_node["connectedTo"].append_array([il_id, ic_id, ir_id])
+        (ie_node["connectedTo"] as Array).append_array([il_id, ic_id, ir_id])
         
         # left/center/right -> pre-boss
         add_edge.call(il_id, ip_id, base_km, 0.05, "gravel")
         add_edge.call(ic_id, ip_id, base_km, 0.03)
         add_edge.call(ir_id, ip_id, base_km, 0.05, "gravel")
-        il_node["connectedTo"].append(ip_id)
-        ic_node["connectedTo"].append(ip_id)
-        ir_node["connectedTo"].append(ip_id)
+        (il_node["connectedTo"] as Array).append(ip_id)
+        (ic_node["connectedTo"] as Array).append(ip_id)
+        (ir_node["connectedTo"] as Array).append(ip_id)
         
         # pre-boss -> boss
         add_edge.call(ip_id, boss_id, base_km * 1.5, 0.08)
-        ip_node["connectedTo"].append(boss_id)
+        (ip_node["connectedTo"] as Array).append(boss_id)
 
     # 3. Final Boss
     var final_angle: float = (TAU * (float(num_spokes) - 0.5)) / float(num_spokes) - (TAU / 16.0)
@@ -255,7 +255,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
             e["requiresAllMedals"] = true
             break
             
-    hub_node["connectedTo"].append(final_boss_node["id"])
+    (hub_node["connectedTo"] as Array).append(final_boss_node["id"])
     
     run_data["nodes"] = nodes
     run_data["edges"] = edges

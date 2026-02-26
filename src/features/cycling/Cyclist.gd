@@ -34,13 +34,22 @@ func _ready() -> void:
 	hardware_receiver.is_player = is_player
 
 ## Setup the cyclist with specific properties.
-func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE) -> void:
+func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE, p_start_distance: float = 0.0, p_base_power: float = 200.0) -> void:
 	is_player = p_is_player
 	stats = p_stats
 	label = p_label
+	distance_m = p_start_distance
 	
 	if hardware_receiver:
 		hardware_receiver.is_player = is_player
+		if not is_player:
+			hardware_receiver.set_power_manual(p_base_power)
+			# Disconnect hardware signals for AI
+			if SignalBus.trainer_power_updated.is_connected(hardware_receiver._on_power_updated):
+				SignalBus.trainer_power_updated.disconnect(hardware_receiver._on_power_updated)
+			if SignalBus.trainer_cadence_updated.is_connected(hardware_receiver._on_cadence_updated):
+				SignalBus.trainer_cadence_updated.disconnect(hardware_receiver._on_cadence_updated)
+	
 	if drafting:
 		drafting.stats = stats
 	
@@ -91,24 +100,6 @@ func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array
 		# Position/Rotation handling is usually done by the parent scene (GameScene) relative to the track/camera,
 		# but strictly the visual's internal animation (pedaling) is handled here.
 		# The root Node2D transform (position along track) is updated by GameScene based on distance_m.
-
-## Returns the parameters needed for TrainerService simulation based on current physics.
-func get_trainer_resistance_params() -> Dictionary:
-	# Match Phaser's Trainer simulation parameters (scaling by massRatio)
-	var assumed_trainer_mass: float = 83.0
-	var mass_ratio: float = stats.mass_kg / assumed_trainer_mass
-
-	var effective_grade: float = current_grade * mass_ratio
-	var effective_crr: float = stats.crr * mass_ratio
-	
-	# CWA = CdA according to Phaser implementation
-	var cwa: float = stats.cda
-	
-	return {
-		"grade": effective_grade,
-		"crr": effective_crr,
-		"cwa": cwa
-	}
 
 func set_color(color: Color) -> void:
 	if visuals:

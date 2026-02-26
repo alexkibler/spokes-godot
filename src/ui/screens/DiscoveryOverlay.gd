@@ -27,7 +27,7 @@ func _update_ui(def: Dictionary) -> void:
 	desc_label.text = str(def["description"])
 	
 	var slot: String = def.get("slot", "none")
-	var current: String = RunManager.run_data["equipped"].get(slot, "")
+	var current: String = (RunManager.run_data["equipped"] as Dictionary).get(slot, "")
 	if current != "":
 		var c_def: Dictionary = ContentRegistry.get_item(current)
 		keep_btn.text = "KEEP " + str(c_def["label"])

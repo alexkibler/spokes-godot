@@ -29,9 +29,9 @@ func _setup_js_bridge() -> void:
 	
 	var window: JavaScriptObject = JavaScriptBridge.get_interface("window")
 	if window:
-		window.godot_ftms_callback = _js_data_callback
-		window.godot_ftms_connected_callback = _js_connected_callback
-		window.godot_ftms_disconnected_callback = _js_disconnected_callback
+		window.set("godot_ftms_callback", _js_data_callback)
+		window.set("godot_ftms_connected_callback", _js_connected_callback)
+		window.set("godot_ftms_disconnected_callback", _js_disconnected_callback)
 	
 	var js_code: String = """
 window.connectFTMS = async function() {

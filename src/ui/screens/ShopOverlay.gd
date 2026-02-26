@@ -117,7 +117,7 @@ func _build_inventory() -> void:
 func _on_buy_pressed(item: Dictionary, price: int) -> void:
 	if RunManager.spend_gold(price):
 		# Special case: permanent stat boosts apply immediately
-		if item["id"].begins_with("stat_"):
+		if (item["id"] as String).begins_with("stat_"):
 			ContentRegistry.apply_reward(item["id"])
 		else:
 			RunManager.add_to_inventory(item["id"])

@@ -115,8 +115,8 @@ func _ready() -> void:
 	SignalBus.item_discovered.connect(_on_item_discovered)
 	
 	# Dev-only speed control
-	var hostname = JavaScriptBridge.eval("window.location.hostname")
-	if typeof(hostname) == TYPE_STRING and hostname.begins_with("spokesdev"):
+	var hostname: Variant = JavaScriptBridge.eval("window.location.hostname")
+	if typeof(hostname) == TYPE_STRING and (hostname as String).begins_with("spokesdev"):
 		is_dev_build = true
 		_create_speed_control()
 
@@ -136,14 +136,7 @@ func _spawn_ghosts() -> void:
 		var g_stats: CyclistStats = player_cyclist.stats.duplicate()
 		var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
 		
-		g_node.setup(false, g_stats, labels[i], color)
-
-		# Set Initial State
-		g_node.distance_m = 10.0 + i * 5.0
-		g_node.velocity_ms = 0.0
-
-		# Set Power (Manual)
-		g_node.hardware_receiver.set_power_manual(base_power * offsets[i])
+		g_node.setup(false, g_stats, labels[i], color, 10.0 + i * 5.0, base_power * offsets[i])
 		
 		ghosts.append(g_node)
 
@@ -152,20 +145,21 @@ func _apply_biome_theming(edge: Dictionary) -> void:
 	var run: Dictionary = RunManager.get_run()
 	for n: Dictionary in run["nodes"]:
 		if n["id"] == edge["to"]:
-			spoke_id = n.get("metadata", {}).get("spokeId", "plains")
+			spoke_id = ((n as Dictionary).get("metadata", {}) as Dictionary).get("spokeId", "plains")
 			break
 	
 	var color: Color = SpokesTheme.BIOME_COLORS.get(spoke_id, Color.DARK_GREEN)
-	$ParallaxBackground/HillLayer/Hills.color = color.lerp(Color.BLACK, 0.2)
-	$ParallaxBackground/GroundLayer/Field.color = color.lerp(Color.BLACK, 0.4)
-	$Environment/RoadFill.color = color.lerp(Color.BLACK, 0.4)
+	($ParallaxBackground/HillLayer/Hills as Polygon2D).color = color.lerp(Color.BLACK, 0.2)
+	($ParallaxBackground/GroundLayer/Field as ColorRect).color = color.lerp(Color.BLACK, 0.4)
+	($Environment/RoadFill as Polygon2D).color = color.lerp(Color.BLACK, 0.4)
 
 func _build_elevation_graph() -> void:
 	if not is_inside_tree() or course == null: return
 	
 	elevation_line.clear_points()
 	var total_dist: float = course.total_distance_m
-	var width: float = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
+	var elevation_container: Control = $HUD/MarginContainer/VBoxContainer/ElevationContainer as Control
+	var width: float = elevation_container.size.x
 	if width <= 0: width = 1240.0
 	
 	var container_height: float = 100.0
@@ -242,7 +236,7 @@ func _update_ground_line() -> void:
 	var poly_points: Array[Vector2] = points.duplicate()
 	poly_points.append(Vector2(end_x, 1000.0)) # Far below screen
 	poly_points.append(Vector2(start_x, 1000.0))
-	$Environment/RoadFill.polygon = PackedVector2Array(poly_points)
+	($Environment/RoadFill as Polygon2D).polygon = PackedVector2Array(poly_points)
 
 func _physics_process(delta: float) -> void:
 	if is_complete: return
@@ -303,12 +297,8 @@ func _physics_process(delta: float) -> void:
 	_update_visuals(delta)
 	
 	if Engine.get_physics_frames() % 60 == 0:
-		var trainer_params: Dictionary = player_cyclist.get_trainer_resistance_params()
-		TrainerService.set_simulation_params(
-			trainer_params["grade"], 
-			trainer_params["crr"], 
-			trainer_params["cwa"]
-		)
+		var params: Dictionary = CyclistPhysics.get_trainer_simulation_params(player_cyclist.stats, player_cyclist.current_grade)
+		TrainerService.set_simulation_params(params.grade, params.crr, params.cwa)
 
 func _update_visuals(delta: float) -> void:
 	# Parallax scrolling
@@ -341,7 +331,8 @@ func _update_visuals(delta: float) -> void:
 	
 	# Update Player marker on elevation graph
 	var total_dist: float = course.total_distance_m
-	var graph_width: float = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
+	var elevation_container: Control = $HUD/MarginContainer/VBoxContainer/ElevationContainer as Control
+	var graph_width: float = elevation_container.size.x
 	if graph_width <= 0: graph_width = 1240.0
 	
 	var progress: float = clamp(player_cyclist.distance_m / total_dist, 0.0, 1.0)
@@ -354,12 +345,12 @@ func _on_viewport_resized() -> void:
 	var vw: float = get_viewport_rect().size.x
 	var mirror_val: Vector2 = Vector2(max(1280.0, vw), 0)
 	if parallax:
-		for layer in parallax.get_children():
+		for layer: Node in parallax.get_children():
 			if layer is ParallaxLayer:
-				layer.motion_mirroring = mirror_val
-				for child in layer.get_children():
+				(layer as ParallaxLayer).motion_mirroring = mirror_val
+				for child: Node in layer.get_children():
 					if child is Control:
-						child.custom_minimum_size.x = mirror_val.x
+						(child as Control).custom_minimum_size.x = mirror_val.x
 	
 	# Wait for layout update to get correct ElevationContainer width
 	get_tree().process_frame.connect(_build_elevation_graph, CONNECT_ONE_SHOT)
@@ -389,7 +380,7 @@ func _create_speed_control() -> void:
 	lbl.add_theme_color_override("font_color", Color.WHITE)
 	hbox.add_child(lbl)
 
-	for speed in [1.0, 2.0, 5.0, 10.0]:
+	for speed: float in [1.0, 2.0, 5.0, 10.0]:
 		var btn: Button = Button.new()
 		btn.text = str(speed) + "x"
 		btn.custom_minimum_size = Vector2(48, 32)
@@ -411,13 +402,14 @@ func _create_speed_control() -> void:
 func _on_item_discovered(item_id: String) -> void:
 	if RunManager.autoplay_enabled: return
 	
-	var overlay = load("res://src/ui/screens/DiscoveryOverlay.tscn").instantiate()
+	var overlay: Node = (load("res://src/ui/screens/DiscoveryOverlay.tscn") as PackedScene).instantiate()
 	add_child(overlay)
-	overlay.setup(item_id)
+	if overlay.has_method("setup"):
+		overlay.call("setup", item_id)
 
 func _set_surface(surface: String) -> void:
 	var road_color: Color = Color(0.2, 0.2, 0.2) # Default Asphalt
-	var field_color: Color = SpokesTheme.BIOME_COLORS.get("plains", Color.DARK_GREEN).lerp(Color.BLACK, 0.4)
+	var field_color: Color = (SpokesTheme.BIOME_COLORS.get("plains", Color.DARK_GREEN) as Color).lerp(Color.BLACK, 0.4)
 	
 	match surface:
 		"gravel":
@@ -431,9 +423,9 @@ func _set_surface(surface: String) -> void:
 			field_color = Color("#1b1b1b")
 	
 	if has_node("Environment/RoadFill"):
-		$Environment/RoadFill.color = road_color
+		($Environment/RoadFill as Polygon2D).color = road_color
 	if has_node("ParallaxBackground/GroundLayer/Field"):
-		$ParallaxBackground/GroundLayer/Field.color = field_color
+		($ParallaxBackground/GroundLayer/Field as ColorRect).color = field_color
 
 func _on_ride_complete() -> void:
 	is_complete = true
@@ -481,16 +473,16 @@ func _on_ride_complete() -> void:
 		get_tree().change_scene_to_file("res://src/features/map/MapScene.tscn")
 
 	if is_first_clear:
-		var overlay: Node = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
+		var overlay: Node = (load("res://src/ui/screens/RewardOverlay.tscn") as PackedScene).instantiate()
 		add_child(overlay)
 		
 		# Show boss medal if applicable
 		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
 		if overlay.has_method("setup"):
-			overlay.setup(is_boss)
+			overlay.call("setup", is_boss)
 		
 		if overlay.has_signal("reward_selected"):
-			overlay.reward_selected.connect(func() -> void:
+			overlay.connect("reward_selected", func() -> void:
 				_check_and_show_pending_overlay(on_overlay_closed)
 			)
 	else:
@@ -501,15 +493,15 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 	RunManager.pending_overlay = "" # Clear it immediately
 	
 	if pending == "shop":
-		var overlay: Node = load("res://src/ui/screens/ShopOverlay.tscn").instantiate()
+		var overlay: Node = (load("res://src/ui/screens/ShopOverlay.tscn") as PackedScene).instantiate()
 		add_child(overlay)
 		if overlay.has_signal("closed"):
-			overlay.closed.connect(callback)
+			overlay.connect("closed", callback)
 	elif pending == "event":
-		var overlay: Node = load("res://src/ui/screens/EventOverlay.tscn").instantiate()
+		var overlay: Node = (load("res://src/ui/screens/EventOverlay.tscn") as PackedScene).instantiate()
 		add_child(overlay)
 		if overlay.has_signal("closed"):
-			overlay.closed.connect(callback)
+			overlay.connect("closed", callback)
 	else:
 		# No pending overlay, wait a bit then return to map
 		get_tree().create_timer(2.0).timeout.connect(callback)
@@ -519,11 +511,11 @@ func _on_cadence_updated(p_rpm: float) -> void:
 	# We just trigger the HUD update logic.
 	var cadence_node: Label = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false) as Label
 	if cadence_node:
-		cadence_node.text = str(round(p_rpm)) + " RPM"
+		(cadence_node as Label).text = str(round(p_rpm)) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		var pause_menu: Node = load("res://src/ui/screens/PauseOverlay.tscn").instantiate()
+		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
 		add_child(pause_menu)
 		get_viewport().set_input_as_handled()
 
@@ -548,15 +540,15 @@ func _update_hud(p_effective_power: float) -> void:
 
 	if state == "surge":
 		draft_badge.visible = true
-		draft_badge.get_node("Label").text = "ATTACK! +25% POWER"
+		(draft_badge.get_node("Label") as Label).text = "ATTACK! +25% POWER"
 		draft_badge.modulate = Color.ORANGE_RED
 	elif state == "recovery":
 		draft_badge.visible = true
-		draft_badge.get_node("Label").text = "RECOVERING... -15% POWER"
+		(draft_badge.get_node("Label") as Label).text = "RECOVERING... -15% POWER"
 		draft_badge.modulate = Color.SKY_BLUE
 	elif player_cyclist.draft_factor > 0.01:
 		draft_badge.visible = true
-		draft_badge.get_node("Label").text = "SLIPSTREAM  −%d%% DRAG" % int(player_cyclist.draft_factor * 100)
+		(draft_badge.get_node("Label") as Label).text = "SLIPSTREAM  −%d%% DRAG" % int(player_cyclist.draft_factor * 100)
 		draft_badge.modulate = Color.WHITE
 	else:
 		draft_badge.visible = false

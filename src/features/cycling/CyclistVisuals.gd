@@ -52,24 +52,24 @@ func _animate_parts(velocity: float) -> void:
 		if has_node(node_name):
 			var rider: Node = get_node(node_name)
 			var base_y: float = -45.0 if rider is Sprite2D else -62.0
-			rider.position.y = base_y + bob
+			(rider as Node2D).position.y = base_y + bob
 
 	# Ensure Bike parts stay stationary (at their base_y)
 	for node_name: String in ["Frame", "Crank", "Chain", "Wheels", "Handlebars", "BackPedal"]:
 		if has_node(node_name):
 			var child: Node = get_node(node_name)
 			if child is Sprite2D:
-				child.position.y = -45.0
+				(child as Node2D).position.y = -45.0
 
 ## Sets the color of the cyclist parts (for ghosts/teams).
 func set_color(color: Color) -> void:
-	if has_node("Frame"): get_node("Frame").modulate = color
-	if has_node("Crank"): get_node("Crank").modulate = color
+	if has_node("Frame"): (get_node("Frame") as CanvasItem).modulate = color
+	if has_node("Crank"): (get_node("Crank") as CanvasItem).modulate = color
 
 	if has_node("Rider"):
-		var rider = get_node("Rider")
-		if rider is Sprite2D: rider.modulate = color
-		elif rider is Polygon2D: rider.color = color
+		var rider: Node = get_node("Rider")
+		if rider is Sprite2D: (rider as Sprite2D).modulate = color
+		elif rider is Polygon2D: (rider as Polygon2D).color = color
 
 	if has_node("RiderPoly"):
-		get_node("RiderPoly").color = color
+		(get_node("RiderPoly") as Polygon2D).color = color

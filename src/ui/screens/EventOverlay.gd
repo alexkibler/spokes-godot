@@ -20,17 +20,17 @@ func _ready() -> void:
 	_pick_event()
 	
 	if RunManager.autoplay_enabled:
-		var pb = ProgressBar.new()
+		var pb: ProgressBar = ProgressBar.new()
 		pb.show_percentage = false
 		pb.custom_minimum_size.y = 6
 		pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pb.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 		attempt_btn.add_child(pb)
 		
-		var tween = create_tween()
+		var tween: Tween = create_tween()
 		tween.tween_property(pb, "value", 100.0, 2.0).from(0.0)
 		
-		get_tree().create_timer(2.0).timeout.connect(func():
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
 			if is_inside_tree() and not outcome_panel.visible:
 				_on_attempt_pressed()
 		)
@@ -105,7 +105,7 @@ func _show_outcome(title: String, desc: String, success: bool) -> void:
 	outcome_title.add_theme_color_override("font_color", Color.GREEN if success else Color.RED)
 	
 	if RunManager.autoplay_enabled:
-		get_tree().create_timer(2.0).timeout.connect(func():
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
 			if is_inside_tree():
 				_on_close_pressed()
 		)

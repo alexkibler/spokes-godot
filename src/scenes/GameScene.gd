@@ -94,9 +94,9 @@ func _ready() -> void:
 	# Setup UI
 	progress_bar.max_value = course.get("totalDistanceM", 1000.0)
 	progress_bar.value = 0.0
-	_build_elevation_graph()
+	
 	get_viewport().size_changed.connect(_on_viewport_resized)
-	_on_viewport_resized()
+	_on_viewport_resized() # This now handles _build_elevation_graph via process_frame
 	
 	# Spawn Ghosts
 	_spawn_ghosts()
@@ -160,37 +160,45 @@ func _apply_biome_theming(edge: Dictionary) -> void:
 	$ParallaxBackground/GroundLayer/Field.color = color.lerp(Color.BLACK, 0.4)
 
 func _build_elevation_graph() -> void:
+	if not is_inside_tree() or course.is_empty(): return
+	
 	elevation_line.clear_points()
 	var total_dist = course.get("totalDistanceM", 1000.0)
 	var width = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
 	if width <= 0: width = 1240
 	
-	var container_size = Vector2(width, 100)
+	var container_height = 100.0
 	var points = 100
 	
 	var elev_points = []
-	var min_elev = 0.0
-	var max_elev = 0.0
-	
 	for i in range(points + 1):
 		var d = (float(i) / points) * total_dist
-		var e = _get_elevation_at(course, d)
-		elev_points.append(e)
+		elev_points.append(_get_elevation_at(course, d))
+	
+	var min_elev = elev_points[0]
+	var max_elev = elev_points[0]
+	for e in elev_points:
 		min_elev = min(min_elev, e)
 		max_elev = max(max_elev, e)
 		
-	var range_elev = max(10.0, max_elev - min_elev)
+	var range_elev = max(5.0, max_elev - min_elev) # Minimum 5m scale
+	
+	# Add 10% vertical padding
+	var padding = range_elev * 0.1
+	min_elev -= padding
+	range_elev += padding * 2.0
 	
 	for i in range(elev_points.size()):
 		var x = (float(i) / points) * width
-		var y = container_size.y - ((elev_points[i] - min_elev) / range_elev) * container_size.y
+		var y = container_height - ((elev_points[i] - min_elev) / range_elev) * container_height
 		elevation_line.add_point(Vector2(x, y))
 
 func _get_elevation_at(p_course: Dictionary, p_dist: float) -> float:
-	var wrapped = fmod(p_dist, p_course["totalDistanceM"])
-	var remaining = wrapped
+	var total_dist = p_course.get("totalDistanceM", 1.0)
+	# Use a small epsilon to avoid wrapping exactly at the boundary
+	var remaining = min(p_dist, total_dist - 0.001)
 	var elevation = 0.0
-	for segment in p_course["segments"]:
+	for segment in p_course.get("segments", []):
 		var dist = min(remaining, segment["distanceM"])
 		elevation += dist * segment["grade"]
 		if remaining <= segment["distanceM"]: break
@@ -373,7 +381,7 @@ func _update_visuals(delta: float) -> void:
 	var total_dist = course.get("totalDistanceM", 1.0)
 	var graph_width = $HUD/MarginContainer/VBoxContainer/ElevationContainer.size.x
 	if graph_width <= 0: graph_width = 1240
-	player_marker.position.x = (distance_m / total_dist) * graph_width
+	player_marker.position.x = clamp(distance_m / total_dist, 0.0, 1.0) * graph_width
 
 func _on_viewport_resized() -> void:
 	var vw = get_viewport_rect().size.x
@@ -385,7 +393,9 @@ func _on_viewport_resized() -> void:
 				for child in layer.get_children():
 					if child is Control:
 						child.custom_minimum_size.x = mirror_val.x
-	_build_elevation_graph()
+	
+	# Wait for layout update to get correct ElevationContainer width
+	get_tree().process_frame.connect(_build_elevation_graph, CONNECT_ONE_SHOT)
 
 func _animate_cyclist(node: Node2D, w_rot: float, vel: float) -> void:
 	node.get_node("WheelBack").rotation = w_rot

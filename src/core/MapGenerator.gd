@@ -42,8 +42,8 @@ static func compute_num_spokes(total_distance_km: float) -> int:
 
 static func random_island_node_type() -> String:
     var r = randf()
-    if r < 0.5: return "standard"
-    if r < 0.8: return "event"
+    if r < 0.3: return "standard"
+    if r < 0.7: return "event"
     return "hard"
 
 static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
@@ -114,9 +114,13 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
             var node_id = "node_%s_s%d" % [spoke_id, i]
             var pos = get_pos.call(SPOKE_STEP * i)
             
+            var type = "standard"
+            if randf() < 0.2: type = "event"
+            elif randf() < 0.1: type = "hard"
+            
             var node = {
                 "id": node_id,
-                "type": "standard",
+                "type": type,
                 "floor": i,
                 "col": 0,
                 "x": pos["x"],
@@ -129,6 +133,13 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
             
             if i == 1:
                 add_edge.call(hub_node["id"], node_id, base_km, config["hazardGrade"], config["hazardSurface"])
+                # Spoke Gate: require medal from previous spoke
+                if spoke_index > 0:
+                    var prev_spoke_id = active_spokes[spoke_index - 1]
+                    for e in edges:
+                        if e["from"] == hub_node["id"] and e["to"] == node_id:
+                            e["requiredMedal"] = "medal_" + prev_spoke_id
+                            break
                 hub_node["connectedTo"].append(node_id)
             else:
                 var prev_id = spoke_node_ids[i-2]
@@ -205,7 +216,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
 
     # 3. Final Boss
     var final_angle = PI * (2.0 * num_spokes - 1.0) / float(num_spokes)
-    var final_dist = 0.06
+    var final_dist = 0.45
     var final_boss_node = {
         "id": "node_final_boss",
         "type": "finish",
@@ -216,7 +227,14 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         "connectedTo": []
     }
     nodes.append(final_boss_node)
+    
+    # This edge is "Locked" - needs all medals
     add_edge.call(hub_node["id"], final_boss_node["id"], base_km * 2.0, 0.10)
+    for e in edges:
+        if e["from"] == hub_node["id"] and e["to"] == final_boss_node["id"]:
+            e["requiresAllMedals"] = true
+            break
+            
     hub_node["connectedTo"].append(final_boss_node["id"])
     
     run_data["nodes"] = nodes

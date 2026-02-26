@@ -15,10 +15,32 @@ func _ready() -> void:
 	_render_cards()
 	
 	if RunManager.autoplay_enabled:
-		# Auto-pick first card after delay
+		var best_r = RunManager.get_best_reward(current_rewards)
+		var best_idx = 0
+		for i in range(current_rewards.size()):
+			if current_rewards[i]["id"] == best_r["id"]:
+				best_idx = i
+				break
+				
+		# Add indicator after cards are rendered
+		get_tree().process_frame.connect(func():
+			if card_container.get_child_count() > best_idx:
+				var target_card = card_container.get_child(best_idx)
+				var pb = ProgressBar.new()
+				pb.show_percentage = false
+				pb.custom_minimum_size.y = 8
+				pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				pb.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+				target_card.add_child(pb)
+				
+				var tween = create_tween()
+				tween.tween_property(pb, "value", 100.0, 2.0).from(0.0)
+		, CONNECT_ONE_SHOT)
+
+		# Auto-pick best card after delay
 		get_tree().create_timer(2.0).timeout.connect(func():
-			if is_inside_tree() and not current_rewards.is_empty():
-				_on_card_pressed(current_rewards[0]["id"])
+			if is_inside_tree() and not best_r.is_empty():
+				_on_card_pressed(best_r["id"])
 		)
 
 func _render_cards() -> void:

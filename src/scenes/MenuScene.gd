@@ -26,7 +26,34 @@ func _ready() -> void:
 	diff_toggle.add_item("Hard")
 	diff_toggle.selected = 1
 	
+	var bt_btn = Button.new()
+	bt_btn.text = "PAIR BLUETOOTH TRAINER"
+	bt_btn.custom_minimum_size = Vector2(300, 60)
+	bt_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if not OS.has_feature("web"):
+		bt_btn.disabled = true
+		bt_btn.text += " (WEB ONLY)"
+	else:
+		bt_btn.pressed.connect(func():
+			TrainerService.is_mock_mode = false
+			TrainerService.request_bluetooth_if_needed()
+			bt_btn.text = "PAIRING..."
+			bt_btn.disabled = true
+			if not TrainerService.connected.is_connected(self._on_bt_connected):
+				TrainerService.connected.connect(func():
+					bt_btn.text = "CONNECTED!"
+				, CONNECT_ONE_SHOT)
+		)
+	
+	var vbox = $MarginContainer/VBoxContainer
+	var start_btn = $MarginContainer/VBoxContainer/StartButton
+	vbox.add_child(bt_btn)
+	vbox.move_child(bt_btn, start_btn.get_index())
+	
 	_on_dist_changed(dist_slider.value)
+
+func _on_bt_connected() -> void:
+	pass
 
 func _on_dist_changed(val: float) -> void:
 	dist_label.text = str(val) + " km"
@@ -37,9 +64,6 @@ func _on_start_pressed() -> void:
 	SettingsManager.weight_kg = weight_input.value
 	SettingsManager.units = "imperial" if units_toggle.selected == 0 else "metric"
 	SettingsManager.save_settings()
-	
-	# Configure Trainer (Mock for now)
-	TrainerService.is_mock_mode = true
 	
 	# Start Run
 	var diff_str = "normal"

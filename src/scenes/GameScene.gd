@@ -31,6 +31,14 @@ var run_modifiers: Dictionary = {}
 var course: Dictionary = {}
 var is_complete: bool = false
 
+# Surge / Recovery state
+var surge_timer: float = 0.0
+var recovery_timer: float = 0.0
+const SURGE_DURATION: float = 5.0
+const SURGE_POWER_MULT: float = 1.25
+const RECOVERY_DURATION: float = 4.0
+const RECOVERY_POWER_MULT: float = 0.85
+
 var fit_writer: FitWriter
 var last_record_ms: int = 0
 var ride_start_time: int = 0
@@ -156,11 +164,37 @@ func _physics_process(delta: float) -> void:
 		var target_power = float(RunManager.run_data.get("ftpW", 200.0))
 		latest_power = lerp(latest_power, target_power, delta * 2.0)
 	
-	# 1. Update Drafting
+	# 1. Update Drafting & Surge Logic
 	var best_draft = 0.0
+	var close_behind = false
+	
 	for g in ghosts:
-		best_draft = max(best_draft, DraftingPhysics.get_draft_factor(g["distance_m"] - distance_m))
+		var gap_behind = g["distance_m"] - distance_m # Ghost is in front
+		var gap_ahead = distance_m - g["distance_m"]  # Ghost is behind
+		
+		# Benefit from ghost in front (standard draft)
+		var draft = DraftingPhysics.get_draft_factor(gap_behind)
+		# Benefit from ghost behind (push)
+		var push = DraftingPhysics.get_leading_draft_factor(gap_ahead)
+		
+		best_draft = max(best_draft, max(draft, push))
+		
+		# If we are close behind (within 4m) and moving faster, potential surge
+		if gap_behind > 0 and gap_behind < 4.0:
+			if velocity_ms > g["velocity_ms"] + 0.1:
+				close_behind = true
+				
 	player_draft_factor = best_draft
+	
+	# Surge State Machine
+	if surge_timer > 0:
+		surge_timer -= delta
+		if surge_timer <= 0:
+			recovery_timer = RECOVERY_DURATION
+	elif recovery_timer > 0:
+		recovery_timer -= delta
+	elif close_behind and player_draft_factor > 0.15:
+		surge_timer = SURGE_DURATION
 	
 	# 2. Update Player Physics
 	current_grade = CourseProfile.get_grade_at_distance(course, distance_m)
@@ -169,8 +203,14 @@ func _physics_process(delta: float) -> void:
 	var draft_mods = run_modifiers.duplicate()
 	draft_mods["dragReduction"] = min(0.99, draft_mods.get("dragReduction", 0.0) + player_draft_factor)
 	
+	var effective_input_power = latest_power
+	if surge_timer > 0:
+		effective_input_power *= SURGE_POWER_MULT
+	elif recovery_timer > 0:
+		effective_input_power *= RECOVERY_POWER_MULT
+
 	var acceleration = CyclistPhysics.calculate_acceleration(
-		latest_power, 
+		effective_input_power, 
 		velocity_ms, 
 		physics_config, 
 		draft_mods
@@ -187,11 +227,17 @@ func _physics_process(delta: float) -> void:
 		var g_config = physics_config.duplicate()
 		g_config["grade"] = g_grade
 		
-		# Ghost also drafts!
+		# Ghost also drafts (following)
 		var g_draft = DraftingPhysics.get_draft_factor(distance_m - g_dist)
+		# Ghost also gets pushed (leading player)
+		g_draft = max(g_draft, DraftingPhysics.get_leading_draft_factor(g_dist - distance_m))
+		
 		for other in ghosts:
 			if other == g: continue
+			# Drafting other ghosts
 			g_draft = max(g_draft, DraftingPhysics.get_draft_factor(other["distance_m"] - g_dist))
+			# Getting pushed by other ghosts
+			g_draft = max(g_draft, DraftingPhysics.get_leading_draft_factor(g_dist - other["distance_m"]))
 			
 		var g_accel = CyclistPhysics.calculate_acceleration(g["power_w"], g["velocity_ms"], g_config, {"dragReduction": g_draft})
 		g["velocity_ms"] = max(0.0, g["velocity_ms"] + g_accel * delta)
@@ -279,6 +325,12 @@ func _on_ride_complete() -> void:
 func _on_trainer_data(data: Dictionary) -> void:
 	latest_power = data.get("power", 0.0)
 
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		var pause_menu = load("res://src/ui/PauseOverlay.tscn").instantiate()
+		add_child(pause_menu)
+		get_viewport().set_input_as_handled()
+
 func _update_hud() -> void:
 	if hud_power_label:
 		hud_power_label.text = str(round(latest_power)) + " W"
@@ -295,10 +347,19 @@ func _update_hud() -> void:
 	if progress_bar:
 		progress_bar.value = distance_m
 		
-	# Update Draft Badge
-	if player_draft_factor > 0.01:
+	# Update Draft/Surge Badge
+	if surge_timer > 0:
+		draft_badge.visible = true
+		draft_badge.get_node("Label").text = "ATTACK! +25% POWER"
+		draft_badge.modulate = Color.ORANGE_RED
+	elif recovery_timer > 0:
+		draft_badge.visible = true
+		draft_badge.get_node("Label").text = "RECOVERING... -15% POWER"
+		draft_badge.modulate = Color.SKY_BLUE
+	elif player_draft_factor > 0.01:
 		draft_badge.visible = true
 		draft_badge.get_node("Label").text = "SLIPSTREAM -%d%% DRAG" % int(player_draft_factor * 100)
+		draft_badge.modulate = Color.WHITE
 	else:
 		draft_badge.visible = false
 		

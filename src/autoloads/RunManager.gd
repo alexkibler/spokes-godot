@@ -51,6 +51,19 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 	is_active_run = true
 	run_started.emit()
 
+func is_edge_traversable(edge: Dictionary) -> bool:
+	if edge.get("requiresAllMedals", false):
+		var medals_held = 0
+		for item in run_data["inventory"]:
+			if item.begins_with("medal_"): medals_held += 1
+		var medals_needed = run_data["runLength"]
+		return medals_held >= medals_needed
+	
+	if edge.has("requiredMedal"):
+		return edge["requiredMedal"] in run_data["inventory"]
+		
+	return true
+
 func get_run() -> Dictionary:
 	return run_data
 
@@ -59,6 +72,9 @@ func export_data() -> Dictionary:
 
 func set_active_edge(edge: Dictionary) -> void:
 	run_data["active_edge"] = edge
+
+func get_active_edge() -> Dictionary:
+	return run_data.get("active_edge", {})
 
 func get_next_autoplay_node() -> Dictionary:
 	if not is_active_run or run_data.get("currentNodeId", "") == "": return {}
@@ -75,8 +91,10 @@ func get_next_autoplay_node() -> Dictionary:
 	var neighbors = []
 	for edge in run_data["edges"]:
 		var target_id = ""
-		if edge["from"] == current_id: target_id = edge["to"]
-		elif edge["to"] == current_id: target_id = edge["from"]
+		if edge["from"] == current_id: 
+			if is_edge_traversable(edge): target_id = edge["to"]
+		elif edge["to"] == current_id: 
+			if is_edge_traversable(edge): target_id = edge["from"]
 		
 		if target_id != "":
 			for n in run_data["nodes"]:
@@ -121,47 +139,106 @@ func get_next_autoplay_node() -> Dictionary:
 
 func complete_active_edge() -> bool:
 	var ae = run_data.get("active_edge")
-	if not ae: return false
+	return complete_node_visit(ae)
+
+func complete_node_visit(edge: Dictionary) -> bool:
+	if not edge: return false
 	
-	var found_edge = null
-	for e in run_data["edges"]:
-		if e["from"] == ae["from"] and e["to"] == ae["to"]:
-			found_edge = e
+	# Find destination node
+	var dest_id = edge["to"]
+	if edge["to"] == run_data["currentNodeId"]:
+		dest_id = edge["from"]
+		
+	var dest_node = null
+	for n in run_data["nodes"]:
+		if n["id"] == dest_id:
+			dest_node = n
 			break
 			
-	if found_edge:
-		# Find the destination node
-		var dest_node = null
-		for n in run_data["nodes"]:
-			if n["id"] == found_edge["to"]:
-				dest_node = n
-				break
-		
-		# Award gold
-		var reward_gold = 25
-		if dest_node:
-			if dest_node["type"] == "boss": reward_gold = 100
-			elif dest_node["type"] == "finish": reward_gold = 500
-		add_gold(reward_gold)
-		
-		# Award Medals for Bosses
-		if dest_node and dest_node["type"] == "boss":
-			var spoke_id = dest_node.get("metadata", {}).get("spokeId", "unknown")
-			var medal_id = "medal_" + spoke_id
-			if not medal_id in run_data["inventory"]:
-				run_data["inventory"].append(medal_id)
-				print("[RUN] Awarded Medal: ", medal_id)
+	# Award gold
+	var reward_gold = 25
+	if dest_node:
+		if dest_node["type"] == "boss": reward_gold = 100
+		elif dest_node["type"] == "finish": reward_gold = 500
+	add_gold(reward_gold)
+	
+	# Award Medals for Bosses
+	if dest_node and dest_node["type"] == "boss":
+		var spoke_id = dest_node.get("metadata", {}).get("spokeId", "unknown")
+		var medal_id = "medal_" + spoke_id
+		if not medal_id in run_data["inventory"]:
+			run_data["inventory"].append(medal_id)
+			print("[RUN] Awarded Medal: ", medal_id)
 
-		# Advance current node
-		run_data["currentNodeId"] = found_edge["to"]
-		if not found_edge["to"] in run_data["visitedNodeIds"]:
-			run_data["visitedNodeIds"].append(found_edge["to"])
-			
-		if not found_edge["isCleared"]:
-			found_edge["isCleared"] = true
-			return true # First clear!
+	# Advance current node
+	run_data["currentNodeId"] = dest_id
+	if not dest_id in run_data["visitedNodeIds"]:
+		run_data["visitedNodeIds"].append(dest_id)
+		
+	if not edge.get("isCleared", false):
+		edge["isCleared"] = true
+		return true # First clear!
 			
 	return false
+
+func get_best_reward(rewards: Array) -> Dictionary:
+	if rewards.is_empty(): return {}
+	
+	var best_r = rewards[0]
+	var max_score = -999.0
+	
+	var current_node_id = run_data.get("currentNodeId", "")
+	var current_node = null
+	for n in run_data["nodes"]:
+		if n["id"] == current_node_id:
+			current_node = n
+			break
+			
+	# Identify current biome/spoke
+	var current_spoke = "plains"
+	if current_node:
+		current_spoke = current_node.get("metadata", {}).get("spokeId", "plains")
+
+	for r in rewards:
+		var score = 0.0
+		
+		# Base score by rarity
+		match r.get("rarity", "common"):
+			"common": score += 10.0
+			"uncommon": score += 25.0
+			"rare": score += 50.0
+			
+		var id = r["id"]
+		
+		# Heuristics: Power is high priority early on
+		if id.contains("power"):
+			score += 15.0
+			if run_data["visitedNodeIds"].size() < 15:
+				score += 10.0
+				
+		# Heuristics: Weight reduction for climbing biomes
+		if id.contains("weight"):
+			if current_spoke == "mountain" or current_spoke == "canyon":
+				score += 25.0
+			else:
+				score += 8.0
+				
+		# Heuristics: Aero for flat/fast biomes
+		if id.contains("aero"):
+			if current_spoke == "plains" or current_spoke == "coast":
+				score += 18.0
+			else:
+				score += 12.0
+				
+		# Items are usually better than raw stat boosts
+		if id.contains("item_"):
+			score += 15.0
+			
+		if score > max_score:
+			max_score = score
+			best_r = r
+			
+	return best_r
 
 func spend_gold(amount: int) -> bool:
 	if run_data["gold"] >= amount:

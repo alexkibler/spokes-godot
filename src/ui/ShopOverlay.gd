@@ -18,6 +18,24 @@ const CATALOG = [
 
 func _ready() -> void:
 	refresh_all()
+	
+	if RunManager.autoplay_enabled:
+		var pb = ProgressBar.new()
+		pb.show_percentage = false
+		pb.custom_minimum_size.y = 8
+		pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pb.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+		# Find the close button by path or reference
+		var close_btn = get_node("CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton")
+		close_btn.add_child(pb)
+		
+		var tween = create_tween()
+		tween.tween_property(pb, "value", 100.0, 1.5).from(0.0)
+		
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if is_inside_tree():
+				_on_close_pressed()
+		)
 
 func refresh_all() -> void:
 	var run = RunManager.get_run()

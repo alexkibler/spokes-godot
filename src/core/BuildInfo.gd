@@ -13,12 +13,12 @@ func _ready() -> void:
 		_add_version_watermark.call_deferred()
 
 func _add_version_watermark() -> void:
-	var layer = CanvasLayer.new()
+	var layer: CanvasLayer = CanvasLayer.new()
 	layer.layer = 128
 	add_child(layer)
 	
 	# MarginContainer handles the anchoring properly
-	var margin = MarginContainer.new()
+	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	margin.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	margin.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -27,11 +27,11 @@ func _add_version_watermark() -> void:
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(margin)
 	
-	var panel = PanelContainer.new()
+	var panel: PanelContainer = PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(panel)
 	
-	var style = StyleBoxFlat.new()
+	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0.5)
 	style.set_corner_radius_all(5)
 	style.content_margin_left = 8
@@ -40,7 +40,7 @@ func _add_version_watermark() -> void:
 	style.content_margin_bottom = 2
 	panel.add_theme_stylebox_override("panel", style)
 	
-	var label = Label.new()
+	var label: Label = Label.new()
 	label.text = "v: " + COMMIT_HASH.left(7)
 	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", Color.WHITE)

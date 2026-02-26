@@ -36,9 +36,9 @@ func _ready() -> void:
 		)
 
 func _pick_event() -> void:
-	var items = []
-	for id in ContentRegistry.items:
-		var def = ContentRegistry.get_item(id)
+	var items: Array[Dictionary] = []
+	for id: String in ContentRegistry.items:
+		var def: Dictionary = ContentRegistry.get_item(id)
 		if def.has("slot"): items.append(def)
 		
 	if items.is_empty():
@@ -46,51 +46,52 @@ func _pick_event() -> void:
 		return
 		
 	# Logic from pickEventItem: weight by progress
-	var run = RunManager.get_run()
-	var current_floor = run.get("visitedNodeIds", []).size()
-	var total_floors = run.get("runLength", 10)
-	var progress = float(current_floor) / float(max(1, total_floors))
+	var run: Dictionary = RunManager.get_run()
+	var visited: Array = run.get("visitedNodeIds", [])
+	var current_floor: int = visited.size()
+	var total_floors: int = int(run.get("runLength", 10))
+	var progress: float = float(current_floor) / float(max(1, total_floors))
 	
-	var weighted_items = []
-	for item in items:
-		var weight = 0.0
-		var r = item.get("rarity", "common")
+	var weighted_items: Array[Dictionary] = []
+	for item: Dictionary in items:
+		var weight: float = 0.0
+		var r: String = item.get("rarity", "common")
 		if r == "common": weight = 100.0 * (1.0 - progress * 0.5)
 		elif r == "uncommon": weight = 20.0 + progress * 80.0
 		elif r == "rare": weight = max(0.0, (progress - 0.2) * 100.0)
 		weighted_items.append({"item": item, "weight": weight})
 		
-	var total_weight = 0.0
-	for entry in weighted_items: total_weight += entry["weight"]
+	var total_weight: float = 0.0
+	for entry: Dictionary in weighted_items: total_weight += entry["weight"]
 	
-	var rand = randf() * total_weight
+	var rand: float = randf() * total_weight
 	current_item = items[0]
-	for entry in weighted_items:
+	for entry: Dictionary in weighted_items:
 		if rand < entry["weight"]:
 			current_item = entry["item"]
 			break
 		rand -= entry["weight"]
 		
 	# Success chance by rarity
-	var r = current_item.get("rarity", "common")
+	var r_final: String = current_item.get("rarity", "common")
 	success_chance = 0.9
-	if r == "uncommon": success_chance = 0.7
-	elif r == "rare": success_chance = 0.5
+	if r_final == "uncommon": success_chance = 0.7
+	elif r_final == "rare": success_chance = 0.5
 	
 	title_label.text = "SHADY MECHANIC"
-	desc_label.text = "A mysterious mechanic offers you a " + current_item["label"] + " if you let him 'tune' your bike. It looks risky..."
+	desc_label.text = "A mysterious mechanic offers you a " + str(current_item["label"]) + " if you let him 'tune' your bike. It looks risky..."
 	attempt_btn.text = "ATTEMPT (%d%% CHANCE)" % int(success_chance * 100)
 
 func _on_attempt_pressed() -> void:
-	var roll = randf()
+	var roll: float = randf()
 	if roll < success_chance:
 		# Success!
 		RunManager.add_to_inventory(current_item["id"])
-		_show_outcome("SUCCESS!", "The mechanic was a genius! You received: " + current_item["label"], true)
+		_show_outcome("SUCCESS!", "The mechanic was a genius! You received: " + str(current_item["label"]), true)
 	else:
 		# Failure
-		var run = RunManager.get_run()
-		if run["gold"] >= 50:
+		var run: Dictionary = RunManager.get_run()
+		if int(run["gold"]) >= 50:
 			RunManager.spend_gold(50)
 			_show_outcome("FAILURE", "He stripped the bolts and charged you 50g for the 'labor'.", false)
 		else:

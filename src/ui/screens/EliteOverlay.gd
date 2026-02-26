@@ -26,23 +26,23 @@ func _update_ui() -> void:
 	title_label.text = current_challenge.title
 	flavor_label.text = current_challenge.flavor_text
 	
-	var ftp = RunManager.run_data.get("ftpW", 200)
+	var ftp: int = int(RunManager.run_data.get("ftpW", 200))
 	condition_label.text = current_challenge.format_text(ftp)
 	
 	reward_label.text = "REWARD: " + current_challenge.reward_description
 	
 	if RunManager.autoplay_enabled:
-		var pb = ProgressBar.new()
+		var pb: ProgressBar = ProgressBar.new()
 		pb.show_percentage = false
 		pb.custom_minimum_size.y = 8
 		pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pb.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 		accept_btn.add_child(pb)
 		
-		var tween = create_tween()
+		var tween: Tween = create_tween()
 		tween.tween_property(pb, "value", 100.0, 2.0).from(0.0)
 		
-		get_tree().create_timer(2.0).timeout.connect(func():
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
 			if is_inside_tree():
 				_on_accept_pressed()
 		)

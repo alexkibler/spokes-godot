@@ -23,7 +23,7 @@ func _ready() -> void:
 	if not RunManager.is_active_run:
 		# Emergency start for testing
 		RunManager.start_new_run(3, 50.0, "normal", 200, 75.0, "imperial")
-	
+
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
 	hud.update_hud()
 	queue_redraw()
@@ -36,34 +36,34 @@ func _on_autoplay_changed(enabled: bool) -> void:
 func _draw() -> void:
 	var run: Dictionary = RunManager.get_run()
 	if run.is_empty(): return
-	
+
 	hud.update_hud()
-	
+
 	# Use fixed reference for world-space drawing
 	# This matches the Camera2D position at (640, 360)
 	var center: Vector2 = Vector2(640, 360)
 	var scale_factor: float = 600.0 # 0.8 * 750 (approx)
-	
+
 	# Draw edges
 	for edge: Dictionary in run["edges"]:
 		var from_node: Dictionary = _find_node(run["nodes"], edge["from"])
 		var to_node: Dictionary = _find_node(run["nodes"], edge["to"])
-		
+
 		if not from_node.is_empty() and not to_node.is_empty():
 			var p1: Vector2 = center + (Vector2(from_node["x"], from_node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 			var p2: Vector2 = center + (Vector2(to_node["x"], to_node["y"]) - Vector2(0.5, 0.5)) * scale_factor
-			
+
 			var color: Color = Color.GRAY
 			var width: float = 2.0
 			var dashed: bool = false
-			
+
 			if edge.get("isCleared", false):
 				color = Color.GREEN
 			elif not RunManager.is_edge_traversable(edge):
 				color = Color.RED
 				width = 1.0
 				dashed = true
-			
+
 			if dashed:
 				# Simple dashed line implementation
 				var dir: Vector2 = (p2 - p1).normalized()
@@ -81,10 +81,10 @@ func _draw() -> void:
 	# Draw nodes
 	for node: Dictionary in run["nodes"]:
 		var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
-		
+
 		var color: Color = Color.WHITE
 		var radius: float = 10.0
-		
+
 		match node["type"]:
 			"start":
 				color = Color.YELLOW
@@ -101,26 +101,26 @@ func _draw() -> void:
 			"finish":
 				color = Color.CYAN
 				radius = 20.0
-		
+
 		var is_locked: bool = false
 		for edge: Dictionary in run["edges"]:
 			if edge["to"] == node["id"]:
 				if not RunManager.is_edge_traversable(edge):
 					is_locked = true
 					break
-		
+
 		if node["id"] == run["currentNodeId"]:
 			draw_circle(pos, radius + 4, Color.WHITE) # Highlight current
-		
+
 		var draw_color: Color = color
 		if is_locked:
 			draw_color = color.lerp(Color.BLACK, 0.4)
 		elif node.get("isUsed", false) and node["id"] != run["currentNodeId"] and node["type"] != "start":
 			draw_color = color.lerp(Color.BLACK, 0.7) # Heavily dim used nodes
-			
+
 		draw_circle(pos, radius + 1.5, Color.BLACK) # Outline
 		draw_circle(pos, radius, draw_color)
-		
+
 		if is_locked:
 			# Draw a small lock-like symbol
 			var lock_rect: Rect2 = Rect2(pos.x - 4, pos.y - 1, 8, 6)
@@ -137,13 +137,13 @@ func _draw() -> void:
 
 func _check_autoplay() -> void:
 	if not RunManager.autoplay_enabled or is_selecting: return
-	
+
 	autoplay_target_node = RunManager.get_next_autoplay_node()
 	if not autoplay_target_node.is_empty():
 		is_selecting = true
 		autoplay_timer = 2.0
 
-func _find_node(nodes: Array, id: String) -> Dictionary:
+func _find_node(nodes: Array[Dictionary], id: String) -> Dictionary:
 	for n: Dictionary in nodes:
 		if n["id"] == id:
 			return n
@@ -153,42 +153,41 @@ func _input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		var run: Dictionary = RunManager.get_run()
 		if run.is_empty(): return
-		
+
 		# Stable World Coordinates
 		var center: Vector2 = Vector2(640, 360)
 		var scale_factor: float = 600.0
-		
+
 		# Translate Screen/Viewport position to World position
 		var world_click_pos: Vector2 = get_canvas_transform().affine_inverse() * event.position
-		
+
 		print("[INPUT DEBUG] Screen Pos: ", event.position, " -> World Pos: ", world_click_pos)
-		
+
 		# Check node clicks
 		for node: Dictionary in run["nodes"]:
 			var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 			var dist: float = world_click_pos.distance_to(pos)
-			
+
 			if dist < 25.0:
 				print("[INPUT DEBUG] HIT Node: ", node["id"])
 				_on_node_clicked(node)
 				return
-	
+
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_R:
-			var overlay: Node = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
+			var overlay = load("res://src/ui/screens/RewardOverlay.tscn").instantiate()
 			add_child(overlay)
-			if overlay.has_signal("reward_selected"):
-				overlay.reward_selected.connect(func() -> void: queue_redraw())
+			overlay.reward_selected.connect(func() -> void: queue_redraw())
 
 	if event.is_action_pressed("ui_cancel"):
-		var pause_menu: Node = load("res://src/ui/screens/PauseOverlay.tscn").instantiate()
+		var pause_menu = load("res://src/ui/screens/PauseOverlay.tscn").instantiate()
 		add_child(pause_menu)
 		get_viewport().set_input_as_handled()
 
 func _on_node_clicked(node: Dictionary) -> void:
 	var run: Dictionary = RunManager.get_run()
 	if node["id"] == run["currentNodeId"]: return
-	
+
 	# 1. Find the connecting edge
 	var connecting_edge: Dictionary = {}
 	for edge: Dictionary in run["edges"]:
@@ -196,11 +195,11 @@ func _on_node_clicked(node: Dictionary) -> void:
 		   (edge["to"] == run["currentNodeId"] and edge["from"] == node["id"]):
 			connecting_edge = edge
 			break
-			
+
 	if connecting_edge.is_empty():
 		print("[MAP] Node not reachable from current node")
 		return
-		
+
 	# 2. Check traversability FIRST (applies to shops/events too!)
 	if not RunManager.is_edge_traversable(connecting_edge):
 		print("[MAP] Path is locked! Need more medals.")
@@ -222,28 +221,25 @@ func _on_node_clicked(node: Dictionary) -> void:
 			RunManager.pending_overlay = "event"
 		elif node["type"] == "hard":
 			var challenge: EliteChallenge = EliteChallenge.get_random_challenge()
-			var overlay: Node = load("res://src/ui/screens/EliteOverlay.tscn").instantiate()
+			var overlay = load("res://src/ui/screens/EliteOverlay.tscn").instantiate()
 			add_child(overlay)
-			if overlay.has_method("setup"):
-				overlay.setup(challenge)
-			if overlay.has_signal("challenge_accepted"):
-				overlay.challenge_accepted.connect(func(accepted_challenge: EliteChallenge) -> void:
-					RunManager.active_challenge = accepted_challenge
-					# Use specialized elite profile
-					var max_g: float = RunManager.get_absolute_max_grade()
-					var profile: CourseProfile = accepted_challenge.generate_course_profile(max_g)
-					# Note: We don't overwrite the base edge profile permanently here 
-					# so that future traversals (in reverse) use the normal profile.
-					# We duplicate it for this specific ride.
-					var elite_edge: Dictionary = connecting_edge.duplicate()
-					elite_edge["profile"] = profile
-					RunManager.set_active_edge(elite_edge)
-					get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
-				)
-			if overlay.has_signal("challenge_declined"):
-				overlay.challenge_declined.connect(func() -> void:
-					_check_autoplay()
-				)
+			overlay.setup(challenge)
+			overlay.challenge_accepted.connect(func(accepted_challenge: EliteChallenge) -> void:
+				RunManager.active_challenge = accepted_challenge
+				# Use specialized elite profile
+				var max_g: float = RunManager.get_absolute_max_grade()
+				var profile: CourseProfile = accepted_challenge.generate_course_profile(max_g)
+				# Note: We don't overwrite the base edge profile permanently here
+				# so that future traversals (in reverse) use the normal profile.
+				# We duplicate it for this specific ride.
+				var elite_edge: Dictionary = connecting_edge.duplicate()
+				elite_edge["profile"] = profile
+				RunManager.set_active_edge(elite_edge)
+				get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
+			)
+			overlay.challenge_declined.connect(func() -> void:
+				_check_autoplay()
+			)
 			return
 
 	# Start the ride for all other cases (standard, used nodes, etc.)

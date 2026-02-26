@@ -21,7 +21,7 @@ func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = str(new_gold) + " g"
 
 func _on_modifiers_changed() -> void:
-	var run = RunManager.get_run()
+	var run: Dictionary = RunManager.get_run()
 	if not run.is_empty():
 		_update_modifiers(run["modifiers"])
 
@@ -29,9 +29,10 @@ func _on_autoplay_changed(enabled: bool) -> void:
 	_update_autoplay_ui(enabled)
 
 func _on_equip_pressed() -> void:
-	var overlay = load("res://src/ui/screens/EquipmentOverlay.tscn").instantiate()
+	var overlay: Node = load("res://src/ui/screens/EquipmentOverlay.tscn").instantiate()
 	add_child(overlay)
-	overlay.closed.connect(func(): update_hud())
+	if overlay.has_signal("closed"):
+		overlay.closed.connect(func() -> void: update_hud())
 
 func _on_autoplay_pressed() -> void:
 	RunManager.toggle_autoplay()
@@ -46,15 +47,16 @@ func _update_autoplay_ui(enabled: bool) -> void:
 		autoplay_button.remove_theme_color_override("font_color")
 
 func update_hud() -> void:
-	var run = RunManager.get_run()
+	var run: Dictionary = RunManager.get_run()
 	if run.is_empty(): return
 	
 	gold_label.text = str(run.get("gold", 0)) + " g"
 	
 	# Calculate current floor (deepest visited node floor)
-	var current_floor = 0
-	var current_node_id = run.get("currentNodeId", "")
-	for n in run["nodes"]:
+	var current_floor: int = 0
+	var current_node_id: String = run.get("currentNodeId", "")
+	var nodes: Array = run.get("nodes", [])
+	for n: Dictionary in nodes:
 		if n["id"] == current_node_id:
 			current_floor = n["floor"]
 			break
@@ -65,7 +67,7 @@ func update_hud() -> void:
 
 func _update_modifiers(modifiers: Dictionary) -> void:
 	# Clear existing
-	for child in modifier_container.get_children():
+	for child: Node in modifier_container.get_children():
 		child.queue_free()
 		
 	# Add chips for non-baseline modifiers
@@ -79,8 +81,8 @@ func _update_modifiers(modifiers: Dictionary) -> void:
 		_add_modifier_chip("Weight", "x%.2f" % modifiers["weightMult"], Color.SALMON)
 
 func _add_modifier_chip(label: String, val: String, color: Color) -> void:
-	var chip = PanelContainer.new()
-	var style = StyleBoxFlat.new()
+	var chip: PanelContainer = PanelContainer.new()
+	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = color.lerp(Color.BLACK, 0.6)
 	style.border_width_left = 1
 	style.border_width_top = 1
@@ -93,7 +95,7 @@ func _add_modifier_chip(label: String, val: String, color: Color) -> void:
 	style.corner_radius_bottom_right = 4
 	chip.add_theme_stylebox_override("panel", style)
 	
-	var l = Label.new()
+	var l: Label = Label.new()
 	l.text = label + " " + val
 	l.add_theme_font_size_override("font_size", 14)
 	l.add_theme_color_override("font_color", Color.WHITE)

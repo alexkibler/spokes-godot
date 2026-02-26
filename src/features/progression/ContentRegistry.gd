@@ -4,7 +4,7 @@ class_name ContentRegistry
 # Manages the database of items and rewards, and handles the loot pool.
 # Replaces RewardManager.gd and internal ContentRegistry.gd class usage.
 
-const RARITY_WEIGHTS = {
+const RARITY_WEIGHTS: Dictionary = {
 	"common": 60,
 	"uncommon": 30,
 	"rare": 10,
@@ -33,39 +33,36 @@ static func get_item(id: String) -> Dictionary:
 static func get_reward(id: String) -> Dictionary:
 	return rewards.get(id, {})
 
-static func get_loot_pool(count: int) -> Array:
-	var pool = []
-	for r in rewards.values():
+static func get_loot_pool(count: int) -> Array[Dictionary]:
+	var pool: Array[Dictionary] = []
+	for r: Dictionary in rewards.values():
 		if not r.has("available") or r["available"].call(RunManager):
-			# Note: We use global RunManager for now as most rewards are static,
-			# but check if we should be using a passed rm?
-			# Actually, RewardManager usually calls this.
 			pool.append(r)
 			
-	var results = []
-	var used = {}
+	var results: Array[Dictionary] = []
+	var used: Dictionary = {}
 	
 	if pool.size() <= count:
 		return pool
 		
 	while results.size() < count:
-		var candidates = []
-		for r in pool:
+		var candidates: Array[Dictionary] = []
+		for r: Dictionary in pool:
 			if not used.has(r["id"]):
 				candidates.append(r)
 		
 		if candidates.is_empty(): break
 		
-		var total_weight = 0
-		for r in candidates:
-			var rarity = r.get("rarity", "common")
+		var total_weight: float = 0.0
+		for r: Dictionary in candidates:
+			var rarity: String = r.get("rarity", "common")
 			total_weight += RARITY_WEIGHTS.get(rarity, 10)
 			
-		var rand = randf() * total_weight
-		var picked = candidates[candidates.size() - 1]
+		var rand: float = randf() * total_weight
+		var picked: Dictionary = candidates[candidates.size() - 1]
 		
-		for r in candidates:
-			var rarity = r.get("rarity", "common")
+		for r: Dictionary in candidates:
+			var rarity: String = r.get("rarity", "common")
 			rand -= RARITY_WEIGHTS.get(rarity, 10)
 			if rand <= 0:
 				picked = r
@@ -78,7 +75,7 @@ static func get_loot_pool(count: int) -> Array:
 
 ## Apply a reward by ID
 static func apply_reward(reward_id: String) -> void:
-	var r = get_reward(reward_id)
+	var r: Dictionary = get_reward(reward_id)
 	if r.has("apply"):
 		r["apply"].call(RunManager)
 
@@ -110,7 +107,7 @@ static func bootstrap() -> void:
 		"description": "+4% Power output",
 		"rarity": "common",
 		"modifier": {"powerMult": 1.04},
-		"apply": func(rm): rm.apply_modifier({"powerMult": 1.04}, "Leg Day")
+		"apply": func(rm: Node) -> void: rm.apply_modifier({"powerMult": 1.04}, "Leg Day")
 	})
 	
 	register_reward({
@@ -119,7 +116,7 @@ static func bootstrap() -> void:
 		"description": "-2% Aerodynamic drag",
 		"rarity": "common",
 		"modifier": {"dragReduction": 0.02},
-		"apply": func(rm): rm.apply_modifier({"dragReduction": 0.02}, "Slammed Stem")
+		"apply": func(rm: Node) -> void: rm.apply_modifier({"dragReduction": 0.02}, "Slammed Stem")
 	})
 	
 	register_reward({
@@ -128,7 +125,7 @@ static func bootstrap() -> void:
 		"description": "-3% Total system weight",
 		"rarity": "common",
 		"modifier": {"weightMult": 0.97},
-		"apply": func(rm): rm.apply_modifier({"weightMult": 0.97}, "Carbon Cages")
+		"apply": func(rm: Node) -> void: rm.apply_modifier({"weightMult": 0.97}, "Carbon Cages")
 	})
 
 	# --- Rewards (Items) ---
@@ -137,5 +134,5 @@ static func bootstrap() -> void:
 		"label": "Aero Helmet",
 		"description": "Equipable: -3% Drag",
 		"rarity": "uncommon",
-		"apply": func(rm): rm.add_to_inventory("aero_helmet")
+		"apply": func(rm: Node) -> void: rm.add_to_inventory("aero_helmet")
 	})

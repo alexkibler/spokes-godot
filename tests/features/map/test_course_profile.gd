@@ -2,12 +2,12 @@ extends GutTest
 
 # Tests ported from ~/Repos/spokes/src/core/course/__tests__/CourseProfile.test.ts
 
-func build_course_profile(segments_data: Array) -> CourseProfile:
-	var total_dist = 0.0
-	for s in segments_data:
+func build_course_profile(segments_data: Array[Dictionary]) -> CourseProfile:
+	var total_dist: float = 0.0
+	for s: Dictionary in segments_data:
 		total_dist += s["distanceM"]
 
-	var profile = CourseProfile.new()
+	var profile: CourseProfile = CourseProfile.new()
 	profile.segments = segments_data
 	profile.total_distance_m = total_dist
 	return profile
@@ -31,8 +31,8 @@ func get_surface_course() -> CourseProfile:
 
 # ─── buildCourseProfile ───────────────────────────────────────────────────────
 
-func test_build_course_profile():
-	var simple_course = get_simple_course()
+func test_build_course_profile() -> void:
+	var simple_course: CourseProfile = get_simple_course()
 	assert_eq(simple_course.total_distance_m, 3000.0, "totalDistanceM should be sum of segment distances")
 	assert_eq(simple_course.segments[0].grade, 0.00)
 	assert_eq(simple_course.segments[1].grade, 0.05)
@@ -40,8 +40,8 @@ func test_build_course_profile():
 
 # ─── getGradeAtDistance ───────────────────────────────────────────────────────
 
-func test_get_grade_at_distance():
-	var simple_course = get_simple_course()
+func test_get_grade_at_distance() -> void:
+	var simple_course: CourseProfile = get_simple_course()
 	assert_eq(simple_course.get_grade_at_distance(0.0), 0.00)
 	assert_eq(simple_course.get_grade_at_distance(500.0), 0.00)
 	assert_eq(simple_course.get_grade_at_distance(1500.0), 0.05)
@@ -60,8 +60,8 @@ func test_get_grade_at_distance():
 
 # ─── getElevationAtDistance ───────────────────────────────────────────────────
 
-func test_get_elevation_at_distance():
-	var simple_course = get_simple_course()
+func test_get_elevation_at_distance() -> void:
+	var simple_course: CourseProfile = get_simple_course()
 	assert_eq(simple_course.get_elevation_at_distance(0.0), 0.0)
 	assert_almost_eq(simple_course.get_elevation_at_distance(1000.0), 0.0, 0.00001)
 	
@@ -83,8 +83,8 @@ func test_get_elevation_at_distance():
 
 # ─── getSurfaceAtDistance ─────────────────────────────────────────────────────
 
-func test_get_surface_at_distance():
-	var surface_course = get_surface_course()
+func test_get_surface_at_distance() -> void:
+	var surface_course: CourseProfile = get_surface_course()
 	assert_eq(surface_course.get_surface_at_distance(0.0), "asphalt")
 	assert_eq(surface_course.get_surface_at_distance(250.0), "asphalt")
 	assert_eq(surface_course.get_surface_at_distance(750.0), "gravel")
@@ -99,7 +99,13 @@ func test_get_surface_at_distance():
 
 # ─── getCrrForSurface ─────────────────────────────────────────────────────────
 
-func test_get_crr_for_surface():
+func test_get_crr_for_surface() -> void:
+	assert_gt(CourseProfile.get_crr_for_surface("gravel"), CourseProfile.get_crr_for_surface("asphalt"))
+	assert_gt(CourseProfile.get_crr_for_surface("dirt"), CourseProfile.get_crr_for_surface("gravel"))
+	assert_gt(CourseProfile.get_crr_for_surface("mud"), CourseProfile.get_crr_for_surface("dirt"))
+	
+	# Default to asphalt
+	assert_eq(CourseProfile.get_crr_for_surface(), CourseProfile.get_crr_for_surface("asphalt"))
 	assert_gt(CourseProfile.get_crr_for_surface("gravel"), CourseProfile.get_crr_for_surface("asphalt"))
 	assert_gt(CourseProfile.get_crr_for_surface("dirt"), CourseProfile.get_crr_for_surface("gravel"))
 	assert_gt(CourseProfile.get_crr_for_surface("mud"), CourseProfile.get_crr_for_surface("dirt"))

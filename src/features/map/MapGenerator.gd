@@ -4,18 +4,18 @@ extends Object
 # Port of CourseGenerator.ts
 # Procedurally generates the Hub-and-Spoke map structure.
 
-const NODES_PER_SPOKE = 2
-const SPOKE_STEP = 0.12
-const MIN_SPOKES = 2
-const MAX_SPOKES = 8
-const KM_PER_SPOKE = 20
+const NODES_PER_SPOKE: int = 2
+const SPOKE_STEP: float = 0.12
+const MIN_SPOKES: int = 2
+const MAX_SPOKES: int = 8
+const KM_PER_SPOKE: int = 20
 
-const SPOKE_IDS = [
+const SPOKE_IDS: Array[String] = [
     "plains", "coast", "mountain", "forest",
     "desert", "tundra", "canyon", "jungle",
 ]
 
-const BIOME_COLORS = {
+const BIOME_COLORS: Dictionary = {
     "plains":   Color("#7bb661"),
     "coast":    Color("#4a90e2"),
     "mountain": Color("#9b9b9b"),
@@ -26,7 +26,7 @@ const BIOME_COLORS = {
     "jungle":   Color("#228b22"),
 }
 
-const SPOKE_CONFIG = {
+const SPOKE_CONFIG: Dictionary = {
     "plains":   {"hazardSurface": "asphalt", "hazardGrade": 0.00},
     "coast":    {"hazardSurface": "mud",     "hazardGrade": 0.02},
     "mountain": {"hazardSurface": "gravel",  "hazardGrade": 0.15},
@@ -41,24 +41,24 @@ static func compute_num_spokes(total_distance_km: float) -> int:
     return int(clamp(round(total_distance_km / KM_PER_SPOKE), MIN_SPOKES, MAX_SPOKES))
 
 static func random_island_node_type() -> String:
-    var r = randf()
+    var r: float = randf()
     if r < 0.3: return "standard"
     if r < 0.7: return "event"
     return "hard"
 
 static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
-    var nodes = []
-    var edges = []
+    var nodes: Array[Dictionary] = []
+    var edges: Array[Dictionary] = []
     
-    var total_dist_km = run_data.get("totalDistanceKm", 50.0)
-    var num_spokes = compute_num_spokes(total_dist_km)
+    var total_dist_km: float = run_data.get("totalDistanceKm", 50.0)
+    var num_spokes: int = compute_num_spokes(total_dist_km)
     
-    var weight_per_spoke = NODES_PER_SPOKE + 4.5
-    var total_run_weight = num_spokes * weight_per_spoke + 2
-    var base_km = max(0.1, total_dist_km / total_run_weight)
+    var weight_per_spoke: float = NODES_PER_SPOKE + 4.5
+    var total_run_weight: float = num_spokes * weight_per_spoke + 2
+    var base_km: float = max(0.1, total_dist_km / total_run_weight)
     
-    var difficulty = run_data.get("difficulty", "normal")
-    var absolute_max_grade = {
+    var difficulty: String = run_data.get("difficulty", "normal")
+    var absolute_max_grade: float = {
         "easy": 0.05,
         "normal": 0.07,
         "hard": 0.10
@@ -68,7 +68,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     # Easy: <500ft -> ~0.015 avg max_grade
     # Normal: 750-1000ft -> ~0.04 avg max_grade
     # Hard: 1200-1500ft -> ~0.07 avg max_grade
-    var diff_config = {
+    var diff_config: Dictionary = {
         "easy":   {"base_grade": 0.015, "hazard_mult": 0.1,  "rand_var": 0.005},
         "normal": {"base_grade": 0.048, "hazard_mult": 0.25, "rand_var": 0.008},
         "hard":   {"base_grade": 0.08,  "hazard_mult": 0.4,  "rand_var": 0.01}
@@ -77,19 +77,19 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     run_data["runLength"] = num_spokes
     
     # Helper for adding edges
-    var add_edge = func(from_id: String, to_id: String, km: float, base_max_grade: float, surface: String = "asphalt"):
-        var target_node = null
-        for n in nodes:
+    var add_edge: Callable = func(from_id: String, to_id: String, km: float, base_max_grade: float, surface: String = "asphalt") -> void:
+        var target_node: Dictionary = {}
+        for n: Dictionary in nodes:
             if n["id"] == to_id:
                 target_node = n
                 break
         
         # Hazard grade (config["hazardGrade"]) is maxed at 0.15 (mountains)
-        var grade = diff_config["base_grade"] + (base_max_grade * diff_config["hazard_mult"])
+        var grade: float = diff_config["base_grade"] + (base_max_grade * diff_config["hazard_mult"])
         grade += (randf() * 2.0 - 1.0) * diff_config["rand_var"]
         grade = max(0.005, grade)
         
-        if target_node:
+        if not target_node.is_empty():
             if target_node["type"] == "hard": grade *= 1.5
             elif target_node["type"] == "boss": grade *= 2.0
             elif target_node["type"] == "finish": grade *= 2.5
@@ -104,7 +104,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         })
 
     # 1. Hub
-    var hub_node = {
+    var hub_node: Dictionary = {
         "id": "node_hub",
         "type": "start",
         "floor": 0,
@@ -116,29 +116,29 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     nodes.append(hub_node)
     
     # 2. Spokes
-    var active_spokes = SPOKE_IDS.slice(0, num_spokes)
-    for spoke_index in range(active_spokes.size()):
-        var spoke_id = active_spokes[spoke_index]
-        var config = SPOKE_CONFIG[spoke_id]
-        var angle = (TAU * spoke_index) / float(num_spokes) - (TAU / 16.0)
+    var active_spokes: Array = SPOKE_IDS.slice(0, num_spokes)
+    for spoke_index: int in range(active_spokes.size()):
+        var spoke_id: String = active_spokes[spoke_index]
+        var config: Dictionary = SPOKE_CONFIG[spoke_id]
+        var angle: float = (TAU * spoke_index) / float(num_spokes) - (TAU / 16.0)
         
-        var get_pos = func(radial: float, perp: float = 0.0):
+        var get_pos: Callable = func(radial: float, perp: float = 0.0) -> Dictionary:
             return {
                 "x": 0.5 + cos(angle) * radial + (-sin(angle)) * perp,
                 "y": 0.5 + sin(angle) * radial + (cos(angle)) * perp
             }
             
         # 2a. Linear spoke nodes
-        var spoke_node_ids = []
-        for i in range(1, NODES_PER_SPOKE + 1):
-            var node_id = "node_%s_s%d" % [spoke_id, i]
-            var pos = get_pos.call(SPOKE_STEP * i)
+        var spoke_node_ids: Array[String] = []
+        for i: int in range(1, NODES_PER_SPOKE + 1):
+            var node_id: String = "node_%s_s%d" % [spoke_id, i]
+            var pos: Dictionary = get_pos.call(SPOKE_STEP * i)
             
-            var type = "standard"
+            var type: String = "standard"
             if randf() < 0.2: type = "event"
             elif randf() < 0.1: type = "hard"
             
-            var node = {
+            var node: Dictionary = {
                 "id": node_id,
                 "type": type,
                 "floor": i,
@@ -155,40 +155,40 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
                 add_edge.call(hub_node["id"], node_id, base_km, config["hazardGrade"], config["hazardSurface"])
                 # Spoke Gate: require medal from previous spoke
                 if spoke_index > 0:
-                    var prev_spoke_id = active_spokes[spoke_index - 1]
-                    for e in edges:
+                    var prev_spoke_id: String = active_spokes[spoke_index - 1]
+                    for e: Dictionary in edges:
                         if e["from"] == hub_node["id"] and e["to"] == node_id:
                             e["requiredMedal"] = "medal_" + prev_spoke_id
                             break
                 hub_node["connectedTo"].append(node_id)
             else:
-                var prev_id = spoke_node_ids[i-2]
+                var prev_id: String = spoke_node_ids[i-2]
                 add_edge.call(prev_id, node_id, base_km, 0.04)
                 # find prev node
-                for n in nodes:
+                for n: Dictionary in nodes:
                     if n["id"] == prev_id:
                         n["connectedTo"].append(node_id)
                         break
 
         # 2b. Island mini-DAG
-        var last_spoke_id = spoke_node_ids[NODES_PER_SPOKE - 1]
+        var last_spoke_id: String = spoke_node_ids[NODES_PER_SPOKE - 1]
         
-        var ISLAND_ENTRY = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 0.8
-        var ISLAND_MID   = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 1.6
-        var ISLAND_PRE   = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 2.4
-        var ISLAND_BOSS  = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 3.2
+        var ISLAND_ENTRY: float = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 0.8
+        var ISLAND_MID: float   = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 1.6
+        var ISLAND_PRE: float   = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 2.4
+        var ISLAND_BOSS: float  = SPOKE_STEP * NODES_PER_SPOKE + SPOKE_STEP * 3.2
         
-        var r_types = [random_island_node_type(), random_island_node_type(), random_island_node_type(), random_island_node_type()]
+        var r_types: Array[String] = [random_island_node_type(), random_island_node_type(), random_island_node_type(), random_island_node_type()]
         
-        var ie_id = "node_%s_ie" % spoke_id
-        var il_id = "node_%s_il" % spoke_id
-        var ic_id = "node_%s_ic" % spoke_id
-        var ir_id = "node_%s_ir" % spoke_id
-        var ip_id = "node_%s_ip" % spoke_id
-        var boss_id = "node_%s_boss" % spoke_id
+        var ie_id: String = "node_%s_ie" % spoke_id
+        var il_id: String = "node_%s_il" % spoke_id
+        var ic_id: String = "node_%s_ic" % spoke_id
+        var ir_id: String = "node_%s_ir" % spoke_id
+        var ip_id: String = "node_%s_ip" % spoke_id
+        var boss_id: String = "node_%s_boss" % spoke_id
         
-        var mk_node = func(id: String, type: String, p_floor: int, radial: float, perp: float = 0.0):
-            var pos = get_pos.call(radial, perp)
+        var mk_node: Callable = func(id: String, type: String, p_floor: int, radial: float, perp: float = 0.0) -> Dictionary:
+            var pos: Dictionary = get_pos.call(radial, perp)
             return {
                 "id": id,
                 "type": type,
@@ -200,18 +200,18 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
                 "metadata": {"spokeId": spoke_id}
             }
             
-        var ie_node = mk_node.call(ie_id, r_types[0], NODES_PER_SPOKE + 1, ISLAND_ENTRY, 0.0)
-        var il_node = mk_node.call(il_id, r_types[1], NODES_PER_SPOKE + 2, ISLAND_MID, -0.05)
-        var ic_node = mk_node.call(ic_id, "shop", NODES_PER_SPOKE + 2, ISLAND_MID, 0.0)
-        var ir_node = mk_node.call(ir_id, r_types[2], NODES_PER_SPOKE + 2, ISLAND_MID, 0.05)
-        var ip_node = mk_node.call(ip_id, r_types[3], NODES_PER_SPOKE + 3, ISLAND_PRE, 0.0)
-        var boss_node = mk_node.call(boss_id, "boss", NODES_PER_SPOKE + 4, ISLAND_BOSS, 0.0)
+        var ie_node: Dictionary = mk_node.call(ie_id, r_types[0], NODES_PER_SPOKE + 1, ISLAND_ENTRY, 0.0)
+        var il_node: Dictionary = mk_node.call(il_id, r_types[1], NODES_PER_SPOKE + 2, ISLAND_MID, -0.05)
+        var ic_node: Dictionary = mk_node.call(ic_id, "shop", NODES_PER_SPOKE + 2, ISLAND_MID, 0.0)
+        var ir_node: Dictionary = mk_node.call(ir_id, r_types[2], NODES_PER_SPOKE + 2, ISLAND_MID, 0.05)
+        var ip_node: Dictionary = mk_node.call(ip_id, r_types[3], NODES_PER_SPOKE + 3, ISLAND_PRE, 0.0)
+        var boss_node: Dictionary = mk_node.call(boss_id, "boss", NODES_PER_SPOKE + 4, ISLAND_BOSS, 0.0)
         
         nodes.append_array([ie_node, il_node, ic_node, ir_node, ip_node, boss_node])
         
         # Last spoke -> entry
         add_edge.call(last_spoke_id, ie_id, base_km, 0.04)
-        for n in nodes:
+        for n: Dictionary in nodes:
             if n["id"] == last_spoke_id:
                 n["connectedTo"].append(ie_id)
                 break
@@ -235,9 +235,9 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
         ip_node["connectedTo"].append(boss_id)
 
     # 3. Final Boss
-    var final_angle = (TAU * (float(num_spokes) - 0.5)) / float(num_spokes) - (TAU / 16.0)
-    var final_dist = 0.45
-    var final_boss_node = {
+    var final_angle: float = (TAU * (float(num_spokes) - 0.5)) / float(num_spokes) - (TAU / 16.0)
+    var final_dist: float = 0.45
+    var final_boss_node: Dictionary = {
         "id": "node_final_boss",
         "type": "finish",
         "floor": 99,
@@ -250,7 +250,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     
     # This edge is "Locked" - needs all medals
     add_edge.call(hub_node["id"], final_boss_node["id"], base_km * 2.0, 0.10)
-    for e in edges:
+    for e: Dictionary in edges:
         if e["from"] == hub_node["id"] and e["to"] == final_boss_node["id"]:
             e["requiresAllMedals"] = true
             break
@@ -263,9 +263,9 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     run_data["visitedNodeIds"] = [hub_node["id"]]
     hub_node["isUsed"] = true
     
-    var total_map_dist = 0.0
-    for e in edges:
-        total_map_dist += e["profile"].total_distance_m
+    var total_map_dist: float = 0.0
+    for e: Dictionary in edges:
+        total_map_dist += (e["profile"] as CourseProfile).total_distance_m
     
     run_data["stats"]["totalMapDistanceM"] = total_map_dist
     

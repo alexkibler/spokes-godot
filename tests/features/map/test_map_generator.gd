@@ -5,12 +5,12 @@ extends GutTest
 
 # ─── compute_num_spokes ─────────────────────────────────────────────────────────
 
-func test_compute_num_spokes():
+func test_compute_num_spokes() -> void:
 	assert_eq(MapGenerator.compute_num_spokes(1), 2, "minimum 2 for 1km")
 	assert_eq(MapGenerator.compute_num_spokes(10), 2, "minimum 2 for 10km")
 	assert_eq(MapGenerator.compute_num_spokes(24), 2, "minimum 2 for 24km")
 	
-	var km_per_spoke = 20.0 # From MapGenerator.gd
+	var km_per_spoke: float = 20.0 # From MapGenerator.gd
 	assert_eq(MapGenerator.compute_num_spokes(km_per_spoke * 1.5), 2)
 	assert_eq(MapGenerator.compute_num_spokes(km_per_spoke * 2.5), 3)
 	assert_eq(MapGenerator.compute_num_spokes(km_per_spoke * 3.5), 4)
@@ -21,8 +21,8 @@ func test_compute_num_spokes():
 
 # ─── generate_hub_and_spoke_map ───────────────────────────────────────────────────
 
-func test_generate_hub_and_spoke_map_integrity():
-	var run_data = {
+func test_generate_hub_and_spoke_map_integrity() -> void:
+	var run_data: Dictionary = {
 		"totalDistanceKm": 100.0,
 		"difficulty": "normal",
 		"nodes": [],
@@ -31,13 +31,13 @@ func test_generate_hub_and_spoke_map_integrity():
 	}
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
-	var nodes = run_data.nodes
-	var edges = run_data.edges
+	var nodes: Array[Dictionary] = run_data.nodes
+	var edges: Array[Dictionary] = run_data.edges
 	
 	# 1. Graph Integrity
-	var start_nodes = []
-	var finish_nodes = []
-	for n in nodes:
+	var start_nodes: Array[Dictionary] = []
+	var finish_nodes: Array[Dictionary] = []
+	for n: Dictionary in nodes:
 		if n.type == "start": start_nodes.append(n)
 		if n.type == "finish": finish_nodes.append(n)
 		
@@ -45,25 +45,25 @@ func test_generate_hub_and_spoke_map_integrity():
 	assert_gt(finish_nodes.size(), 0, "should have at least one finish node")
 	
 	# 2. Orphan check: ensure every node is connected to at least one edge
-	var referenced_nodes = {}
-	for e in edges:
+	var referenced_nodes: Dictionary = {}
+	for e: Dictionary in edges:
 		referenced_nodes[e.from] = true
 		referenced_nodes[e.to] = true
 		
-	for n in nodes:
+	for n: Dictionary in nodes:
 		assert_true(referenced_nodes.has(n.id), "node " + n.id + " should be referenced in edges")
 		
 	# 3. Edge Validity
-	var node_ids = {}
-	for n in nodes:
+	var node_ids: Dictionary = {}
+	for n: Dictionary in nodes:
 		node_ids[n.id] = true
 		
-	for e in edges:
+	for e: Dictionary in edges:
 		assert_true(node_ids.has(e.from), "edge from " + e.from + " should exist")
 		assert_true(node_ids.has(e.to), "edge to " + e.to + " should exist")
 
-func test_generate_hub_and_spoke_map_structure():
-	var run_data = {
+func test_generate_hub_and_spoke_map_structure() -> void:
+	var run_data: Dictionary = {
 		"totalDistanceKm": 20.0,
 		"difficulty": "normal",
 		"nodes": [],
@@ -72,7 +72,7 @@ func test_generate_hub_and_spoke_map_structure():
 	}
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
-	var num_spokes = MapGenerator.compute_num_spokes(20.0) # 1
+	var num_spokes: int = MapGenerator.compute_num_spokes(20.0) # 1
 	# Wait, compute_num_spokes(20) returns 1 but MIN_SPOKES is 2.
 	# Let's re-verify MapGenerator.gd compute_num_spokes
 	# static func compute_num_spokes(total_distance_km: float) -> int:
@@ -80,23 +80,23 @@ func test_generate_hub_and_spoke_map_structure():
 	# round(20/20) = 1. clamp(1, 2, 8) = 2.
 	assert_eq(num_spokes, 2)
 	
-	var hub = null
-	for n in run_data.nodes:
+	var hub: Dictionary = {}
+	for n: Dictionary in run_data.nodes:
 		if n.id == "node_hub":
 			hub = n
 			break
-	assert_not_null(hub)
+	assert_false(hub.is_empty())
 	
 	# Hub connects to num_spokes spoke-starts + final boss
 	assert_eq(hub.connectedTo.size(), num_spokes + 1)
 	
-	var boss_nodes = []
-	for n in run_data.nodes:
+	var boss_nodes: Array[Dictionary] = []
+	for n: Dictionary in run_data.nodes:
 		if n.type == "boss": boss_nodes.append(n)
 	assert_eq(boss_nodes.size(), num_spokes)
 
-func test_generate_hub_and_spoke_map_counts():
-	var run_data = {
+func test_generate_hub_and_spoke_map_counts() -> void:
+	var run_data: Dictionary = {
 		"totalDistanceKm": 200.0,
 		"difficulty": "normal",
 		"nodes": [],
@@ -105,26 +105,26 @@ func test_generate_hub_and_spoke_map_counts():
 	}
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
-	var num_spokes = MapGenerator.compute_num_spokes(200.0) # 10, clamped to 8
+	var num_spokes: int = MapGenerator.compute_num_spokes(200.0) # 10, clamped to 8
 	assert_eq(num_spokes, 8)
 	
 	# Total nodes per biome = NODES_PER_SPOKE linear + 6 island
 	# MapGenerator.gd: const NODES_PER_SPOKE = 2
-	var nodes_per_biome = 2 + 6
+	var nodes_per_biome: int = 2 + 6
 	# Total nodes = 1 hub + numSpokes*nodesPerBiome + 1 final boss
-	assert_eq(run_data.nodes.size(), 1 + num_spokes * nodes_per_biome + 1)
+	assert_eq((run_data.nodes as Array).size(), 1 + num_spokes * nodes_per_biome + 1)
 	
-	var shop_nodes = []
-	var boss_nodes = []
-	for n in run_data.nodes:
+	var shop_nodes: Array[Dictionary] = []
+	var boss_nodes: Array[Dictionary] = []
+	for n: Dictionary in run_data.nodes:
 		if n.type == "shop": shop_nodes.append(n)
 		if n.type == "boss": boss_nodes.append(n)
 		
 	assert_eq(shop_nodes.size(), num_spokes)
 	assert_eq(boss_nodes.size(), num_spokes)
 
-func test_boss_metadata():
-	var run_data = {
+func test_boss_metadata() -> void:
+	var run_data: Dictionary = {
 		"totalDistanceKm": 60.0,
 		"difficulty": "normal",
 		"nodes": [],
@@ -133,13 +133,13 @@ func test_boss_metadata():
 	}
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
-	for n in run_data.nodes:
+	for n: Dictionary in run_data.nodes:
 		if n.type == "boss":
 			assert_true(n.has("metadata"), "boss should have metadata")
 			assert_true(n.metadata.has("spokeId"), "boss should have spokeId")
 
-func test_connectivity():
-	var run_data = {
+func test_connectivity() -> void:
+	var run_data: Dictionary = {
 		"totalDistanceKm": 60.0,
 		"difficulty": "normal",
 		"nodes": [],
@@ -148,33 +148,33 @@ func test_connectivity():
 	}
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
-	var start_node = null
-	var finish_node = null
-	for n in run_data.nodes:
+	var start_node: Dictionary = {}
+	var finish_node: Dictionary = {}
+	for n: Dictionary in run_data.nodes:
 		if n.type == "start": start_node = n
 		if n.type == "finish": finish_node = n
 		
-	assert_not_null(start_node)
-	assert_not_null(finish_node)
+	assert_false(start_node.is_empty())
+	assert_false(finish_node.is_empty())
 	
 	# BFS to ensure finish is reachable from start
-	var adjacency = {}
-	for e in run_data.edges:
+	var adjacency: Dictionary = {}
+	for e: Dictionary in run_data.edges:
 		if not adjacency.has(e.from): adjacency[e.from] = []
 		adjacency[e.from].append(e.to)
 		
-	var queue = [start_node.id]
-	var visited = {start_node.id: true}
-	var reachable = false
+	var queue: Array[String] = [start_node.id]
+	var visited: Dictionary = {start_node.id: true}
+	var reachable: bool = false
 	
 	while not queue.is_empty():
-		var current = queue.pop_front()
+		var current: String = queue.pop_front()
 		if current == finish_node.id:
 			reachable = true
 			break
 			
-		var neighbors = adjacency.get(current, [])
-		for nxt in neighbors:
+		var neighbors: Array = adjacency.get(current, [])
+		for nxt: String in neighbors:
 			if not visited.has(nxt):
 				visited[nxt] = true
 				queue.push_back(nxt)

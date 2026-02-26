@@ -4,14 +4,14 @@ extends GutTest
 
 # ─── Distance constants ───────────────────────────────────────────────────────
 
-func test_distance_constants():
+func test_distance_constants() -> void:
 	assert_eq(Units.MI_TO_KM, 1.609344, "MI_TO_KM is exactly 1.609344")
 	assert_almost_eq(Units.KM_TO_MI, 1.0 / 1.609344, 0.0000000001, "KM_TO_MI is the reciprocal of MI_TO_KM")
 	
 	# round-trips 3 miles through km without losing integer status
-	var miles = 3.0
-	var km = miles * Units.MI_TO_KM
-	var back_to_miles = km * Units.KM_TO_MI
+	var miles: float = 3.0
+	var km: float = miles * Units.MI_TO_KM
+	var back_to_miles: float = km * Units.KM_TO_MI
 	
 	assert_true(Units.is_close_to_integer(back_to_miles), "round-trip should be close to integer")
 	assert_eq(Units.format_fixed(back_to_miles), "3", "format_fixed(3.0) should be '3'")
@@ -22,7 +22,7 @@ func test_distance_constants():
 
 # ─── Weight constants ─────────────────────────────────────────────────────────
 
-func test_weight_constants():
+func test_weight_constants() -> void:
 	assert_eq(Units.LB_TO_KG, 0.45359237, "LB_TO_KG is exactly 0.45359237")
 	assert_almost_eq(Units.KG_TO_LB, 1.0 / 0.45359237, 0.00000001, "KG_TO_LB is the reciprocal of LB_TO_KG")
 	assert_almost_eq(Units.LB_TO_KG * Units.KG_TO_LB, 1.0, 0.000000000001, "LB_TO_KG * KG_TO_LB is very close to 1")
@@ -31,13 +31,13 @@ func test_weight_constants():
 	assert_almost_eq(68.0 * Units.KG_TO_LB, 149.9, 0.1, "68 kg converts to approximately 150 lb")
 	
 	# round-trips 70 kg through lb and back within floating-point precision
-	var lb = 70.0 * Units.KG_TO_LB
-	var back_to_kg = lb * Units.LB_TO_KG
+	var lb: float = 70.0 * Units.KG_TO_LB
+	var back_to_kg: float = lb * Units.LB_TO_KG
 	assert_almost_eq(back_to_kg, 70.0, 0.0000000001, "round-trip 70 kg should be precise")
 
 # ─── isCloseToInteger ─────────────────────────────────────────────────────────
 
-func test_is_close_to_integer():
+func test_is_close_to_integer() -> void:
 	assert_true(Units.is_close_to_integer(3.0), "returns true for an exact integer (3)")
 	assert_true(Units.is_close_to_integer(0.0), "returns true for an exact integer (0)")
 	assert_true(Units.is_close_to_integer(-5.0), "returns true for an exact integer (-5)")
@@ -58,7 +58,7 @@ func test_is_close_to_integer():
 
 # ─── formatFixed ─────────────────────────────────────────────────────────────
 
-func test_format_fixed():
+func test_format_fixed() -> void:
 	assert_eq(Units.format_fixed(3.0), "3", "strips decimal for exact integers (3)")
 	assert_eq(Units.format_fixed(0.0), "0", "strips decimal for exact integers (0)")
 	

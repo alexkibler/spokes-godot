@@ -30,7 +30,7 @@ func _ready() -> void:
 	diff_toggle.add_item("Hard")
 	diff_toggle.selected = 1
 	
-	var bt_btn = Button.new()
+	var bt_btn: Button = Button.new()
 	bt_btn.text = "PAIR BLUETOOTH TRAINER"
 	bt_btn.custom_minimum_size = Vector2(300, 60)
 	bt_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -38,20 +38,20 @@ func _ready() -> void:
 		bt_btn.disabled = true
 		bt_btn.text += " (WEB ONLY)"
 	else:
-		bt_btn.pressed.connect(func():
+		bt_btn.pressed.connect(func() -> void:
 			TrainerService.is_mock_mode = false
 			TrainerService.request_bluetooth_if_needed()
 			bt_btn.text = "PAIRING..."
 			bt_btn.disabled = true
 		)
-		SignalBus.trainer_connected.connect(func():
+		SignalBus.trainer_connected.connect(func() -> void:
 			bt_btn.text = "CONNECTED!"
 			bt_btn.disabled = true
 			_show_trainer_status()
 		)
 	
-	var vbox = $MarginContainer/VBoxContainer
-	var start_btn = $MarginContainer/VBoxContainer/StartButton
+	var vbox: VBoxContainer = $MarginContainer/VBoxContainer as VBoxContainer
+	var start_btn: Button = $MarginContainer/VBoxContainer/StartButton as Button
 	vbox.add_child(bt_btn)
 	vbox.move_child(bt_btn, start_btn.get_index())
 	
@@ -84,8 +84,8 @@ func _show_trainer_status() -> void:
 	if not SignalBus.trainer_cadence_updated.is_connected(self._on_trainer_cadence_updated):
 		SignalBus.trainer_cadence_updated.connect(self._on_trainer_cadence_updated)
 
-var _last_watts: float = 0
-var _last_rpm: float = 0
+var _last_watts: float = 0.0
+var _last_rpm: float = 0.0
 
 func _on_trainer_power_updated(watts: float) -> void:
 	_last_watts = watts
@@ -117,14 +117,14 @@ func _on_start_pressed() -> void:
 	SettingsManager.save_settings()
 	
 	# Start Run
-	var diff_str = "normal"
+	var diff_str: String = "normal"
 	match diff_toggle.selected:
 		0: diff_str = "easy"
 		1: diff_str = "normal"
 		2: diff_str = "hard"
 		
-	var dist_km = dist_slider.value
-	var floors = int(max(4, round(dist_km / 1.25)))
+	var dist_km: float = dist_slider.value
+	var floors: int = int(max(4, round(dist_km / 1.25)))
 	
 	RunManager.start_new_run(
 		floors,

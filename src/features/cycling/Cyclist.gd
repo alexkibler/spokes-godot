@@ -32,7 +32,7 @@ func _ready() -> void:
 
 	for child in get_children():
 		if child.has_method("initialize"):
-			child.call("initialize", self)
+			child.initialize(self)
 
 ## Setup the cyclist with specific properties.
 func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE, p_start_distance: float = 0.0, p_base_power: float = 200.0) -> void:
@@ -43,25 +43,25 @@ func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist"
 	
 	for child in get_children():
 		if child.has_method("initialize"):
-			child.call("initialize", self)
+			child.initialize(self)
 			
 	if not is_player and hardware_receiver:
-		hardware_receiver.call("set_power_manual", p_base_power)
+		(hardware_receiver as HardwareReceiverComponent).set_power_manual(p_base_power)
 	
 	set_color(p_color)
 
 func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array[Cyclist], run_modifiers: Dictionary = {}) -> void:
 	# 1. Gather Inputs
-	var raw_power: float = hardware_receiver.call("get_power") if hardware_receiver else 0.0
+	var raw_power: float = (hardware_receiver as HardwareReceiverComponent).get_power() if hardware_receiver else 0.0
 
 	# 2. Update Components
 	if drafting:
-		drafting.call("update_drafting", distance_m, nearby_entities)
-		draft_factor = drafting.call("get_draft_factor")
+		(drafting as DraftingComponent).update_drafting(distance_m, nearby_entities)
+		draft_factor = (drafting as DraftingComponent).get_draft_factor()
 
 	if surge:
-		surge.call("process_surge", delta, draft_factor)
-		var surge_mult: float = surge.call("get_power_multiplier")
+		(surge as SurgeComponent).process_surge(delta, draft_factor)
+		var surge_mult: float = (surge as SurgeComponent).get_power_multiplier()
 
 		# 3. Calculate Physics Modifiers
 		var physics_modifiers: Dictionary = run_modifiers.duplicate()
@@ -94,11 +94,11 @@ func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array
 func _process(delta: float) -> void:
 	# 5. Update Visuals
 	if visuals and hardware_receiver:
-		visuals.call("update_animation", delta, velocity_ms, hardware_receiver.call("get_cadence"))
+		(visuals as CyclistVisuals).update_animation(delta, velocity_ms, (hardware_receiver as HardwareReceiverComponent).get_cadence())
 		# Position/Rotation handling is usually done by the parent scene (GameScene) relative to the track/camera,
 		# but strictly the visual's internal animation (pedaling) is handled here.
 		# The root Node2D transform (position along track) is updated by GameScene based on distance_m.
 
 func set_color(color: Color) -> void:
 	if visuals:
-		visuals.call("set_color", color)
+		(visuals as CyclistVisuals).set_color(color)

@@ -25,7 +25,7 @@ func _ready() -> void:
 		RunManager.start_new_run(3, 50.0, "normal", 200, 75.0, "imperial")
 	
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
-	hud.call("update_hud")
+	hud.update_hud()
 	queue_redraw()
 	_check_autoplay()
 
@@ -37,7 +37,7 @@ func _draw() -> void:
 	var run: Dictionary = RunManager.get_run()
 	if run.is_empty(): return
 	
-	hud.call("update_hud")
+	hud.update_hud()
 	
 	# Use fixed reference for world-space drawing
 	# This matches the Camera2D position at (640, 360)
@@ -45,9 +45,9 @@ func _draw() -> void:
 	var scale_factor: float = 600.0 # 0.8 * 750 (approx)
 	
 	# Draw edges
-	for edge: Dictionary in (run["edges"] as Array):
-		var from_node: Dictionary = _find_node(run["nodes"] as Array, edge["from"])
-		var to_node: Dictionary = _find_node(run["nodes"] as Array, edge["to"])
+	for edge: Dictionary in run["edges"]:
+		var from_node: Dictionary = _find_node(run["nodes"], edge["from"])
+		var to_node: Dictionary = _find_node(run["nodes"], edge["to"])
 		
 		if not from_node.is_empty() and not to_node.is_empty():
 			var p1: Vector2 = center + (Vector2(from_node["x"], from_node["y"]) - Vector2(0.5, 0.5)) * scale_factor
@@ -168,7 +168,7 @@ func _input(event: InputEvent) -> void:
 		print("[INPUT DEBUG] Screen Pos: ", event_pos, " -> World Pos: ", world_click_pos)
 		
 		# Check node clicks
-		for node: Dictionary in (run["nodes"] as Array):
+		for node: Dictionary in run["nodes"]:
 			var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 			var dist: float = world_click_pos.distance_to(pos)
 			
@@ -195,7 +195,7 @@ func _on_node_clicked(node: Dictionary) -> void:
 	
 	# 1. Find the connecting edge
 	var connecting_edge: Dictionary = {}
-	for edge: Dictionary in (run["edges"] as Array):
+	for edge: Dictionary in run["edges"]:
 		if (edge["from"] == run["currentNodeId"] and edge["to"] == node["id"]) or \
 		   (edge["to"] == run["currentNodeId"] and edge["from"] == node["id"]):
 			connecting_edge = edge
@@ -229,7 +229,7 @@ func _on_node_clicked(node: Dictionary) -> void:
 			var overlay: Node = (load("res://src/ui/screens/EliteOverlay.tscn") as PackedScene).instantiate()
 			add_child(overlay)
 			if overlay.has_method("setup"):
-				overlay.call("setup", challenge)
+				overlay.setup(challenge)
 			if overlay.has_signal("challenge_accepted"):
 				overlay.connect("challenge_accepted", func(accepted_challenge: EliteChallenge) -> void:
 					RunManager.active_challenge = accepted_challenge

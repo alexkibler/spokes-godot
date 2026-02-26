@@ -6,6 +6,7 @@ signal data_received(data) # Dict with power, speed, cadence
 
 var is_connected_to_device: bool = false
 var is_mock_mode: bool = true
+var mock_cadence: float = 90.0
 
 var mock_timer: Timer
 var _js_data_callback = null
@@ -13,26 +14,26 @@ var _js_connected_callback = null
 var _js_disconnected_callback = null
 
 func _ready() -> void:
-    mock_timer = Timer.new()
-    mock_timer.wait_time = 1.0 # 1 second tick like FTMS
-    mock_timer.timeout.connect(_on_mock_tick)
-    add_child(mock_timer)
-    
-    if OS.has_feature("web"):
-        _setup_js_bridge()
+	mock_timer = Timer.new()
+	mock_timer.wait_time = 1.0 # 1 second tick like FTMS
+	mock_timer.timeout.connect(_on_mock_tick)
+	add_child(mock_timer)
+	
+	if OS.has_feature("web"):
+		_setup_js_bridge()
 
 func _setup_js_bridge() -> void:
-    _js_data_callback = JavaScriptBridge.create_callback(_on_js_data)
-    _js_connected_callback = JavaScriptBridge.create_callback(_on_js_connected)
-    _js_disconnected_callback = JavaScriptBridge.create_callback(_on_js_disconnected)
-    
-    var window = JavaScriptBridge.get_interface("window")
-    if window:
-        window.godot_ftms_callback = _js_data_callback
-        window.godot_ftms_connected_callback = _js_connected_callback
-        window.godot_ftms_disconnected_callback = _js_disconnected_callback
-    
-    var js_code = """
+	_js_data_callback = JavaScriptBridge.create_callback(_on_js_data)
+	_js_connected_callback = JavaScriptBridge.create_callback(_on_js_connected)
+	_js_disconnected_callback = JavaScriptBridge.create_callback(_on_js_disconnected)
+	
+	var window = JavaScriptBridge.get_interface("window")
+	if window:
+		window.godot_ftms_callback = _js_data_callback
+		window.godot_ftms_connected_callback = _js_connected_callback
+		window.godot_ftms_disconnected_callback = _js_disconnected_callback
+	
+	var js_code = """
 window.connectFTMS = async function() {
     if (!navigator.bluetooth) {
         console.error("Web Bluetooth is not supported in this browser.");
@@ -145,57 +146,57 @@ window.setFTMSGrade = async function(grade, crr, cwa) {
     }
 };
 """
-    JavaScriptBridge.eval(js_code)
+	JavaScriptBridge.eval(js_code)
 
 func _on_js_data(args: Array) -> void:
-    if args.size() >= 3:
-        var data = {
-            "power": float(args[0]),
-            "cadence": float(args[1]),
-            "speed_kmh": float(args[2])
-        }
-        data_received.emit(data)
+	if args.size() >= 3:
+		var data = {
+			"power": float(args[0]),
+			"cadence": float(args[1]),
+			"speed_kmh": float(args[2])
+		}
+		data_received.emit(data)
 
 func _on_js_connected(_args: Array) -> void:
-    is_connected_to_device = true
-    is_mock_mode = false
-    mock_timer.stop()
-    connected.emit()
+	is_connected_to_device = true
+	is_mock_mode = false
+	mock_timer.stop()
+	connected.emit()
 
 func _on_js_disconnected(_args: Array) -> void:
-    is_connected_to_device = false
-    disconnected.emit()
+	is_connected_to_device = false
+	disconnected.emit()
 
 func request_bluetooth_if_needed() -> void:
-    if OS.has_feature("web") and not is_connected_to_device:
-        is_mock_mode = false # Explicitly disable mock mode
-        mock_timer.stop()
-        JavaScriptBridge.eval("window.connectFTMS();")
+	if OS.has_feature("web") and not is_connected_to_device:
+		is_mock_mode = false # Explicitly disable mock mode
+		mock_timer.stop()
+		JavaScriptBridge.eval("window.connectFTMS();")
 
 func connect_trainer() -> void:
-    if is_mock_mode:
-        is_connected_to_device = true
-        mock_timer.start()
-        connected.emit()
-
+	if is_mock_mode:
+		is_connected_to_device = true
+		mock_cadence = float(randi_range(60, 110))
+		mock_timer.start()
+		connected.emit()
 func disconnect_trainer() -> void:
-    is_connected_to_device = false
-    mock_timer.stop()
-    disconnected.emit()
+	is_connected_to_device = false
+	mock_timer.stop()
+	disconnected.emit()
 
 func set_simulation_params(grade: float, crr: float, cwa: float) -> void:
-    if OS.has_feature("web") and not is_mock_mode and is_connected_to_device:
-        var js_call = "window.setFTMSGrade(" + str(grade) + ", " + str(crr) + ", " + str(cwa) + ");"
-        JavaScriptBridge.eval(js_call)
+	if OS.has_feature("web") and not is_mock_mode and is_connected_to_device:
+		var js_call = "window.setFTMSGrade(" + str(grade) + ", " + str(crr) + ", " + str(cwa) + ");"
+		JavaScriptBridge.eval(js_call)
 
 func _on_mock_tick() -> void:
-    if not is_connected_to_device or not is_mock_mode: 
-        mock_timer.stop() # Safety: stop if we shouldn't be running
-        return
-    
-    var data = {
-        "power": 200.0,
-        "cadence": 90.0,
-        "speed_kmh": 30.0
-    }
-    data_received.emit(data)
+	if not is_connected_to_device or not is_mock_mode: 
+		mock_timer.stop() # Safety: stop if we shouldn't be running
+		return
+	
+	var data = {
+		"power": 200.0,
+		"cadence": mock_cadence,
+		"speed_kmh": 30.0
+	}
+	data_received.emit(data)

@@ -25,6 +25,8 @@ var current_grade: float = 0.0
 var current_surface: String = "asphalt"
 var player_draft_factor: float = 0.0
 var travel_direction: float = 1.0 # 1.0 for L->R, -1.0 for R->L
+var cadence: float = 90.0
+var crank_rotation: float = 0.0
 
 var ghosts: Array = [] # List of Dictionaries { "distance_m", "velocity_ms", "power_w", "node" }
 var ghost_scene = preload("res://src/scenes/CyclistVisuals.tscn")
@@ -114,6 +116,8 @@ func _ready() -> void:
 	TrainerService.data_received.connect(_on_trainer_data)
 	TrainerService.connect_trainer()
 	
+	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
+	
 	# Setup UI
 	progress_bar.max_value = course.get("totalDistanceM", 1000.0)
 	progress_bar.value = 0.0
@@ -125,6 +129,8 @@ func _ready() -> void:
 	_spawn_ghosts()
 
 	RunManager.item_discovered.connect(_on_item_discovered)
+	
+	cadence = TrainerService.mock_cadence if TrainerService.is_mock_mode else 0.0
 
 	# Dev-only speed control
 	var hostname = JavaScriptBridge.eval("window.location.hostname")
@@ -157,19 +163,32 @@ func _spawn_ghosts() -> void:
 		environment.add_child(g_node)
 		
 		# Style the ghost
-		var sprite = g_node.get_node("Sprite2D")
-		var rider = g_node.get_node("Rider")
 		var color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
-		sprite.modulate = color
-		rider.color = color
+		if g_node.has_node("Frame"):
+			g_node.get_node("Frame").modulate = color
+		if g_node.has_node("Crank"):
+			g_node.get_node("Crank").modulate = color
+		if g_node.has_node("Rider"):
+			var rider = g_node.get_node("Rider")
+			if rider is Sprite2D:
+				rider.modulate = color
+			else:
+				rider.color = color
+		if g_node.has_node("RiderPoly"):
+			g_node.get_node("RiderPoly").color = color
 		
+		# Legacy support for old single-sprite
+		if g_node.has_node("Sprite2D"):
+			g_node.get_node("Sprite2D").modulate = color
+			
 		var ghost_state = {
 			"label": labels[i],
 			"distance_m": 10.0 + i * 5.0,
 			"velocity_ms": 0.0,
 			"power_w": base_power * offsets[i],
 			"node": g_node,
-			"wheel_rotation": 0.0
+			"wheel_rotation": 0.0,
+			"crank_rotation": 0.0
 		}
 		ghosts.append(ghost_state)
 
@@ -428,7 +447,8 @@ func _update_visuals(delta: float) -> void:
 	
 	# Animate Player
 	wheel_rotation += velocity_ms * delta * 10.0
-	_animate_cyclist(player_cyclist, wheel_rotation, velocity_ms)
+	crank_rotation += (cadence / 60.0) * 2.0 * PI * delta
+	_animate_cyclist(player_cyclist, wheel_rotation, velocity_ms, crank_rotation)
 	
 	# Position and Rotate Player on road (Pivot at player distance)
 	var p_grade = CourseProfile.get_grade_at_distance(course, distance_m)
@@ -450,7 +470,9 @@ func _update_visuals(delta: float) -> void:
 		g_node.scale.x = travel_direction
 		
 		g["wheel_rotation"] += g["velocity_ms"] * delta * 10.0
-		_animate_cyclist(g_node, g["wheel_rotation"], g["velocity_ms"])
+		var g_crank_rot = g.get("crank_rotation", 0.0) + (90.0 / 60.0) * 2.0 * PI * delta
+		g["crank_rotation"] = g_crank_rot
+		_animate_cyclist(g_node, g["wheel_rotation"], g["velocity_ms"], g_crank_rot)
 	
 	# Environment stays level as the ground itself is now deformed
 	environment.rotation = 0
@@ -480,25 +502,48 @@ func _on_viewport_resized() -> void:
 	# Wait for layout update to get correct ElevationContainer width
 	get_tree().process_frame.connect(_build_elevation_graph, CONNECT_ONE_SHOT)
 
-func _animate_cyclist(node: Node2D, w_rot: float, vel: float) -> void:
-	var sprite: Sprite2D = node.get_node("Sprite2D")
-	var rider: Polygon2D = node.get_node("Rider")
+func _animate_cyclist(node: Node2D, w_rot: float, vel: float, crank_rot: float = 0.0) -> void:
+	var frames = 12
 	
+	# Frame Index for Wheels/Chain/Frame (Speed-based)
+	var wheel_idx = 0
 	if vel > 0.1:
-		# Use w_rot to determine frame (0 to 11)
-		# 2*PI radians is one full rotation
-		var frames = 12
-		var frame_idx = int(fmod(w_rot, 2.0 * PI) / (2.0 * PI) * frames)
-		if frame_idx < 0: frame_idx += frames
-		sprite.frame = frame_idx
-		
-		# Bob the rider
-		var bob = sin(Time.get_ticks_msec() * 0.01) * 3.0
-		rider.position.y = -62 + bob
-	else:
-		# Stationary frame
-		sprite.frame = 0
-		rider.position.y = -62
+		wheel_idx = int(fmod(w_rot, 2.0 * PI) / (2.0 * PI) * frames)
+		if wheel_idx < 0: wheel_idx += frames
+	
+	# Frame Index for Crank (Cadence-based)
+	var crank_idx = int(fmod(crank_rot, 2.0 * PI) / (2.0 * PI) * frames)
+	if crank_idx < 0: crank_idx += frames
+	
+	# Update Sprites
+	for child in node.get_children():
+		if child is Sprite2D:
+			if child.name == "Crank":
+				child.frame = crank_idx
+			else:
+				child.frame = wheel_idx
+	
+	# Bob ONLY the Rider (the person)
+	var bob = 0.0
+	if vel > 0.1:
+		bob = sin(Time.get_ticks_msec() * 0.01) * 3.0
+	
+	# Rider could be the Sprite2D or the Polygon2D (for legacy/ghost support)
+	for node_name in ["Rider", "RiderPoly"]:
+		if node.has_node(node_name):
+			var rider = node.get_node(node_name)
+			var base_y = -45.0 if rider is Sprite2D else -62.0
+			rider.position.y = base_y + bob
+	
+	# Ensure Bike parts stay stationary (at their base_y)
+	for node_name in ["Frame", "Crank", "Chain", "Wheels", "Sprite2D"]:
+		if node.has_node(node_name) and node_name != "Rider":
+			var child = node.get_node(node_name)
+			if child is Sprite2D:
+				child.position.y = -45.0
+
+
+
 func _create_speed_control() -> void:
 	var layer = CanvasLayer.new()
 	layer.layer = 10
@@ -630,9 +675,10 @@ func _on_trainer_data(data: Dictionary) -> void:
 		raw_trainer_speed_ms = data["speed_kmh"] / 3.6
 	
 	if data.has("cadence"):
+		cadence = float(data["cadence"])
 		var cadence_node = hud_power_label.get_parent().get_parent().find_child("CadenceValue", true, false)
 		if cadence_node:
-			cadence_node.text = str(round(data["cadence"])) + " RPM"
+			cadence_node.text = str(round(cadence)) + " RPM"
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

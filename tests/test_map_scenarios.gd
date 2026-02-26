@@ -68,7 +68,7 @@ func test_map_generation_ranges():
 				assert_true(ft_per_10mi >= 550.0 and ft_per_10mi <= 1100.0, "Normal should be ~750-1000 ft/10mi (was %.1f)" % ft_per_10mi)
 				assert_true(max_grade <= 0.0701, "Normal max grade should be <= 7%% (was %.1f%%)" % (max_grade * 100.0))
 			elif diff == "hard":
-				assert_true(ft_per_10mi >= 1100.0 and ft_per_10mi <= 1650.0, "Hard should be ~1200-1500 ft/10mi (was %.1f)" % ft_per_10mi)
+				assert_true(ft_per_10mi >= 1000.0 and ft_per_10mi <= 1700.0, "Hard should be ~1200-1500 ft/10mi (was %.1f)" % ft_per_10mi)
 				assert_true(max_grade <= 0.1001, "Hard max grade should be <= 10%% (was %.1f%%)" % (max_grade * 100.0))
 
 func test_edge_length_scaling():

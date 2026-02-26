@@ -5,29 +5,18 @@ extends Object
 
 const G: float = 9.80665
 
-# Default physics configuration
-# Using a dictionary for flexibility, matching the original interface
-static func get_default_config() -> Dictionary:
-    return {
-        "massKg": 122.3, # 114.3 kg rider + 8 kg bike
-        "cdA": 0.416,
-        "crr": 0.0041,
-        "rhoAir": 1.225,
-        "grade": 0.0
-    }
-
 ## Compute the forces and resulting acceleration (m/s²) for a given power and velocity.
 static func calculate_acceleration(
     power_w: float,
     current_velocity_ms: float,
-    config: Dictionary,
+    stats: CyclistStats,
+    grade: float = 0.0,
     modifiers: Dictionary = {}
 ) -> float:
-    var cdA: float = config.get("cdA", 0.416)
-    var rhoAir: float = config.get("rhoAir", 1.225)
-    var crr: float = config.get("crr", 0.0041)
-    var grade: float = config.get("grade", 0.0)
-    var massKg: float = config.get("massKg", 122.3)
+    var cdA: float = stats.cda
+    var rhoAir: float = stats.rho_air
+    var crr: float = stats.crr
+    var massKg: float = stats.mass_kg
     
     var power_mult: float = modifiers.get("powerMult", 1.0)
     var drag_reduction: float = modifiers.get("dragReduction", 0.0)

@@ -1,7 +1,10 @@
 class_name SpokesTheme
-extends Object
+extends Resource
 
-const BIOME_COLORS = {
+## SpokesTheme
+## Defines the color palette and visual style for different biomes.
+
+@export var biome_colors: Dictionary = {
     "plains":   Color("#88cc44"),
     "coast":    Color("#4488cc"),
     "mountain": Color("#cc4444"),
@@ -12,7 +15,7 @@ const BIOME_COLORS = {
     "jungle":   Color("#44aa44"),
 }
 
-const PARALLAX_COLORS = {
+@export var parallax_colors: Dictionary = {
     "mountains": Color("#b8aa96"),
     "hills":     Color("#7a9469"),
     "ground":    Color("#4a6e38"),

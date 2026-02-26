@@ -2,18 +2,18 @@ extends "res://addons/gut/test.gd"
 
 # Systematic profiling of cyclist physics across weights, FTPs, and grades.
 
-func find_steady_state_speed(power: float, config: Dictionary, tolerance: float = 0.001) -> float:
+func find_steady_state_speed(power: float, stats: CyclistStats, grade: float = 0.0, tolerance: float = 0.001) -> float:
 	# Use binary search to find v where acceleration is 0
 	var v_min: float = 0.0
 	var v_max: float = 40.0 # 144 km/h is a safe upper bound
 	
 	# Handle downhill coasting or high power where terminal velocity might be higher
-	if config.get("grade", 0.0) < -0.05 or power > 600:
+	if grade < -0.05 or power > 600:
 		v_max = 100.0 # 360 km/h
 		
 	for i in range(50): # 50 iterations for high precision
 		var v_mid = (v_min + v_max) / 2.0
-		var acc = CyclistPhysics.calculate_acceleration(power, v_mid, config)
+		var acc = CyclistPhysics.calculate_acceleration(power, v_mid, stats, grade)
 		if acc > 0:
 			v_min = v_mid
 		else:
@@ -36,11 +36,10 @@ func test_physics_profile_matrix():
 		for ftp in ftps:
 			var last_speed = 999.0
 			for g in grades:
-				var config = CyclistPhysics.get_default_config()
-				config["massKg"] = w + bike_weight
-				config["grade"] = g
+				var stats = CyclistStats.new()
+				stats.mass_kg = w + bike_weight
 				
-				var v_ms = find_steady_state_speed(ftp, config)
+				var v_ms = find_steady_state_speed(ftp, stats, g)
 				var v_kmh = v_ms * 3.6
 				
 				# Print every few to keep output manageable but representative
@@ -61,16 +60,14 @@ func test_weight_impact_on_climbs():
 	var ftp = 300.0
 	var grade = 0.10 # 10%
 	
-	var config_light = CyclistPhysics.get_default_config()
-	config_light["massKg"] = 60.0 + 8.0
-	config_light["grade"] = grade
+	var stats_light = CyclistStats.new()
+	stats_light.mass_kg = 60.0 + 8.0
 	
-	var config_heavy = CyclistPhysics.get_default_config()
-	config_heavy["massKg"] = 90.0 + 8.0
-	config_heavy["grade"] = grade
+	var stats_heavy = CyclistStats.new()
+	stats_heavy.mass_kg = 90.0 + 8.0
 	
-	var speed_light = find_steady_state_speed(ftp, config_light) * 3.6
-	var speed_heavy = find_steady_state_speed(ftp, config_heavy) * 3.6
+	var speed_light = find_steady_state_speed(ftp, stats_light, grade) * 3.6
+	var speed_heavy = find_steady_state_speed(ftp, stats_heavy, grade) * 3.6
 	
 	assert_gt(speed_light, speed_heavy, "Light rider should be faster on 10% climb")
 	assert_gt(speed_light - speed_heavy, 2.0, "Weight impact should be significant on 10% climb")
@@ -81,16 +78,14 @@ func test_aero_dominance_on_flats():
 	
 	# Rider A: 60kg, 200W (3.33 W/kg)
 	# Rider B: 90kg, 200W (2.22 W/kg)
-	var config_a = CyclistPhysics.get_default_config()
-	config_a["massKg"] = 60.0 + 8.0
-	config_a["grade"] = grade
+	var stats_a = CyclistStats.new()
+	stats_a.mass_kg = 60.0 + 8.0
 	
-	var config_b = CyclistPhysics.get_default_config()
-	config_b["massKg"] = 90.0 + 8.0
-	config_b["grade"] = grade
+	var stats_b = CyclistStats.new()
+	stats_b.mass_kg = 90.0 + 8.0
 	
-	var speed_a = find_steady_state_speed(200.0, config_a) * 3.6
-	var speed_b = find_steady_state_speed(200.0, config_b) * 3.6
+	var speed_a = find_steady_state_speed(200.0, stats_a, grade) * 3.6
+	var speed_b = find_steady_state_speed(200.0, stats_b, grade) * 3.6
 	
 	# They should be relatively close on the flat, though rolling resistance will favor the lighter rider slightly
 	assert_almost_eq(speed_a, speed_b, 2.0, "Flat speed should be similar for same power despite weight diff")
@@ -106,11 +101,10 @@ func test_coasting_terminal_velocities():
 	
 	for w in weights:
 		for g in grades:
-			var config = CyclistPhysics.get_default_config()
-			config["massKg"] = w + 8.0
-			config["grade"] = g
+			var stats = CyclistStats.new()
+			stats.mass_kg = w + 8.0
 			
-			var v_ms = find_steady_state_speed(0.0, config)
+			var v_ms = find_steady_state_speed(0.0, stats, g)
 			var v_kmh = v_ms * 3.6
 			
 			print("%7.1f | %5.1f%% | %6.2f" % [w, g * 100.0, v_kmh])
@@ -125,8 +119,8 @@ func test_child_proportions():
 	var total_mass = rider_w + 8.0
 	
 	# Using standard adult CdA (0.416) as per user instruction
-	var child_config = CyclistPhysics.get_default_config()
-	child_config["massKg"] = total_mass
+	var child_stats = CyclistStats.new()
+	child_stats.mass_kg = total_mass
 	
 	var powers = [10.0, 25.0, 50.0, 100.0]
 	var grades = [0.0, 0.05, 0.10]
@@ -137,8 +131,7 @@ func test_child_proportions():
 	
 	for p in powers:
 		for g in grades:
-			child_config["grade"] = g
-			var v_ms = find_steady_state_speed(p, child_config)
+			var v_ms = find_steady_state_speed(p, child_stats, g)
 			var v_kmh = v_ms * 3.6
 			var w_kg = p / rider_w
 			
@@ -148,12 +141,10 @@ func test_child_proportions():
 
 	# Comparison: 100W Child vs 100W Adult on 10% climb
 	var grade = 0.10
-	var adult_config = CyclistPhysics.get_default_config() # ~122.3kg total
-	adult_config["grade"] = grade
-	child_config["grade"] = grade
+	var adult_stats = CyclistStats.new() # ~122.3kg total (default)
 	
-	var adult_speed = find_steady_state_speed(100.0, adult_config) * 3.6
-	var child_speed = find_steady_state_speed(100.0, child_config) * 3.6
+	var adult_speed = find_steady_state_speed(100.0, adult_stats, grade) * 3.6
+	var child_speed = find_steady_state_speed(100.0, child_stats, grade) * 3.6
 	
 	print("\nComparison at 100W on 10% Climb:")
 	print("Child (23kg total): %.2f km/h" % child_speed)

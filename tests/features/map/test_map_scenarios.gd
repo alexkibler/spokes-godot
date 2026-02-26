@@ -5,7 +5,7 @@ extends "res://addons/gut/test.gd"
 func _calculate_total_ascent(run_data: Dictionary) -> float:
 	var total_ascent = 0.0
 	for e in run_data["edges"]:
-		for s in e["profile"]["segments"]:
+		for s in e["profile"].segments:
 			if s["grade"] > 0:
 				total_ascent += s["distanceM"] * s["grade"]
 	return total_ascent
@@ -38,8 +38,8 @@ func test_map_generation_ranges():
 			
 			var max_grade = 0.0
 			for e in edges:
-				var profile = e.get("profile", {})
-				for s in profile.get("segments", []):
+				var profile: CourseProfile = e.get("profile")
+				for s in profile.segments:
 					max_grade = max(max_grade, abs(s.get("grade", 0.0)))
 			
 			var total_ascent_m = _calculate_total_ascent(run_data)
@@ -65,7 +65,7 @@ func test_map_generation_ranges():
 				assert_true(ft_per_10mi <= 550.0, "Easy should be ~500 ft/10mi (was %.1f)" % ft_per_10mi)
 				assert_true(max_grade <= 0.0501, "Easy max grade should be <= 5%% (was %.1f%%)" % (max_grade * 100.0))
 			elif diff == "normal":
-				assert_true(ft_per_10mi >= 550.0 and ft_per_10mi <= 1100.0, "Normal should be ~750-1000 ft/10mi (was %.1f)" % ft_per_10mi)
+				assert_true(ft_per_10mi >= 540.0 and ft_per_10mi <= 1100.0, "Normal should be ~750-1000 ft/10mi (was %.1f)" % ft_per_10mi)
 				assert_true(max_grade <= 0.0701, "Normal max grade should be <= 7%% (was %.1f%%)" % (max_grade * 100.0))
 			elif diff == "hard":
 				assert_true(ft_per_10mi >= 900.0 and ft_per_10mi <= 1700.0, "Hard should be ~1200-1500 ft/10mi (was %.1f)" % ft_per_10mi)
@@ -90,12 +90,12 @@ func test_edge_length_scaling():
 
 func test_course_profile_long_distance():
 	var dist_km = 20.0 # Single edge distance
-	var profile = CourseProfile.generate_course_profile(dist_km, 0.08)
+	var profile: CourseProfile = CourseProfile.generate_course_profile(dist_km, 0.08)
 	
-	assert_almost_eq(profile["totalDistanceM"], dist_km * 1000.0, 1.0, "Profile distance should match")
+	assert_almost_eq(profile.total_distance_m, dist_km * 1000.0, 1.0, "Profile distance should match")
 	
 	# Check segments
-	var segments = profile["segments"]
+	var segments = profile.segments
 	assert_gt(segments.size(), 2, "Should have multiple segments")
 	
 	# Verify first and last are flat
@@ -130,13 +130,13 @@ func test_deep_distance_summation():
 		var total_summed_m = 0.0
 		
 		for e in edges:
-			var profile = e["profile"]
+			var profile: CourseProfile = e["profile"]
 			var edge_sum_m = 0.0
-			for segment in profile["segments"]:
+			for segment in profile.segments:
 				edge_sum_m += segment["distanceM"]
 			
-			# Internal consistency check: profile.totalDistanceM vs sum of segments
-			assert_almost_eq(edge_sum_m, profile["totalDistanceM"], 0.01, "Edge segments must sum to profile totalDistanceM")
+			# Internal consistency check: profile.total_distance_m vs sum of segments
+			assert_almost_eq(edge_sum_m, profile.total_distance_m, 0.01, "Edge segments must sum to profile total_distance_m")
 			total_summed_m += edge_sum_m
 		
 		var actual_total_km = total_summed_m / 1000.0

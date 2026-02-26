@@ -8,9 +8,10 @@ func test_drafting_dropoff_curve():
 	
 	var distances = [0.0, 1.0, 2.0, 5.0, 10.0, 15.0, 19.9, 20.0, 25.0]
 	var last_reduction = 1.0 # Start artificially high
+	var stats = CyclistStats.new()
 	
 	for d in distances:
-		var reduction = DraftingPhysics.get_draft_factor(d)
+		var reduction = DraftingPhysics.get_draft_factor(stats, d)
 		print("%12.1f | %16.1f%%" % [d, reduction * 100.0])
 		
 		if d <= 0.0 or d >= 20.0:
@@ -30,9 +31,10 @@ func test_leading_draft_push():
 	
 	var distances = [0.0, 0.5, 1.0, 2.0, 2.9, 3.0, 5.0]
 	var last_reduction = 1.0
+	var stats = CyclistStats.new()
 	
 	for d in distances:
-		var reduction = DraftingPhysics.get_leading_draft_factor(d)
+		var reduction = DraftingPhysics.get_leading_draft_factor(stats, d)
 		print("%12.1f | %16.1f%%" % [d, reduction * 100.0])
 		
 		if d <= 0.0 or d >= 3.0:
@@ -44,9 +46,10 @@ func test_leading_draft_push():
 			last_reduction = reduction
 
 func test_drafting_sweet_spot():
-	var close = DraftingPhysics.get_draft_factor(0.5)
-	var mid = DraftingPhysics.get_draft_factor(10.0)
-	var far = DraftingPhysics.get_draft_factor(19.0)
+	var stats = CyclistStats.new()
+	var close = DraftingPhysics.get_draft_factor(stats, 0.5)
+	var mid = DraftingPhysics.get_draft_factor(stats, 10.0)
+	var far = DraftingPhysics.get_draft_factor(stats, 19.0)
 	
 	assert_gt(close, mid, "Close draft should be stronger than mid")
 	assert_gt(mid, far, "Mid draft should be stronger than far")

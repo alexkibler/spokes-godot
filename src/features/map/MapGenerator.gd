@@ -265,7 +265,7 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     
     var total_map_dist = 0.0
     for e in edges:
-        total_map_dist += e["profile"]["totalDistanceM"]
+        total_map_dist += e["profile"].total_distance_m
     
     run_data["stats"]["totalMapDistanceM"] = total_map_dist
     

@@ -1,5 +1,5 @@
 class_name CourseProfile
-extends Object
+extends Resource
 
 # Port of CourseProfile.ts
 # Defines a cycling course as an ordered list of grade segments.
@@ -11,36 +11,37 @@ const CRR_BY_SURFACE = {
     "mud":     0.040, # soft mud       — ~8×   baseline
 }
 
+@export var segments: Array = [] ## Array of Dictionaries {distanceM, grade, surface}
+@export var total_distance_m: float = 0.0
+
 static func get_crr_for_surface(surface: String = "asphalt") -> float:
     return CRR_BY_SURFACE.get(surface, 0.005)
 
-static func get_grade_at_distance(profile: Dictionary, distance_m: float) -> float:
-    var total_dist = profile.get("totalDistanceM", 0.0)
-    if total_dist <= 0: return 0.0
+func get_grade_at_distance(distance_m: float) -> float:
+    if total_distance_m <= 0: return 0.0
     
-    var wrapped = fmod(distance_m, total_dist)
-    if wrapped < 0: wrapped += total_dist
+    var wrapped = fmod(distance_m, total_distance_m)
+    if wrapped < 0: wrapped += total_distance_m
     var remaining = wrapped
-    for segment in profile.get("segments", []):
+    for segment in segments:
         if remaining < segment["distanceM"]:
             return segment["grade"]
         remaining -= segment["distanceM"]
     return 0.0
 
-static func get_elevation_at_distance(profile: Dictionary, distance_m: float) -> float:
-    var total_dist = profile.get("totalDistanceM", 0.0)
-    if total_dist <= 0: return 0.0
+func get_elevation_at_distance(distance_m: float) -> float:
+    if total_distance_m <= 0: return 0.0
     
-    var num_wraps = floor(distance_m / total_dist)
-    var wrapped = distance_m - (num_wraps * total_dist)
+    var num_wraps = floor(distance_m / total_distance_m)
+    var wrapped = distance_m - (num_wraps * total_distance_m)
     
     var total_elev = 0.0
-    for segment in profile.get("segments", []):
+    for segment in segments:
         total_elev += segment["distanceM"] * segment["grade"]
         
     var remaining = wrapped
     var current_wrap_elev = 0.0
-    for segment in profile.get("segments", []):
+    for segment in segments:
         var dist = min(remaining, segment["distanceM"])
         current_wrap_elev += dist * segment["grade"]
         if remaining <= segment["distanceM"]: break
@@ -48,25 +49,24 @@ static func get_elevation_at_distance(profile: Dictionary, distance_m: float) ->
         
     return (num_wraps * total_elev) + current_wrap_elev
 
-static func get_surface_at_distance(profile: Dictionary, distance_m: float) -> String:
-    var total_dist = profile.get("totalDistanceM", 0.0)
-    if total_dist <= 0: return "asphalt"
+func get_surface_at_distance(distance_m: float) -> String:
+    if total_distance_m <= 0: return "asphalt"
     
-    var wrapped = fmod(distance_m, total_dist)
-    if wrapped < 0: wrapped += total_dist
+    var wrapped = fmod(distance_m, total_distance_m)
+    if wrapped < 0: wrapped += total_distance_m
     var remaining = wrapped
-    for segment in profile.get("segments", []):
+    for segment in segments:
         if remaining < segment["distanceM"]:
             return segment.get("surface", "asphalt")
         remaining -= segment["distanceM"]
     return "asphalt"
 
-static func generate_course_profile(distance_km: float, max_grade: float, surface: String = "asphalt") -> Dictionary:
+static func generate_course_profile(distance_km: float, max_grade: float, surface: String = "asphalt") -> CourseProfile:
     var total_m = distance_km * 1000.0
     var flat_end_m = clamp(total_m * 0.05, 50.0, 1500.0)
     
-    var segments = []
-    segments.append({"distanceM": flat_end_m, "grade": 0.0, "surface": surface})
+    var new_segments = []
+    new_segments.append({"distanceM": flat_end_m, "grade": 0.0, "surface": surface})
     
     var budget_m = total_m - 2.0 * flat_end_m
     var net_elev_m = 0.0
@@ -93,37 +93,36 @@ static func generate_course_profile(distance_km: float, max_grade: float, surfac
         
         var grade = 0.0 if s_sign == 0 else s_sign * mags[randi() % mags.size()]
         
-        segments.append({"distanceM": length, "grade": grade, "surface": surface})
+        new_segments.append({"distanceM": length, "grade": grade, "surface": surface})
         net_elev_m += length * grade
         budget_m -= length
         
     if budget_m > 0:
-        if segments.size() == 1:
+        if new_segments.size() == 1:
             var s_sign = 1 if randf() < 0.5 else -1
             var grade = s_sign * mags[randi() % mags.size()]
-            segments.append({"distanceM": budget_m, "grade": grade, "surface": surface})
+            new_segments.append({"distanceM": budget_m, "grade": grade, "surface": surface})
         else:
-            segments[segments.size() - 1]["distanceM"] += budget_m
+            new_segments[new_segments.size() - 1]["distanceM"] += budget_m
             
-    segments.append({"distanceM": flat_end_m, "grade": 0.0, "surface": surface})
+    new_segments.append({"distanceM": flat_end_m, "grade": 0.0, "surface": surface})
     
     var final_total = 0.0
-    for s in segments: final_total += s["distanceM"]
+    for s in new_segments: final_total += s["distanceM"]
     
-    return {
-        "segments": segments,
-        "totalDistanceM": final_total
-    }
+    var profile = CourseProfile.new()
+    profile.segments = new_segments
+    profile.total_distance_m = final_total
+    return profile
 
-static func invert_course_profile(profile: Dictionary) -> Dictionary:
+func invert_course_profile() -> CourseProfile:
     var reversed_segments = []
-    var old_segments = profile.get("segments", [])
-    for i in range(old_segments.size() - 1, -1, -1):
-        var seg = old_segments[i].duplicate()
+    for i in range(segments.size() - 1, -1, -1):
+        var seg = segments[i].duplicate()
         seg["grade"] = -seg["grade"]
         reversed_segments.append(seg)
         
-    return {
-        "segments": reversed_segments,
-        "totalDistanceM": profile.get("totalDistanceM", 0.0)
-    }
+    var profile = CourseProfile.new()
+    profile.segments = reversed_segments
+    profile.total_distance_m = total_distance_m
+    return profile

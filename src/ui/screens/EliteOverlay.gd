@@ -3,7 +3,7 @@ extends CanvasLayer
 # EliteOverlay.gd
 # Shows the details of an Elite Challenge before the ride starts.
 
-signal challenge_accepted(challenge: Dictionary)
+signal challenge_accepted(challenge: EliteChallenge)
 signal challenge_declined
 
 @onready var title_label: Label = %Title
@@ -12,9 +12,9 @@ signal challenge_declined
 @onready var reward_label: Label = %RewardText
 @onready var accept_btn: Button = %AcceptButton
 
-var current_challenge: Dictionary = {}
+var current_challenge: EliteChallenge = null
 
-func setup(challenge: Dictionary) -> void:
+func setup(challenge: EliteChallenge) -> void:
 	current_challenge = challenge
 	
 	if is_inside_tree():
@@ -23,14 +23,13 @@ func setup(challenge: Dictionary) -> void:
 		ready.connect(_update_ui, CONNECT_ONE_SHOT)
 
 func _update_ui() -> void:
-	title_label.text = current_challenge.get("title", "ELITE CHALLENGE")
-	flavor_label.text = current_challenge.get("flavorText", "")
+	title_label.text = current_challenge.title
+	flavor_label.text = current_challenge.flavor_text
 	
 	var ftp = RunManager.run_data.get("ftpW", 200)
-	condition_label.text = EliteChallenge.format_challenge_text(current_challenge, ftp)
+	condition_label.text = current_challenge.format_text(ftp)
 	
-	var reward = current_challenge.get("reward", {})
-	reward_label.text = "REWARD: " + reward.get("description", "??")
+	reward_label.text = "REWARD: " + current_challenge.reward_description
 	
 	if RunManager.autoplay_enabled:
 		var pb = ProgressBar.new()

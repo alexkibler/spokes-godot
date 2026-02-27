@@ -10,10 +10,13 @@ signal reward_selected
 var current_rewards: Array[Dictionary] = []
 var is_autoplay_selecting: bool = false
 
-func setup(is_boss_clear: bool = false) -> void:
+func setup(is_boss_clear: bool = false, boss_name: String = "") -> void:
 	if is_boss_clear:
 		var boss_label: Label = Label.new()
-		boss_label.text = "🏆 MEDAL EARNED! 🏆"
+		if boss_name != "":
+			boss_label.text = "🏆 %s DEFEATED! 🏆" % boss_name.to_upper()
+		else:
+			boss_label.text = "🏆 MEDAL EARNED! 🏆"
 		boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		boss_label.add_theme_font_size_override("font_size", 48)
 		boss_label.add_theme_color_override("font_color", Color.GOLD)

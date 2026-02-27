@@ -72,7 +72,7 @@ static func get_loot_pool(count: int) -> Array[Dictionary]:
 		used[picked["id"]] = true
 		
 	return results
-
+ 
 ## Apply a reward by ID
 static func apply_reward(reward_id: String) -> void:
 	var r: Dictionary = get_reward(reward_id)

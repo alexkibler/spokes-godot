@@ -136,24 +136,60 @@ func _ready() -> void:
 		_create_speed_control()
 
 func _spawn_ghosts() -> void:
-	# Spawn 3 ghosts with slightly different powers
+	# Spawn ghosts or a single boss
 	var base_power: float = 200.0
 	if RunManager.is_active_run:
 		base_power = float(RunManager.run_data.get("ftpW", 200.0))
 		
-	var offsets: Array[float] = [0.95, 1.05, 1.15]
-	var labels: Array[String] = ["ROOKIE", "PRO", "ELITE"]
+	var ae: Dictionary = RunManager.get_active_edge()
+	var dest_node_id: String = ae.get("actual_to", "")
+	var dest_node: Dictionary = {}
+	var spoke_id: String = "plains"
 	
-	for i: int in range(3):
+	if RunManager.is_active_run:
+		for n: Dictionary in RunManager.run_data.get("nodes", []):
+			if n["id"] == dest_node_id:
+				dest_node = n
+				spoke_id = n.get("metadata", {}).get("spokeId", "plains")
+				break
+			
+	if not dest_node.is_empty() and (dest_node["type"] == "boss" or dest_node["type"] == "finish"):
+		# Spawn a single boss
+		var BossRegistryScript: Script = load("res://src/features/cycling/BossRegistry.gd")
+		var boss_data: Dictionary = BossRegistryScript.get_boss(spoke_id if dest_node["type"] == "boss" else "final")
 		var g_node: Cyclist = cyclist_scene.instantiate()
-		environment.add_child(g_node) # Add to tree first so @onready are ready
-
+		environment.add_child(g_node)
+		
 		var g_stats: CyclistStats = player_cyclist.stats.duplicate()
-		var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+		g_node.setup(
+			false, 
+			g_stats, 
+			boss_data["name"], 
+			boss_data["color"], 
+			15.0, 
+			base_power * boss_data.get("power_mult", 1.0),
+			boss_data.get("modifiers", {})
+		)
 		
-		g_node.setup(false, g_stats, labels[i], color, 10.0 + i * 5.0, base_power * offsets[i])
-		
+		if boss_data.has("surge_config"):
+			g_node.apply_surge_config(boss_data["surge_config"])
+			
 		ghosts.append(g_node)
+	else:
+		# Spawn 3 ghosts with slightly different powers
+		var offsets: Array[float] = [0.95, 1.05, 1.15]
+		var labels: Array[String] = ["ROOKIE", "PRO", "ELITE"]
+		
+		for i: int in range(3):
+			var g_node: Cyclist = cyclist_scene.instantiate()
+			environment.add_child(g_node) # Add to tree first so @onready are ready
+
+			var g_stats: CyclistStats = player_cyclist.stats.duplicate()
+			var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+			
+			g_node.setup(false, g_stats, labels[i], color, 10.0 + i * 5.0, base_power * offsets[i])
+			
+			ghosts.append(g_node)
 
 func _apply_biome_theming(edge: Dictionary) -> void:
 	var spoke_id: String = "plains"
@@ -288,8 +324,8 @@ func _physics_process(delta: float) -> void:
 		var nearby: Array[Cyclist] = [player_cyclist]
 		for other: Cyclist in ghosts:
 			if other != g: nearby.append(other)
-		# Ghosts don't have run modifiers
-		g.process_cyclist(delta, course, nearby, {})
+		# Ghosts use their own modifiers (e.g. for bosses)
+		g.process_cyclist(delta, course, nearby, g.ghost_modifiers)
 	
 	# Elite Challenge Tracking
 	if RunManager.active_challenge != null:
@@ -525,8 +561,14 @@ func _on_ride_complete() -> void:
 		
 		# Show boss medal if applicable
 		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
+		var b_name: String = ""
+		if is_boss:
+			# Find the boss name from the ghost (there should only be one)
+			if ghosts.size() > 0:
+				b_name = ghosts[0].label
+
 		if overlay.has_method("setup"):
-			overlay.setup(is_boss)
+			overlay.setup(is_boss, b_name)
 		
 		if overlay.has_signal("reward_selected"):
 			overlay.connect("reward_selected", func() -> void:

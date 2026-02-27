@@ -150,6 +150,12 @@ func set_active_edge(edge: Dictionary) -> void:
 func get_active_edge() -> Dictionary:
 	return run_data.get("active_edge", {})
 
+func update_active_distance(dist_m: float) -> void:
+	var ae: Dictionary = get_active_edge()
+	if not ae.is_empty():
+		ae["current_distance_m"] = dist_m
+		_maybe_save()
+
 func get_next_autoplay_node() -> Dictionary:
 	if not is_active_run or run_data.get("currentNodeId", "") == "": return {}
 	

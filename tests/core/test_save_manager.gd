@@ -71,9 +71,11 @@ func test_course_profile_reconstruction() -> void:
 	assert_gt(edges.size(), 0, "Should have edges")
 	assert_true(edges[0]["profile"] is CourseProfile, "Initial edge profile should be CourseProfile")
 	
-	# Set active edge to ensure it's also tested
+	# Set active edge with distance to ensure it's also tested
 	RunManager.set_active_edge(edges[0])
+	RunManager.update_active_distance(543.21)
 	assert_true(RunManager.get_active_edge()["profile"] is CourseProfile, "Active edge profile should be CourseProfile")
+	assert_eq(RunManager.get_active_edge()["current_distance_m"], 543.21, "Active distance should be set")
 	
 	# Save and Reset
 	SaveManager.save_game(slot)
@@ -91,3 +93,4 @@ func test_course_profile_reconstruction() -> void:
 	var loaded_active: Dictionary = RunManager.get_active_edge()
 	assert_false(loaded_active.is_empty(), "Active edge should be restored")
 	assert_true(loaded_active["profile"] is CourseProfile, "Loaded active edge profile should be reconstructed as CourseProfile")
+	assert_eq(loaded_active["current_distance_m"], 543.21, "Active distance should be restored accurately")

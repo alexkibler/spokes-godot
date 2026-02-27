@@ -68,7 +68,9 @@ func _ready() -> void:
 			course = ae["profile"]
 			# Note: Cyclist entity updates its own physics state based on distance, so we just set start pos.
 			var current_surface_res: Resource = course.get_surface_at_distance(0.0)
-			var current_surface: String = current_surface_res.get("name")
+			var current_surface: String = "asphalt"
+			if current_surface_res and "name" in current_surface_res:
+				current_surface = current_surface_res.get("name")
 			
 			# Determine direction from map coordinates
 			var from_node: Dictionary = {}
@@ -150,7 +152,8 @@ func _apply_biome_theming(edge: Dictionary) -> void:
 	var run: Dictionary = RunManager.get_run()
 	for n: Dictionary in run["nodes"]:
 		if n["id"] == edge["to"]:
-			spoke_id = n.get("metadata", {}).get("spokeId", "plains")
+			var metadata: Dictionary = n.get("metadata", {})
+			spoke_id = metadata.get("spokeId", "plains")
 			break
 	
 	var color: Color = SpokesTheme.BIOME_COLORS.get(spoke_id, Color.DARK_GREEN)

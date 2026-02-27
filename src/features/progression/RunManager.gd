@@ -210,7 +210,8 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	
 	# Award Medals for Bosses
 	if not dest_node.is_empty() and dest_node["type"] == "boss":
-		var spoke_id: String = dest_node.get("metadata", {}).get("spokeId", "unknown")
+		var metadata: Dictionary = dest_node.get("metadata", {})
+		var spoke_id: String = metadata.get("spokeId", "unknown")
 		var medal_id: String = "medal_" + spoke_id
 		var inventory: Array = run_data["inventory"]
 		if not medal_id in inventory:

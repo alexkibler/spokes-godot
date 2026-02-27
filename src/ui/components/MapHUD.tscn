@@ -39,6 +39,13 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "AUTOPLAY: OFF"
 
+[node name="ResumeButton" type="Button" parent="MarginContainer/TopLeft"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+text = "RESUME RIDE"
+
 [node name="TopRight" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 8

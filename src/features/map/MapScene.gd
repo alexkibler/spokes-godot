@@ -24,11 +24,6 @@ func _ready() -> void:
 		# Emergency start for testing
 		RunManager.start_new_run(3, 50.0, "normal", 200, 75.0, "imperial")
 	
-	# Check for an active ride to resume
-	if not RunManager.get_active_edge().is_empty():
-		get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
-		return
-
 	UIUtils.handle_safe_area($MapHUD/MarginContainer)
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
@@ -56,6 +51,8 @@ func _draw() -> void:
 	var center: Vector2 = Vector2(640, 360)
 	var scale_factor: float = 600.0 # 0.8 * 750 (approx)
 	
+	var active_edge: Dictionary = RunManager.get_active_edge()
+	
 	# Draw edges
 	for edge: Dictionary in run["edges"]:
 		var from_node: Dictionary = _find_node(run["nodes"], edge["from"])
@@ -69,7 +66,11 @@ func _draw() -> void:
 			var width: float = 2.0
 			var dashed: bool = false
 			
-			if edge.get("isCleared", false):
+			# Highlight active edge
+			if not active_edge.is_empty() and active_edge["from"] == edge["from"] and active_edge["to"] == edge["to"]:
+				color = Color.YELLOW
+				width = 5.0
+			elif edge.get("isCleared", false):
 				color = Color.GREEN
 			elif not RunManager.is_edge_traversable(edge):
 				color = Color.RED

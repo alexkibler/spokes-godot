@@ -5,11 +5,13 @@ extends CanvasLayer
 @onready var modifier_container: HBoxContainer = $MarginContainer/TopCenter/ModifierContainer
 @onready var equip_button: Button = $MarginContainer/TopLeft/EquipButton
 @onready var autoplay_button: Button = %AutoplayButton
+@onready var resume_button: Button = %ResumeButton
 
 func _ready() -> void:
 	UIUtils.handle_safe_area($MarginContainer)
 	equip_button.pressed.connect(_on_equip_pressed)
 	autoplay_button.pressed.connect(_on_autoplay_pressed)
+	resume_button.pressed.connect(_on_resume_pressed)
 
 	SignalBus.gold_changed.connect(_on_gold_changed)
 	SignalBus.modifiers_changed.connect(_on_modifiers_changed)
@@ -39,6 +41,9 @@ func _on_autoplay_pressed() -> void:
 	RunManager.toggle_autoplay()
 	# UI update handled by signal
 
+func _on_resume_pressed() -> void:
+	get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
+
 func _update_autoplay_ui(enabled: bool) -> void:
 	if enabled:
 		autoplay_button.text = "AUTOPLAY: ON"
@@ -65,6 +70,9 @@ func update_hud() -> void:
 	floor_label.text = "FLOOR " + str(current_floor)
 	
 	_update_modifiers(run["modifiers"])
+	
+	# Show/Hide resume button
+	resume_button.visible = not RunManager.get_active_edge().is_empty()
 
 func _update_modifiers(modifiers: Dictionary) -> void:
 	# Clear existing

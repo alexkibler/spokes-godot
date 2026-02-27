@@ -61,7 +61,7 @@ func test_autoplay_fallback_when_no_targets() -> void:
 	assert_eq(next_node["id"], "node_plains_s1")
 
 func test_autoplay_reward_selection_avoids_duplicates() -> void:
-	RunManager.run_data["equipped"]["helmet"] = "aero_helmet"
+	RunManager.run_data["equipped"]["Rider"] = "aero_helmet"
 	var reward_a: Dictionary = ContentRegistry.get_reward("item_aero_helmet")
 	var reward_b: Dictionary = ContentRegistry.get_reward("stat_power_1")
 	
@@ -74,7 +74,7 @@ func test_autoplay_reward_selection_prefers_better_item() -> void:
 	# Register a superior item and its reward
 	ContentRegistry.register_item({
 		"id": "pro_frame_test",
-		"slot": "frame",
+		"slot": "Frame",
 		"modifier": {"weightMult": 0.80} # 20% reduction vs baseline
 	})
 	ContentRegistry.register_reward({
@@ -90,14 +90,14 @@ func test_autoplay_reward_selection_prefers_better_item() -> void:
 func test_autoplay_prefers_net_stat_gain() -> void:
 	ContentRegistry.register_item({
 		"id": "basic_helmet_test",
-		"slot": "helmet",
+		"slot": "Rider",
 		"modifier": {"dragReduction": 0.03}
 	})
-	RunManager.run_data["equipped"]["helmet"] = "basic_helmet_test"
+	RunManager.run_data["equipped"]["Rider"] = "basic_helmet_test"
 	
 	ContentRegistry.register_item({
 		"id": "pro_helmet_test",
-		"slot": "helmet",
+		"slot": "Rider",
 		"modifier": {"dragReduction": 0.04}
 	})
 	ContentRegistry.register_reward({
@@ -113,15 +113,15 @@ func test_autoplay_prefers_net_stat_gain() -> void:
 func test_autoplay_automatic_equip_on_grant() -> void:
 	RunManager.autoplay_enabled = true
 	RunManager.add_to_inventory("aero_helmet")
-	assert_eq((RunManager.run_data["equipped"] as Dictionary).get("helmet"), "aero_helmet")
+	assert_eq((RunManager.run_data["equipped"] as Dictionary).get("Rider"), "aero_helmet")
 	
 	ContentRegistry.register_item({
 		"id": "super_helmet_test",
-		"slot": "helmet",
+		"slot": "Rider",
 		"modifier": {"dragReduction": 0.10}
 	})
 	RunManager.add_to_inventory("super_helmet_test")
-	assert_eq((RunManager.run_data["equipped"] as Dictionary).get("helmet"), "super_helmet_test")
+	assert_eq((RunManager.run_data["equipped"] as Dictionary).get("Rider"), "super_helmet_test")
 
 func test_autoplay_pathfinding_complex_navigation() -> void:
 	RunManager.run_data["currentNodeId"] = "node_hub"

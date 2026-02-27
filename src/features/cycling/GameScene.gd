@@ -33,7 +33,6 @@ var is_complete: bool = false
 
 var fit_writer: FitWriter
 var last_record_ms: int = 0
-var last_save_ms: int = 0
 var ride_start_time: int = 0
 
 var is_dev_build: bool = false
@@ -49,7 +48,6 @@ func _ready() -> void:
 	ride_start_time = Time.get_ticks_msec()
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
 	last_record_ms = ride_start_time
-	last_save_ms = ride_start_time
 	
 	UIUtils.handle_safe_area($HUD/MarginContainer)
 
@@ -68,9 +66,6 @@ func _ready() -> void:
 		var ae: Dictionary = RunManager.get_active_edge()
 		if not ae.is_empty():
 			course = ae["profile"]
-			# Restore distance for resumption
-			player_cyclist.distance_m = ae.get("current_distance_m", 0.0)
-			
 			# Note: Cyclist entity updates its own physics state based on distance, so we just set start pos.
 			var current_surface_res: Resource = course.get_surface_at_distance(0.0)
 			var current_surface: String = "asphalt"
@@ -303,11 +298,6 @@ func _physics_process(delta: float) -> void:
 			"speedMs": player_cyclist.velocity_ms,
 			"distanceM": player_cyclist.distance_m
 		})
-		
-	# 4b. Periodically save distance mid-ride (every 5 seconds)
-	if now - last_save_ms >= 5000:
-		last_save_ms = now
-		RunManager.update_active_distance(player_cyclist.distance_m)
 	
 	# 5. Check Completion
 	if player_cyclist.distance_m >= course.total_distance_m:

@@ -41,7 +41,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		"modifierLog": [],
 		"currentNodeId": "",
 		"visitedNodeIds": [],
-		"activeEdge": null,
+		"active_edge": null,
 		"pendingNodeAction": null,
 		"nodes": [],
 		"edges": [],
@@ -112,6 +112,7 @@ func set_active_edge(edge: Dictionary) -> void:
 		processed_edge["actual_to"] = edge["to"]
 		
 	run_data["active_edge"] = processed_edge
+	_maybe_save()
 
 func get_active_edge() -> Dictionary:
 	return run_data.get("active_edge", {})
@@ -229,6 +230,9 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	if not edge.get("isCleared", false):
 		edge["isCleared"] = true
 		is_first_clear = true
+
+	# Clear active edge as the ride is now complete
+	run_data["active_edge"] = null
 
 	# Auto-save after completing a node (end of EACH ride)
 	_maybe_save()

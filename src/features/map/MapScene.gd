@@ -24,6 +24,11 @@ func _ready() -> void:
 		# Emergency start for testing
 		RunManager.start_new_run(3, 50.0, "normal", 200, 75.0, "imperial")
 	
+	# Check for an active ride to resume
+	if not RunManager.get_active_edge().is_empty():
+		get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
+		return
+
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
 	hud.update_hud()
 	queue_redraw()

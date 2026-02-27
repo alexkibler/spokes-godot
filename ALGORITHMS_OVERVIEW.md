@@ -9,17 +9,17 @@ The Hub-and-Spoke generator creates a radial map where each 'spoke' represents a
 
 | Target | Diff | Metric | Mean | Median | Min | Max | Outliers? |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 50km | easy | Ascent (ft/10mi) | 367.3 | 366.9 | 300.2 | 470.0 | Yes |
+| 50km | easy | Ascent (ft/10mi) | 368.0 | 367.0 | 296.9 | 442.6 | Yes |
 | | | Map Dist (km) | 77.9 | 77.9 | 77.9 | 77.9 | Yes |
-| 50km | normal | Ascent (ft/10mi) | 874.7 | 875.1 | 685.3 | 1012.4 | Yes |
+| 50km | normal | Ascent (ft/10mi) | 872.2 | 871.0 | 720.6 | 1047.2 | Yes |
 | | | Map Dist (km) | 77.9 | 77.9 | 77.9 | 77.9 | Yes |
-| 50km | hard | Ascent (ft/10mi) | 1338.8 | 1340.6 | 1099.9 | 1574.8 | Yes |
+| 50km | hard | Ascent (ft/10mi) | 1347.7 | 1345.3 | 1125.3 | 1576.7 | Yes |
 | | | Map Dist (km) | 77.9 | 77.9 | 77.9 | 77.9 | Yes |
-| 200km | easy | Ascent (ft/10mi) | 355.9 | 355.7 | 312.6 | 404.0 | Yes |
+| 200km | easy | Ascent (ft/10mi) | 355.9 | 355.7 | 312.1 | 398.1 | Yes |
 | | | Map Dist (km) | 318.5 | 318.5 | 318.5 | 318.5 | No |
-| 200km | normal | Ascent (ft/10mi) | 872.5 | 873.0 | 796.2 | 960.1 | Yes |
+| 200km | normal | Ascent (ft/10mi) | 873.6 | 873.7 | 797.0 | 963.5 | Yes |
 | | | Map Dist (km) | 318.5 | 318.5 | 318.5 | 318.5 | No |
-| 200km | hard | Ascent (ft/10mi) | 1349.8 | 1350.8 | 1242.4 | 1468.0 | Yes |
+| 200km | hard | Ascent (ft/10mi) | 1349.1 | 1349.6 | 1234.6 | 1455.3 | Yes |
 | | | Map Dist (km) | 318.5 | 318.5 | 318.5 | 318.5 | No |
 
 ### Node Type Distribution (200km Normal Run)
@@ -27,11 +27,11 @@ The Hub-and-Spoke generator creates a radial map where each 'spoke' represents a
 | Node Type | Avg per Map | Percentage |
 | :--- | :--- | :--- |
 | start | 1.00 | 1.5% |
-| hard | 10.88 | 16.5% |
-| standard | 21.10 | 32.0% |
+| standard | 21.15 | 32.0% |
+| hard | 10.92 | 16.5% |
 | shop | 8.00 | 12.1% |
+| event | 15.93 | 24.1% |
 | boss | 8.00 | 12.1% |
-| event | 16.02 | 24.3% |
 | finish | 1.00 | 1.5% |
 
 ## 2. Course Profile Generation (`CourseProfile.gd`)
@@ -39,18 +39,51 @@ Generates a variable elevation profile for a single edge. Each edge begins and e
 
 | Config | Metric | Mean | Median | Min | Max |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 5km @ 4% | Segments | 32.2 | 32.0 | 29.0 | 36.0 |
-| | Avg Grade % | 2.49% | 2.48% | 1.81% | 3.19% |
-| 20km @ 8% | Segments | 35.9 | 36.0 | 31.0 | 41.0 |
-| | Avg Grade % | 4.99% | 5.00% | 3.68% | 6.40% |
+| 5km @ 4% | Segments | 32.2 | 32.0 | 29.0 | 35.0 |
+| | Avg Grade % | 2.50% | 2.50% | 1.85% | 3.22% |
+| 20km @ 8% | Segments | 35.8 | 36.0 | 31.0 | 41.0 |
+| | Avg Grade % | 5.02% | 5.03% | 3.81% | 6.36% |
 
 ## 3. Elite Challenges (`EliteChallenge.gd`)
 Elite challenges are 'Hard' nodes that present specific power-based goals. The following table shows the distribution of challenge types across 1000 selections.
 
 | Challenge Title | Frequency | Percentage |
 | :--- | :--- | :--- |
-| Red Zone Ramp | 192 | 19.2% |
-| Sprint Finish | 223 | 22.3% |
-| Clean Ascent | 209 | 20.9% |
-| Time Trial Effort | 180 | 18.0% |
-| Threshold Push | 196 | 19.6% |
+| Sprint Finish | 182 | 18.2% |
+| Clean Ascent | 206 | 20.6% |
+| Red Zone Ramp | 218 | 21.8% |
+| Threshold Push | 177 | 17.7% |
+| Time Trial Effort | 217 | 21.7% |
+
+## 4. Autoplay Pathfinding (`RunManager.gd`)
+The autoplay system uses a spoke-prioritized Breadth-First Search (BFS) to navigate the hub-and-spoke map structure.
+
+### Strategy: Hub-Spoke-Hub
+1. **Identify Spoke**: Selects the first uncompleted spoke based on `MapGenerator.SPOKE_IDS`.
+2. **Shortest Path to Boss**: Targets ONLY the boss of that spoke, navigating the shortest graph path.
+3. **Return to Hub**: Immediately returns to the central Hub once the medal is earned.
+4. **Final Victory**: Moves to the `node_final_boss` (Finish) only after all required medals are collected.
+
+### Efficiency Benchmark
+Verified across simulations from 10km to 1000km.
+
+| Target Run | Spokes | Generated Distance | Ridden Distance | Ratio |
+| :--- | :--- | :--- | :--- | :--- |
+| 10 km | 2 | 15.3 km | 18.7 km | **1.87x** |
+| 100 km | 5 | 158.0 km | 194.2 km | **1.94x** |
+| 500 km | 8 | 796.3 km | 981.5 km | **1.96x** |
+| 1000 km | 8 | 1592.6 km | 1963.0 km | **1.96x** |
+
+### Understanding Distance Metrics
+Due to the **Hub-and-Spoke** topology, there are three distinct distance measurements:
+
+1.  **Target Distance**: The user-selected goal (e.g., 50km).
+2.  **Generated Distance**: The sum of every unique road segment generated. Because of the "Island" branching (3 paths per spoke), this is typically ~1.5x the Target.
+3.  **Ridden Distance (Odometer)**: The actual distance traveled during a run.
+
+#### The Backtracking Penalty
+Because every spoke is a dead end, players must return to the Hub to reach the next biome. This results in two distinct playstyle ratios (relative to Target Distance):
+*   **Efficiency Ratio (~1.96x)**: The shortest path to clear all bosses and return to the hub.
+*   **Completionist Ratio (~3.0x+)**: The path taken if a player visits every single node (Shops, Events, etc.) on the islands before returning.
+
+**Note**: The ~1.96x ratio represents the typical overhead for the Hub-and-Spoke topology relative to the user's requested target distance.

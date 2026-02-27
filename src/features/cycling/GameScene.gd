@@ -484,6 +484,14 @@ func _on_ride_complete() -> void:
 			
 	var is_first_clear: bool = RunManager.complete_active_edge()
 	
+	# Re-fetch current node from RunManager directly to ensure we have the destination node data
+	var dest_node: Dictionary = {}
+	var current_node_id: String = RunManager.run_data.get("currentNodeId", "")
+	for n: Dictionary in RunManager.run_data.get("nodes", []):
+		if n["id"] == current_node_id:
+			dest_node = n
+			break
+
 	# Evaluate Elite Challenge
 	if RunManager.active_challenge != null:
 		var metrics: Dictionary = {
@@ -503,7 +511,7 @@ func _on_ride_complete() -> void:
 			
 		RunManager.active_challenge = null
 
-	if not current_node.is_empty() and current_node["type"] == "finish":
+	if not dest_node.is_empty() and dest_node["type"] == "finish":
 		get_tree().change_scene_to_file("res://src/features/progression/VictoryScene.tscn")
 		return
 

@@ -74,7 +74,9 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 			"totalRiddenDistanceM": 0,
 			"totalRecordCount": 0,
 			"totalPowerSum": 0,
-			"totalCadenceSum": 0
+			"totalCadenceSum": 0,
+			"totalTimeS": 0,
+			"totalElevationGainM": 0.0
 		}
 	}
 	

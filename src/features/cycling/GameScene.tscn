@@ -110,6 +110,13 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 24
 text = "Grade: 0%"
 
+[node name="SurfaceValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 24
+text = "Surface: Asphalt"
+
 [node name="DistValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)

@@ -8,6 +8,7 @@ extends Node2D
 @onready var hud_speed_label: Label = $HUD/MarginContainer/HUDLayout/Stats/SpeedValue
 @onready var hud_dist_label: Label = $HUD/MarginContainer/HUDLayout/Stats/DistValue
 @onready var hud_grade_label: Label = $HUD/MarginContainer/HUDLayout/Stats/GradeValue
+@onready var hud_surface_label: Label = $HUD/MarginContainer/HUDLayout/Stats/SurfaceValue
 @onready var progress_bar: ProgressBar = $HUD/MarginContainer/HUDLayout/BottomPanel/ProgressBar
 @onready var environment: Node2D = $Environment
 @onready var parallax: ParallaxBackground = $ParallaxBackground
@@ -34,6 +35,10 @@ var is_complete: bool = false
 var fit_writer: FitWriter
 var last_record_ms: int = 0
 var ride_start_time: int = 0
+var ride_elevation_gain_m: float = 0.0
+var ride_power_sum: float = 0.0
+var ride_tick_count: int = 0
+var last_elevation: float = 0.0
 
 var is_dev_build: bool = false
 
@@ -48,6 +53,9 @@ func _ready() -> void:
 	ride_start_time = Time.get_ticks_msec()
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
 	last_record_ms = ride_start_time
+	
+	if course:
+		last_elevation = course.get_elevation_at_distance(0.0)
 	
 	UIUtils.handle_safe_area($HUD/MarginContainer)
 
@@ -265,6 +273,16 @@ func _physics_process(delta: float) -> void:
 	# Process Player
 	player_cyclist.process_cyclist(delta, course, all_entities, run_modifiers)
 	
+	# Update Ride Stats
+	var current_elevation: float = course.get_elevation_at_distance(player_cyclist.distance_m)
+	var elev_diff: float = current_elevation - last_elevation
+	if elev_diff > 0:
+		ride_elevation_gain_m += elev_diff
+	last_elevation = current_elevation
+	
+	ride_power_sum += player_cyclist.effective_power
+	ride_tick_count += 1
+	
 	# For Ghosts, nearby is player + other ghosts
 	for g: Cyclist in ghosts:
 		var nearby: Array[Cyclist] = [player_cyclist]
@@ -449,6 +467,15 @@ func _on_ride_complete() -> void:
 		SignalBus.item_discovered.disconnect(_on_item_discovered)
 	
 	var run: Dictionary = RunManager.get_run()
+	if not run.is_empty() and run.has("stats"):
+		var s: Dictionary = run["stats"]
+		var ride_time_s: float = (Time.get_ticks_msec() - ride_start_time) / 1000.0
+		s["totalRiddenDistanceM"] += player_cyclist.distance_m
+		s["totalTimeS"] += ride_time_s
+		s["totalElevationGainM"] += ride_elevation_gain_m
+		s["totalPowerSum"] += ride_power_sum
+		s["totalRecordCount"] += ride_tick_count
+		
 	var current_node: Dictionary = {}
 	for n: Dictionary in run["nodes"]:
 		if n["id"] == run["currentNodeId"]:
@@ -541,6 +568,12 @@ func _update_hud(p_effective_power: float) -> void:
 		hud_dist_label.text = Units.format_fixed(dist, 2) + unit_suffix
 	if hud_grade_label:
 		hud_grade_label.text = "Grade: " + Units.format_fixed(player_cyclist.current_grade * 100.0, 1) + "%"
+	if hud_surface_label:
+		var s: Resource = player_cyclist.current_surface
+		var s_name: String = s.get("name").capitalize() if s else "Asphalt"
+		var s_crr: float = s.get("crr") if s else 0.005
+		var crr_mult: float = s_crr / 0.005
+		hud_surface_label.text = "Surface: %s (%.1fx)" % [s_name, crr_mult]
 	if progress_bar:
 		progress_bar.value = player_cyclist.distance_m
 		

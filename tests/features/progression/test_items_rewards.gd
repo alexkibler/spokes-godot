@@ -21,7 +21,7 @@ func test_item_registration() -> void:
 	ContentRegistry.register_item({
 		"id": item_id,
 		"label": "Test Item",
-		"slot": "helmet",
+		"slot": "Rider",
 		"modifier": {"powerMult": 1.10}
 	})
 	
@@ -61,15 +61,15 @@ func test_equip_unequip_modifiers() -> void:
 	var success: bool = RunManager.equip_item(item_id)
 	assert_true(success)
 	assert_false(item_id in RunManager.run_data["inventory"])
-	assert_eq(RunManager.run_data["equipped"]["helmet"], item_id)
+	assert_eq(RunManager.run_data["equipped"]["Rider"], item_id)
 	assert_almost_eq(RunManager.run_data["modifiers"]["dragReduction"], 0.03, 0.001)
 	
 	# Unequip
-	var removed_id: String = RunManager.unequip_item("helmet")
+	var removed_id: String = RunManager.unequip_item("Rider")
 	assert_eq(removed_id, item_id)
 	assert_true(item_id in RunManager.run_data["inventory"])
 	assert_eq(RunManager.run_data["modifiers"]["dragReduction"], 0.0)
-	assert_false(RunManager.run_data["equipped"].has("helmet"))
+	assert_false(RunManager.run_data["equipped"].has("Rider"))
 
 func test_modifier_stacking_multiplicative() -> void:
 	# Power and Weight are multiplicative
@@ -99,7 +99,7 @@ func test_item_replacement_swaps_modifiers() -> void:
 	# Equip Item A
 	ContentRegistry.register_item({
 		"id": "heavy_helmet",
-		"slot": "helmet",
+		"slot": "Rider",
 		"label": "Heavy Helmet",
 		"modifier": {"weightMult": 1.20}
 	})
@@ -111,7 +111,7 @@ func test_item_replacement_swaps_modifiers() -> void:
 	# Equip Item B (same slot)
 	ContentRegistry.register_item({
 		"id": "light_helmet",
-		"slot": "helmet",
+		"slot": "Rider",
 		"label": "Light Helmet",
 		"modifier": {"weightMult": 0.80}
 	})
@@ -122,4 +122,4 @@ func test_item_replacement_swaps_modifiers() -> void:
 	# 1.20 / 1.20 * 0.80 = 0.80
 	assert_almost_eq(RunManager.run_data["modifiers"]["weightMult"], 0.80, 0.001)
 	assert_true("heavy_helmet" in RunManager.run_data["inventory"], "Old item should return to inventory")
-	assert_eq(RunManager.run_data["equipped"]["helmet"], "light_helmet")
+	assert_eq(RunManager.run_data["equipped"]["Rider"], "light_helmet")

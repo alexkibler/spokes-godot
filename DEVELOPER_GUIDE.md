@@ -295,6 +295,22 @@ hardware_receiver.set_power_manual(200.0)
 
 Godot's static analyzer doesn't know the concrete type of a `Node` fetched by path (`$HardwareReceiver`). It only knows it's a `Node`. Calling an unknown method on `Node` is a parse error. `.call()` bypasses the analyzer — it's like JavaScript's `obj['methodName']()`.
 
+### Visual System (Recoloring & Swapping)
+
+**File:** `src/features/cycling/CyclistVisuals.gd`
+
+The cyclist is a composite of several sprites and a polygon rider. Instead of a single color, each part can be independently modified:
+
+- **Parts:** `Frame`, `Wheels`, `Handlebars`, `Crank`, `Chain`, `BackPedal`, `Rider`
+- **Recoloring:** Uses `modulate` for sprites and `color` for the `Rider` polygon.
+- **Swapping:** `set_part_visuals()` supports passing a `Texture2D` to replace the sprite sheet for a specific part (e.g., swapping road tires for mud tires).
+
+When the player equips an item, `Cyclist.refresh_visuals()` is triggered via `SignalBus.inventory_changed`. It:
+1. Resets all parts to their default appearance.
+2. Iterates through `RunManager.run_data["equipped"]`.
+3. Looks up the `visuals` dictionary in the `ContentRegistry` definition.
+4. Applies the specified `color` and `texture` to the matching node.
+
 ---
 
 ## Part 5: Drafting & Surge (Aerodynamics)
@@ -651,7 +667,8 @@ var hills := $ParallaxBackground/HillLayer/Hills as Polygon2D
 register_item({
     "id": "power_meter",
     "label": "Power Meter",
-    "slot": "accessory",
+    "slot": "Crank", # Visual part to recolor
+    "visuals": { "color": Color.CHARTREUSE },
     "modifier": {"powerMult": 1.03},
     "rarity": "uncommon",
     "description": "+3% effective power output"

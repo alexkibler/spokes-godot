@@ -63,13 +63,24 @@ func _animate_parts(velocity: float) -> void:
 
 ## Sets the color of the cyclist parts (for ghosts/teams).
 func set_color(color: Color) -> void:
-	if has_node("Frame"): (get_node("Frame") as CanvasItem).modulate = color
-	if has_node("Crank"): (get_node("Crank") as CanvasItem).modulate = color
+	set_part_visuals("Frame", color)
+	set_part_visuals("Crank", color)
+	set_part_visuals("Rider", color)
+	set_part_visuals("RiderPoly", color)
 
-	if has_node("Rider"):
-		var rider: Node = get_node("Rider")
-		if rider is Sprite2D: (rider as Sprite2D).modulate = color
-		elif rider is Polygon2D: (rider as Polygon2D).color = color
-
-	if has_node("RiderPoly"):
-		(get_node("RiderPoly") as Polygon2D).color = color
+## Updates the visuals for a specific part of the bike/rider.
+## 'part_name' should match the node name (e.g., "Frame", "Wheels").
+func set_part_visuals(part_name: String, color: Color = Color.WHITE, texture: Texture2D = null) -> void:
+	if has_node(part_name):
+		var node: Node = get_node(part_name)
+		
+		# Apply color modulation
+		if node is CanvasItem:
+			if node is Polygon2D and part_name.begins_with("Rider"):
+				(node as Polygon2D).color = color
+			else:
+				(node as CanvasItem).modulate = color
+		
+		# Apply texture swap (future-proofing)
+		if texture and node is Sprite2D:
+			(node as Sprite2D).texture = texture

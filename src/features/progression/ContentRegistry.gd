@@ -85,8 +85,9 @@ static func bootstrap() -> void:
 	register_item({
 		"id": "aero_helmet",
 		"label": "Aero Helmet",
-		"slot": "helmet",
+		"slot": "Rider", # Helmet/Rider are same for now
 		"rarity": "uncommon",
+		"visuals": { "color": Color.CORAL },
 		"modifier": {"dragReduction": 0.03},
 		"description": "-3% Drag"
 	})
@@ -94,10 +95,31 @@ static func bootstrap() -> void:
 	register_item({
 		"id": "carbon_frame",
 		"label": "Carbon Frame",
-		"slot": "frame",
+		"slot": "Frame",
 		"rarity": "rare",
+		"visuals": { "color": Color(0.2, 0.2, 0.2) }, # Carbon dark gray
 		"modifier": {"weightMult": 0.88, "dragReduction": 0.03},
 		"description": "-12% Weight, -3% Drag"
+	})
+
+	register_item({
+		"id": "aero_wheels",
+		"label": "Deep-Section Wheels",
+		"slot": "Wheels",
+		"rarity": "rare",
+		"visuals": { "color": Color.SKY_BLUE },
+		"modifier": {"dragReduction": 0.05, "weightMult": 1.05}, # Aero but heavy
+		"description": "-5% Drag, +5% Weight"
+	})
+
+	register_item({
+		"id": "race_bars",
+		"label": "Race Handlebars",
+		"slot": "Handlebars",
+		"rarity": "uncommon",
+		"visuals": { "color": Color.DARK_ORCHID },
+		"modifier": {"dragReduction": 0.02},
+		"description": "-2% Drag"
 	})
 
 	# --- Rewards (Stat Boosts) ---

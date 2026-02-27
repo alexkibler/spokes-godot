@@ -33,6 +33,9 @@ func _ready() -> void:
 	for child in get_children():
 		if child.has_method("initialize"):
 			child.initialize(self)
+	
+	if is_player:
+		SignalBus.inventory_changed.connect(refresh_visuals)
 
 ## Setup the cyclist with specific properties.
 func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE, p_start_distance: float = 0.0, p_base_power: float = 200.0) -> void:
@@ -48,7 +51,41 @@ func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist"
 	if not is_player and hardware_receiver:
 		(hardware_receiver as HardwareReceiverComponent).set_power_manual(p_base_power)
 	
-	set_color(p_color)
+	if is_player:
+		refresh_visuals()
+		# For player, p_color might be used as a base or ignored if items exist
+	else:
+		set_color(p_color)
+
+func refresh_visuals() -> void:
+	if not visuals or not (visuals is CyclistVisuals): return
+	
+	var v: CyclistVisuals = visuals as CyclistVisuals
+	
+	# 1. Reset all parts to default (White / Original Color)
+	var parts: Array[String] = ["BackPedal", "Wheels", "Chain", "Frame", "Crank", "Handlebars", "Rider"]
+	for p: String in parts:
+		v.set_part_visuals(p, Color.WHITE)
+	
+	# Reset Rider specific color (the skin/kit default)
+	v.set_part_visuals("Rider", Color(0.35, 0.23, 0.1))
+
+	# 2. Apply equipped item visuals
+	if is_player and RunManager.is_active_run:
+		var equipped: Dictionary = RunManager.run_data.get("equipped", {})
+		for slot: String in equipped:
+			var item_id: String = equipped[slot]
+			var item_def: Dictionary = ContentRegistry.get_item(item_id)
+			if item_def.has("visuals"):
+				var vis: Dictionary = item_def["visuals"]
+				var color: Color = vis.get("color", Color.WHITE)
+				var texture_path: String = vis.get("texture", "")
+				var texture: Texture2D = null
+				if texture_path != "":
+					texture = load(texture_path) as Texture2D
+				
+				# 'slot' in our items now matches 'part_name' in CyclistVisuals
+				v.set_part_visuals(slot, color, texture)
 
 func process_cyclist(delta: float, course: CourseProfile, nearby_entities: Array[Cyclist], run_modifiers: Dictionary = {}) -> void:
 	# 1. Gather Inputs

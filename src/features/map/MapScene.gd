@@ -29,10 +29,17 @@ func _ready() -> void:
 		get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
 		return
 
+	UIUtils.handle_safe_area($MapHUD/MarginContainer)
+	get_viewport().size_changed.connect(_on_viewport_resized)
+
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
 	hud.update_hud()
 	queue_redraw()
 	_check_autoplay()
+
+func _on_viewport_resized() -> void:
+	UIUtils.handle_safe_area($MapHUD/MarginContainer)
+	queue_redraw()
 
 func _on_autoplay_changed(enabled: bool) -> void:
 	if enabled:

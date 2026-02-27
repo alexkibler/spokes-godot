@@ -67,8 +67,7 @@ func test_autoplay_efficiency_benchmark() -> void:
 
 	# 4. Final Verification
 	for r in results:
-		assert_gt(r["ratio"], 1.0, "Ridden distance must always exceed map distance due to backtracking")
-		assert_lt(r["ratio"], 1.8, "Ratio should remain efficient (below 1.8x) with the new algorithm")
+		assert_almost_eq(r["ratio"], 1.0, 0.05, "Ridden distance should be within 5% of target distance")
 
 func _find_edge(from_id: String, to_id: String) -> Dictionary:
 	for e in RunManager.run_data["edges"]:

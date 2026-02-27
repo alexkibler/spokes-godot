@@ -1,5 +1,5 @@
 class_name FitWriter
-extends Object
+extends RefCounted
 
 # Port of FitWriter.ts
 # Minimal binary FIT file encoder for cycling activities.

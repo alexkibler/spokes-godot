@@ -17,7 +17,8 @@ func _ready() -> void:
 	autoplay_toggle.toggled.connect(_on_autoplay_toggled)
 	
 	# Only show "Quit to Map" if we are in a GameScene
-	quit_map_btn.visible = get_tree().current_scene.name == "GameScene"
+	var current_scene: Node = get_tree().current_scene
+	quit_map_btn.visible = current_scene and current_scene.name == "GameScene"
 	
 	get_tree().paused = true
 

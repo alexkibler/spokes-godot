@@ -581,3 +581,7 @@ func _update_hud(p_effective_power: float) -> void:
 			if gap > 0: l.add_theme_color_override("font_color", Color.SALMON)
 			else: l.add_theme_color_override("font_color", Color.LIGHT_GREEN)
 			race_gap_panel.add_child(l)
+
+func _exit_tree() -> void:
+	# Clean up non-node objects
+	fit_writer = null

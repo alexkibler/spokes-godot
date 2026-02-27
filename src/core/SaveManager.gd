@@ -39,7 +39,7 @@ func get_slot_metadata(slot_index: int) -> Dictionary:
 
 func save_game(slot_index: int) -> void:
 	var path: String = get_save_path(slot_index)
-	var data: Dictionary = RunManager.get_run() # Fetches the current run_data
+	var data: Dictionary = RunManager.export_data() # Fetches the serialized run_data
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(data))

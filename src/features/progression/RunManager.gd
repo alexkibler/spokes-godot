@@ -20,9 +20,26 @@ func reset() -> void:
 
 func load_run_data(data: Dictionary) -> void:
 	run_data = data
+	
+	# Reconstruct CourseProfiles in edges
+	var edges: Array = run_data.get("edges", [])
+	for edge: Dictionary in edges:
+		if edge.has("profile"):
+			var p_val: Variant = edge["profile"]
+			if typeof(p_val) == TYPE_DICTIONARY:
+				edge["profile"] = CourseProfile.from_dict(p_val as Dictionary)
+	
+	# Reconstruct active_edge profile if exists
+	var active_edge: Variant = run_data.get("active_edge")
+	if active_edge != null and typeof(active_edge) == TYPE_DICTIONARY:
+		var ae_dict: Dictionary = active_edge
+		if ae_dict.has("profile"):
+			var p_val: Variant = ae_dict["profile"]
+			if typeof(p_val) == TYPE_DICTIONARY:
+				ae_dict["profile"] = CourseProfile.from_dict(p_val as Dictionary)
+
 	is_active_run = true
 	SignalBus.run_started.emit()
-
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
 	SignalBus.autoplay_changed.emit(autoplay_enabled)
@@ -94,7 +111,23 @@ func get_absolute_max_grade() -> float:
 	return 0.07
 
 func export_data() -> Dictionary:
-	return run_data
+	# Create a deep-ish copy for serialization
+	var data: Dictionary = run_data.duplicate(true)
+	
+	# Serialize CourseProfiles in edges
+	var edges: Array = data.get("edges", [])
+	for edge: Dictionary in edges:
+		if edge.has("profile") and edge["profile"] is CourseProfile:
+			edge["profile"] = (edge["profile"] as CourseProfile).to_dict()
+			
+	# Serialize active_edge profile if exists
+	var active_edge: Variant = data.get("active_edge")
+	if active_edge != null and typeof(active_edge) == TYPE_DICTIONARY:
+		var ae_dict: Dictionary = active_edge
+		if ae_dict.has("profile") and ae_dict["profile"] is CourseProfile:
+			ae_dict["profile"] = (ae_dict["profile"] as CourseProfile).to_dict()
+			
+	return data
 
 func set_active_edge(edge: Dictionary) -> void:
 	var current_id: String = run_data.get("currentNodeId", "")

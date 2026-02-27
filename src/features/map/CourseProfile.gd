@@ -134,3 +134,20 @@ func invert_course_profile() -> CourseProfile:
 	profile.segments = reversed_segments
 	profile.total_distance_m = total_distance_m
 	return profile
+
+func to_dict() -> Dictionary:
+	return {
+		"segments": segments,
+		"total_distance_m": total_distance_m
+	}
+
+static func from_dict(data: Dictionary) -> CourseProfile:
+	var profile: CourseProfile = CourseProfile.new()
+	profile.total_distance_m = data.get("total_distance_m", 0.0)
+	
+	var seg_data: Variant = data.get("segments", [])
+	if typeof(seg_data) == TYPE_ARRAY:
+		# Use assign() to safely fill the typed Array[Dictionary]
+		profile.segments.assign(seg_data as Array)
+		
+	return profile

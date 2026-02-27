@@ -58,3 +58,36 @@ func test_delete_save() -> void:
 	
 	SaveManager.delete_save(slot)
 	assert_false(SaveManager.has_save(slot), "Save should be deleted")
+
+func test_course_profile_reconstruction() -> void:
+	var slot: int = 0
+	
+	# Start a new run (generates profiles)
+	RunManager.start_new_run(3, 10.0, "normal", 200, 75.0, "metric")
+	RunManager.current_slot_index = slot
+	
+	# Ensure edges have CourseProfile objects
+	var edges: Array = RunManager.get_run()["edges"]
+	assert_gt(edges.size(), 0, "Should have edges")
+	assert_true(edges[0]["profile"] is CourseProfile, "Initial edge profile should be CourseProfile")
+	
+	# Set active edge to ensure it's also tested
+	RunManager.set_active_edge(edges[0])
+	assert_true(RunManager.get_active_edge()["profile"] is CourseProfile, "Active edge profile should be CourseProfile")
+	
+	# Save and Reset
+	SaveManager.save_game(slot)
+	RunManager.reset()
+	
+	# Load
+	var success: bool = SaveManager.load_game(slot)
+	assert_true(success, "Load should be successful")
+	
+	# Verify Reconstruction
+	var loaded_edges: Array = RunManager.get_run()["edges"]
+	assert_true(loaded_edges[0]["profile"] is CourseProfile, "Loaded edge profile should be reconstructed as CourseProfile")
+	assert_gt(loaded_edges[0]["profile"].segments.size(), 0, "Reconstructed profile should have segments")
+	
+	var loaded_active: Dictionary = RunManager.get_active_edge()
+	assert_false(loaded_active.is_empty(), "Active edge should be restored")
+	assert_true(loaded_active["profile"] is CourseProfile, "Loaded active edge profile should be reconstructed as CourseProfile")

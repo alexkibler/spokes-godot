@@ -64,6 +64,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 	MapGenerator.generate_hub_and_spoke_map(run_data)
 	
 	is_active_run = true
+	_maybe_save()
 	SignalBus.run_started.emit()
 
 func is_edge_traversable(edge: Dictionary) -> bool:
@@ -224,16 +225,15 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	if not dest_node.is_empty():
 		dest_node["isUsed"] = true
 		
+	var is_first_clear: bool = false
 	if not edge.get("isCleared", false):
 		edge["isCleared"] = true
+		is_first_clear = true
 
-		# Auto-save after completing a node
-		if current_slot_index != -1:
-			SaveManager.save_game(current_slot_index)
+	# Auto-save after completing a node (end of EACH ride)
+	_maybe_save()
 
-		return true # First clear!
-			
-	return false
+	return is_first_clear
 
 func get_best_reward(rewards: Array[Dictionary]) -> Dictionary:
 	if rewards.is_empty(): return {}
@@ -314,6 +314,7 @@ func add_to_inventory(item_id: String) -> void:
 	inventory.append(item_id)
 	
 	SignalBus.inventory_changed.emit()
+	_maybe_save()
 	if autoplay_enabled:
 		var def: Dictionary = ContentRegistry.get_item(item_id)
 		if def.has("slot"):
@@ -348,6 +349,7 @@ func equip_item(item_id: String) -> bool:
 	equipped[slot] = item_id
 	
 	SignalBus.inventory_changed.emit()
+	_maybe_save()
 	if def.has("modifier"):
 		var label: String = def.get("label", item_id)
 		apply_modifier(def["modifier"], label + " (equipped)")
@@ -377,6 +379,7 @@ func unequip_item(slot: String) -> String:
 	inventory.append(item_id)
 	SignalBus.modifiers_changed.emit()
 	SignalBus.inventory_changed.emit()
+	_maybe_save()
 	return item_id
 
 func _reverse_modifier(delta: Dictionary) -> void:
@@ -401,6 +404,7 @@ func apply_modifier(delta: Dictionary, label: String = "") -> void:
 		mod_log.append(log_entry)
 		
 	SignalBus.modifiers_changed.emit()
+	_maybe_save()
 
 func spend_gold(amount: int) -> bool:
 	var current_gold: int = run_data["gold"]
@@ -408,6 +412,7 @@ func spend_gold(amount: int) -> bool:
 		current_gold -= amount
 		run_data["gold"] = current_gold
 		SignalBus.gold_changed.emit(current_gold)
+		_maybe_save()
 		return true
 	return false
 
@@ -416,3 +421,8 @@ func add_gold(amount: int) -> void:
 	current_gold += amount
 	run_data["gold"] = current_gold
 	SignalBus.gold_changed.emit(current_gold)
+	_maybe_save()
+
+func _maybe_save() -> void:
+	if current_slot_index != -1:
+		SaveManager.save_game(current_slot_index)

@@ -40,7 +40,7 @@ func test_autoplay_efficiency_benchmark() -> void:
 			if next_node["id"] == "node_final_boss":
 				break
 		
-		var ratio: float = ridden_m / map_total_m if map_total_m > 0 else 0.0
+		var ratio: float = (ridden_m / 1000.0) / float(dist_km) if dist_km > 0 else 0.0
 		results.append({
 			"target_km": dist_km,
 			"spokes": num_spokes,

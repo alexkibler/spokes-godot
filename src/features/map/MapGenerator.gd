@@ -53,9 +53,15 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     var total_dist_km: float = run_data.get("totalDistanceKm", 50.0)
     var num_spokes: int = compute_num_spokes(total_dist_km)
     
-    var weight_per_spoke: float = NODES_PER_SPOKE + 4.5
-    var total_run_weight: float = num_spokes * weight_per_spoke + 2
-    var base_km: float = max(0.1, total_dist_km / total_run_weight)
+    # Ridden Distance Weighting:
+    # Each spoke requires a round trip: (NODES_PER_SPOKE + 3 island steps + boss_edge) * 2
+    # Out: 2 (linear) + 1 (entry) + 1 (choice) + 1 (pre-boss) + 1.5 (boss) = 6.5
+    # Back: 6.5
+    # Total: 13.0 unit segments per spoke.
+    # The final boss edge is weighted at 2.0 unit segments.
+    var unit_segments_per_spoke: float = 13.0
+    var total_unit_segments: float = (num_spokes * unit_segments_per_spoke) + 2.0
+    var base_km: float = max(0.1, total_dist_km / total_unit_segments)
     
     var difficulty: String = run_data.get("difficulty", "normal")
     var absolute_max_grade: float = {

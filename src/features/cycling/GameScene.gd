@@ -3,16 +3,16 @@ extends Node2D
 
 # Orchestrator for the riding experience
 
-@onready var hud_power_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/PowerValue
-@onready var hud_cadence_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/CadenceValue
-@onready var hud_speed_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/SpeedValue
-@onready var hud_dist_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/DistValue
-@onready var hud_grade_label: Label = $HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats/GradeValue
-@onready var progress_bar: ProgressBar = $HUD/MarginContainer/VBoxContainer/ProgressBar
+@onready var hud_power_label: Label = $HUD/MarginContainer/HUDLayout/Stats/PowerValue
+@onready var hud_cadence_label: Label = $HUD/MarginContainer/HUDLayout/Stats/CadenceValue
+@onready var hud_speed_label: Label = $HUD/MarginContainer/HUDLayout/Stats/SpeedValue
+@onready var hud_dist_label: Label = $HUD/MarginContainer/HUDLayout/Stats/DistValue
+@onready var hud_grade_label: Label = $HUD/MarginContainer/HUDLayout/Stats/GradeValue
+@onready var progress_bar: ProgressBar = $HUD/MarginContainer/HUDLayout/BottomPanel/ProgressBar
 @onready var environment: Node2D = $Environment
 @onready var parallax: ParallaxBackground = $ParallaxBackground
-@onready var elevation_line: Line2D = $HUD/MarginContainer/VBoxContainer/ElevationContainer/ElevationLine
-@onready var player_marker: ColorRect = $HUD/MarginContainer/VBoxContainer/ElevationContainer/PlayerMarker
+@onready var elevation_line: Line2D = $HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer/ElevationLine
+@onready var player_marker: ColorRect = $HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer/PlayerMarker
 @onready var ground_line: Line2D = $Environment/Ground
 @onready var draft_badge: PanelContainer = %DraftBadge
 @onready var race_gap_panel: VBoxContainer = %RaceGapPanel
@@ -49,6 +49,8 @@ func _ready() -> void:
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
 	last_record_ms = ride_start_time
 	
+	UIUtils.handle_safe_area($HUD/MarginContainer)
+
 	# Create Player Entity
 	player_cyclist = cyclist_scene.instantiate()
 	player_cyclist.name = "PlayerCyclist"
@@ -161,7 +163,7 @@ func _build_elevation_graph() -> void:
 	
 	elevation_line.clear_points()
 	var total_dist: float = course.total_distance_m
-	var elevation_container: Control = $HUD/MarginContainer/VBoxContainer/ElevationContainer as Control
+	var elevation_container: Control = $HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer as Control
 	var width: float = elevation_container.size.x
 	if width <= 0: width = 1240.0
 	
@@ -337,7 +339,7 @@ func _update_visuals(delta: float) -> void:
 	
 	# Update Player marker on elevation graph
 	var total_dist: float = course.total_distance_m
-	var elevation_container: Control = $HUD/MarginContainer/VBoxContainer/ElevationContainer as Control
+	var elevation_container: Control = $HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer as Control
 	var graph_width: float = elevation_container.size.x
 	if graph_width <= 0: graph_width = 1240.0
 	
@@ -348,6 +350,7 @@ func _update_visuals(delta: float) -> void:
 		player_marker.position.x = progress * graph_width
 
 func _on_viewport_resized() -> void:
+	UIUtils.handle_safe_area($HUD/MarginContainer)
 	var vw: float = get_viewport_rect().size.x
 	var mirror_val: Vector2 = Vector2(max(1280.0, vw), 0)
 	if parallax:

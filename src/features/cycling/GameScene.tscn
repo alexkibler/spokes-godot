@@ -66,82 +66,103 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HUD/MarginContainer"]
+[node name="HUDLayout" type="Control" parent="HUD/MarginContainer"]
 layout_mode = 2
+mouse_filter = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HUD/MarginContainer/VBoxContainer"]
-layout_mode = 2
+[node name="Stats" type="VBoxContainer" parent="HUD/MarginContainer/HUDLayout"]
+layout_mode = 1
+offset_right = 200.0
+offset_bottom = 200.0
+mouse_filter = 2
 
-[node name="Stats" type="VBoxContainer" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PowerValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+[node name="PowerValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_font_sizes/font_size = 64
 text = "0 W"
 
-[node name="CadenceValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+[node name="CadenceValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 24
 text = "0 RPM"
 
-[node name="SpeedValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+[node name="SpeedValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 32
 text = "0.0 km/h"
 
-[node name="GradeValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+[node name="GradeValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 24
 text = "Grade: 0%"
 
-[node name="DistValue" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/Stats"]
+[node name="DistValue" type="Label" parent="HUD/MarginContainer/HUDLayout/Stats"]
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 32
 text = "0.00 km"
 
-[node name="DraftBadge" type="PanelContainer" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="DraftBadge" type="PanelContainer" parent="HUD/MarginContainer/HUDLayout"]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 0
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_right = 100.0
+offset_bottom = 40.0
+grow_horizontal = 2
+mouse_filter = 2
 
-[node name="Label" type="Label" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer/DraftBadge"]
+[node name="Label" type="Label" parent="HUD/MarginContainer/HUDLayout/DraftBadge"]
 layout_mode = 2
 text = "SLIPSTREAM -20% DRAG"
+horizontal_alignment = 1
 
-[node name="RaceGapPanel" type="VBoxContainer" parent="HUD/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="RaceGapPanel" type="VBoxContainer" parent="HUD/MarginContainer/HUDLayout"]
 unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 0
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_bottom = 200.0
+grow_horizontal = 0
+mouse_filter = 2
 
-[node name="Spacer" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
+[node name="BottomPanel" type="VBoxContainer" parent="HUD/MarginContainer/HUDLayout"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -124.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
 
-[node name="ElevationContainer" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
+[node name="ElevationContainer" type="Control" parent="HUD/MarginContainer/HUDLayout/BottomPanel"]
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
+mouse_filter = 2
 
-[node name="ColorRect" type="ColorRect" parent="HUD/MarginContainer/VBoxContainer/ElevationContainer"]
+[node name="ColorRect" type="ColorRect" parent="HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -150,18 +171,19 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.4)
 
-[node name="ElevationLine" type="Line2D" parent="HUD/MarginContainer/VBoxContainer/ElevationContainer"]
+[node name="ElevationLine" type="Line2D" parent="HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer"]
 width = 3.0
 default_color = Color(1, 1, 1, 0.8)
 
-[node name="PlayerMarker" type="ColorRect" parent="HUD/MarginContainer/VBoxContainer/ElevationContainer"]
+[node name="PlayerMarker" type="ColorRect" parent="HUD/MarginContainer/HUDLayout/BottomPanel/ElevationContainer"]
 layout_mode = 0
 offset_right = 4.0
 offset_bottom = 100.0
 color = Color(1, 0.8, 0, 1)
 
-[node name="ProgressBar" type="ProgressBar" parent="HUD/MarginContainer/VBoxContainer"]
+[node name="ProgressBar" type="ProgressBar" parent="HUD/MarginContainer/HUDLayout/BottomPanel"]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 value = 50.0
 show_percentage = false
+mouse_filter = 2

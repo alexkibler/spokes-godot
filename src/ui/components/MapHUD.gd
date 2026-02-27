@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var autoplay_button: Button = %AutoplayButton
 
 func _ready() -> void:
+	UIUtils.handle_safe_area($MarginContainer)
 	equip_button.pressed.connect(_on_equip_pressed)
 	autoplay_button.pressed.connect(_on_autoplay_pressed)
 

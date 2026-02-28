@@ -1,11 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/ShopOverlay.gd" id="1_s1s1s"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_0o0lo"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_dc8j8"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_6xkqf"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_3rfci"]
 
-[node name="ShopOverlay" type="CanvasLayer"]
-script = ExtResource("1_s1s1s")
+[node name="ShopOverlay" type="CanvasLayer" unique_id=1254877748]
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=1505611000]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,93 +15,125 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.8)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=220347019]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer" unique_id=1297374951]
 custom_minimum_size = Vector2(800, 600)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer" unique_id=1050507790]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer" unique_id=2005885013]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Header" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Header" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=938544054]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Header"]
+[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=659456461]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 32
 text = "TRAIL SHOP"
 
-[node name="GoldLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Header"]
+[node name="GoldLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=2061878151]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.84, 0, 1)
 theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)
 text = "GOLD: 0"
 
-[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=2008363187]
 layout_mode = 2
 
-[node name="Main" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Main" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1971728096]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 40
 
-[node name="Inventory" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main"]
+[node name="Inventory" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main" unique_id=1015206703]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Inventory"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Inventory" unique_id=1209210717]
 layout_mode = 2
 text = "YOUR ITEMS"
 horizontal_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Inventory"]
+[node name="Scroll" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Inventory" unique_id=1316327668]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="InventoryContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Inventory/Scroll"]
+[node name="InventoryContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Inventory/Scroll" unique_id=1157521253]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Catalog" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main"]
+[node name="Catalog" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main" unique_id=102247694]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Catalog"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Catalog" unique_id=2059739488]
 layout_mode = 2
 text = "CATALOG"
 horizontal_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Catalog"]
+[node name="Scroll" type="ScrollContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Catalog" unique_id=570301096]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CatalogContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Catalog/Scroll"]
+[node name="CatalogContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Main/Catalog/Scroll" unique_id=1179575073]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="CloseButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="CloseButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=2099808724]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "CLOSE"
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=1237020733 instance=ExtResource("1_0o0lo")]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_dc8j8")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=79596289 instance=ExtResource("3_6xkqf")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_3rfci")
+label_text = "Buy/Sell"
+
+[node name="@HBoxContainer@44" type="HBoxContainer" parent="InputHints" unique_id=877260457 instance=ExtResource("3_6xkqf")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_3rfci")
+action = 1
+label_text = "Close"
+
+[node name="@HBoxContainer@45" type="HBoxContainer" parent="InputHints" unique_id=1675670641 instance=ExtResource("3_6xkqf")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_3rfci")
+action = 4
+label_text = "Navigate"
 
 [connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton" to="." method="_on_close_pressed"]

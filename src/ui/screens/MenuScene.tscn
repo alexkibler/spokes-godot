@@ -1,17 +1,19 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/MenuScene.gd" id="1_m1m1m"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_axn8s"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_1knhc"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_gpvjj"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_f8p2i"]
 
-[node name="MenuScene" type="Control"]
+[node name="MenuScene" type="Control" unique_id=795896245]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_m1m1m")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=245314697]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,7 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.91, 0.86, 0.78, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=520172741]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -32,93 +34,118 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 100
 theme_override_constants/margin_bottom = 50
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=81814415]
 layout_mode = 2
 theme_override_constants/separation = 30
 alignment = 1
 
-[node name="Title" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer" unique_id=780177902]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.41, 0.31, 1)
 theme_override_font_sizes/font_size = 80
+theme_override_colors/font_color = Color(0.48, 0.41, 0.31, 1)
 text = "SPOKES"
 horizontal_alignment = 1
 
-[node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer"]
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer" unique_id=2009864863]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/h_separation = 40
 theme_override_constants/v_separation = 20
 columns = 2
 
-[node name="FTPLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="FTPLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=909065936]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 text = "FTP (Watts)"
 
-[node name="FTPInput" type="SpinBox" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="FTPInput" type="SpinBox" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=19235472]
 layout_mode = 2
 min_value = 50.0
 max_value = 1000.0
 value = 200.0
 
-[node name="WeightLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="WeightLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=2144727988]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 text = "Rider Weight (kg)"
 
-[node name="WeightInput" type="SpinBox" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="WeightInput" type="SpinBox" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=171097641]
 layout_mode = 2
 min_value = 30.0
 max_value = 300.0
 step = 0.1
 value = 75.0
 
-[node name="UnitsLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="UnitsLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=1521589982]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 text = "Units"
 
-[node name="UnitsToggle" type="OptionButton" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="UnitsToggle" type="OptionButton" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=2095408024]
 layout_mode = 2
 
-[node name="DiffLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="DiffLabel" type="Label" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=1970914560]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 text = "Difficulty"
 
-[node name="DiffToggle" type="OptionButton" parent="MarginContainer/VBoxContainer/GridContainer"]
+[node name="DiffToggle" type="OptionButton" parent="MarginContainer/VBoxContainer/GridContainer" unique_id=2131142406]
 layout_mode = 2
 
-[node name="DistanceContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="DistanceContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=658072962]
 layout_mode = 2
 
-[node name="HBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DistanceContainer"]
+[node name="HBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/DistanceContainer" unique_id=991946489]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DistanceContainer/HBox"]
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/DistanceContainer/HBox" unique_id=1616413884]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 text = "Target Run Distance"
 
-[node name="DistValue" type="Label" parent="MarginContainer/VBoxContainer/DistanceContainer/HBox"]
+[node name="DistValue" type="Label" parent="MarginContainer/VBoxContainer/DistanceContainer/HBox" unique_id=1683458590]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 text = "50 km"
 
-[node name="HSlider" type="HSlider" parent="MarginContainer/VBoxContainer/DistanceContainer"]
+[node name="HSlider" type="HSlider" parent="MarginContainer/VBoxContainer/DistanceContainer" unique_id=1928294190]
 layout_mode = 2
 min_value = 10.0
 max_value = 1000.0
 value = 50.0
 
-[node name="StartButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="StartButton" type="Button" parent="MarginContainer/VBoxContainer" unique_id=494596512]
 custom_minimum_size = Vector2(300, 80)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 32
 text = "START RUN"
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=1339835207 instance=ExtResource("1_axn8s")]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_1knhc")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=375310688 instance=ExtResource("3_gpvjj")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_f8p2i")
+label_text = "Select"
+
+[node name="@HBoxContainer@25" type="HBoxContainer" parent="InputHints" unique_id=1793098075 instance=ExtResource("3_gpvjj")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_f8p2i")
+action = 4
+label_text = "Navigate"
 
 [connection signal="value_changed" from="MarginContainer/VBoxContainer/DistanceContainer/HSlider" to="." method="_on_dist_changed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/StartButton" to="." method="_on_start_pressed"]

@@ -1,11 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/DiscoveryOverlay.gd" id="1_d1d1d"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_fx4jn"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_bfs8k"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_ynh0u"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_vkhts"]
 
-[node name="DiscoveryOverlay" type="CanvasLayer"]
-script = ExtResource("1_d1d1d")
+[node name="DiscoveryOverlay" type="CanvasLayer" unique_id=1218823241]
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=841321541]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,72 +15,97 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.7)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1843315469]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer" unique_id=1380647594]
 custom_minimum_size = Vector2(500, 300)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer" unique_id=946643897]
 layout_mode = 2
 theme_override_constants/margin_left = 30
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 30
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer" unique_id=1091715229]
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1540268855]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.945098, 0.768627, 0.0588235, 1)
 theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.945098, 0.768627, 0.0588235, 1)
 text = "NEW ITEM DISCOVERED!"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1841151749]
 layout_mode = 2
 
-[node name="ItemLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="ItemLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1420233906]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "AERO HELMET"
 horizontal_alignment = 1
 
-[node name="DescLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="DescLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1056016308]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "-3% Drag"
 horizontal_alignment = 1
 
-[node name="Spacer" type="Control" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Spacer" type="Control" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=987272282]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1771050199]
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="EquipButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="EquipButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=496808599]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 50)
 layout_mode = 2
 text = "EQUIP NOW"
 
-[node name="KeepButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="KeepButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=993244474]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 50)
 layout_mode = 2
 text = "KEEP CURRENT"
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=777670805 instance=ExtResource("1_fx4jn")]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_bfs8k")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=551076696 instance=ExtResource("3_ynh0u")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_vkhts")
+label_text = "Select"
+
+[node name="@HBoxContainer@53" type="HBoxContainer" parent="InputHints" unique_id=1968663480 instance=ExtResource("3_ynh0u")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_vkhts")
+action = 4
+label_text = "Navigate"
 
 [connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/EquipButton" to="." method="_on_equip_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/KeepButton" to="." method="_on_keep_pressed"]

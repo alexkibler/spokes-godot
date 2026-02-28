@@ -1,12 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/PauseOverlay.gd" id="1_p1p1p"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_wrvla"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_1vqdk"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_c1nd6"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_gvlgt"]
 
-[node name="PauseOverlay" type="CanvasLayer"]
+[node name="PauseOverlay" type="CanvasLayer" unique_id=114207198]
 process_mode = 3
-script = ExtResource("1_p1p1p")
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=1733659526]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -14,64 +16,103 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.6)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1107346551]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer" unique_id=518536753]
 custom_minimum_size = Vector2(300, 400)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer" unique_id=1808093829]
 layout_mode = 2
 theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 40
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 40
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer" unique_id=195132557]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1227086937]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "PAUSED"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1049240279]
 layout_mode = 2
 
-[node name="AutoplayContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="AutoplayContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1034995913]
 layout_mode = 2
 alignment = 1
 
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoplayContainer"]
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoplayContainer" unique_id=1108876725]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "AUTOPLAY"
 
-[node name="AutoplayToggle" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoplayContainer"]
+[node name="AutoplayToggle" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoplayContainer" unique_id=416674650]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ResumeButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="ResumeButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=2023586453]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 text = "RESUME"
 
-[node name="QuitMapButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuitMapButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=883888607]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 text = "QUIT TO MAP"
 
-[node name="QuitButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuitButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=656835151]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 text = "QUIT TO MENU"
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=874079592 instance=ExtResource("1_wrvla")]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_1vqdk")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=168594600 instance=ExtResource("3_c1nd6")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_gvlgt")
+label_text = "Select"
+
+[node name="@HBoxContainer@2" type="HBoxContainer" parent="InputHints" unique_id=329445723 instance=ExtResource("3_c1nd6")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_gvlgt")
+action = 1
+label_text = "Resume"
+
+[node name="@HBoxContainer@3" type="HBoxContainer" parent="InputHints" unique_id=1598021516 instance=ExtResource("3_c1nd6")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_gvlgt")
+action = 3
+label_text = "Toggle Autoplay"
+
+[node name="@HBoxContainer@4" type="HBoxContainer" parent="InputHints" unique_id=1247876445 instance=ExtResource("3_c1nd6")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_gvlgt")
+action = 4
+label_text = "Navigate"

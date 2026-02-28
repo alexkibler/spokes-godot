@@ -1,17 +1,19 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/SaveSelectionScene.gd" id="1_save_sel"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_fb2oy"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_efrfo"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_8mrx1"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_w056i"]
 
-[node name="SaveSelectionScene" type="Control"]
+[node name="SaveSelectionScene" type="Control" unique_id=331417936]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_save_sel")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=355682319]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,7 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.15, 0.15, 0.15, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=686547612]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -32,18 +34,50 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 50
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1154844916]
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer" unique_id=903228155]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Select Save Slot"
 horizontal_alignment = 1
 
-[node name="SlotsContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="SlotsContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1292108989]
 layout_mode = 2
 theme_override_constants/separation = 15
 alignment = 1
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=923308238 instance=ExtResource("1_fb2oy")]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_efrfo")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=1542090746 instance=ExtResource("3_8mrx1")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_w056i")
+label_text = "Select"
+
+[node name="@HBoxContainer@36" type="HBoxContainer" parent="InputHints" unique_id=2112922536 instance=ExtResource("3_8mrx1")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_w056i")
+action = 1
+label_text = "Back"
+
+[node name="@HBoxContainer@37" type="HBoxContainer" parent="InputHints" unique_id=249384277 instance=ExtResource("3_8mrx1")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_w056i")
+action = 4
+label_text = "Navigate"

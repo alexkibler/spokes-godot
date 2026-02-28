@@ -1,15 +1,17 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/features/map/MapScene.gd" id="1_m1m1m"]
 [ext_resource type="PackedScene" path="res://src/ui/components/MapHUD.tscn" id="2_h2h2h"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="2_hf7tp"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="3_afi5c"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="4_fh4bg"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="5_sweqj"]
 
-[node name="MapScene" type="Node2D"]
-script = ExtResource("1_m1m1m")
+[node name="MapScene" type="Node2D" unique_id=1965272985]
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1132690592]
 layer = -1
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer"]
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer" unique_id=345801589]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -17,7 +19,47 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.05, 0.1, 1)
 
-[node name="MapHUD" parent="." instance=ExtResource("2_h2h2h")]
+[node name="MapHUD" parent="." unique_id=602562017 instance=ExtResource("2_h2h2h")]
+script = null
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="InputHints" type="HBoxContainer" parent="MapHUD" unique_id=883957587 instance=ExtResource("2_hf7tp")]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("3_afi5c")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="MapHUD/InputHints" unique_id=1965493889 instance=ExtResource("4_fh4bg")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("5_sweqj")
+label_text = "Travel"
+
+[node name="@HBoxContainer@2" type="HBoxContainer" parent="MapHUD/InputHints" unique_id=106537382 instance=ExtResource("4_fh4bg")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("5_sweqj")
+action = 1
+label_text = "Menu"
+
+[node name="@HBoxContainer@3" type="HBoxContainer" parent="MapHUD/InputHints" unique_id=854207278 instance=ExtResource("4_fh4bg")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("5_sweqj")
+action = 3
+label_text = "Toggle Autoplay"
+
+[node name="@HBoxContainer@4" type="HBoxContainer" parent="MapHUD/InputHints" unique_id=2132409515 instance=ExtResource("4_fh4bg")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("5_sweqj")
+action = 4
+label_text = "Navigate"
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=417184231]
 position = Vector2(640, 360)

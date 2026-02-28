@@ -1,11 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/RewardOverlay.gd" id="1_r1r1r"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_ylm63"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_lkoft"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_1cuxt"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_ahvh0"]
 
-[node name="RewardOverlay" type="CanvasLayer"]
-script = ExtResource("1_r1r1r")
+[node name="RewardOverlay" type="CanvasLayer" unique_id=1931281108]
 
-[node name="BackgroundDim" type="ColorRect" parent="."]
+[node name="BackgroundDim" type="ColorRect" parent="." unique_id=1381513161]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,7 +15,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.75)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1260525991]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -24,21 +26,46 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 50
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1706940945]
 layout_mode = 2
 alignment = 1
 
-[node name="Title" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer" unique_id=266436641]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "PICK A REWARD"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer" unique_id=1203185459]
 layout_mode = 2
 theme_override_constants/separation = 40
 
-[node name="CardContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="CardContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1882547182]
 layout_mode = 2
 theme_override_constants/separation = 30
 alignment = 1
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=2025923516 instance=ExtResource("1_ylm63")]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_lkoft")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=109494097 instance=ExtResource("3_1cuxt")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_ahvh0")
+label_text = "Select"
+
+[node name="@HBoxContainer@38" type="HBoxContainer" parent="InputHints" unique_id=316974209 instance=ExtResource("3_1cuxt")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_ahvh0")
+action = 4
+label_text = "Navigate"

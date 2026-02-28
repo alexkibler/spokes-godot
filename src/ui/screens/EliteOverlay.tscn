@@ -1,11 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://src/ui/screens/EliteOverlay.gd" id="1_l1l1l"]
+[ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_hh2qt"]
+[ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_ilc58"]
+[ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_vg2b4"]
+[ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_y3k4j"]
 
-[node name="EliteOverlay" type="CanvasLayer"]
-script = ExtResource("1_l1l1l")
+[node name="EliteOverlay" type="CanvasLayer" unique_id=1502405678]
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=2143209694]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,40 +15,40 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.1, 0, 0, 0.8)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=599129768]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="CenterContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer" unique_id=626814749]
 custom_minimum_size = Vector2(600, 450)
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer" unique_id=1454196328]
 layout_mode = 2
 theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 40
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 40
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer" unique_id=150798474]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1561703814]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
 theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
 text = "ELITE CHALLENGE"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1669097318]
 layout_mode = 2
 
-[node name="FlavorText" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="FlavorText" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1335581324]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
@@ -54,49 +56,74 @@ text = "Some flavor text about the challenge."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="ConditionPanel" type="PanelContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="ConditionPanel" type="PanelContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1936142135]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Margin" type="MarginContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConditionPanel"]
+[node name="Margin" type="MarginContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConditionPanel" unique_id=539622412]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="ConditionText" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConditionPanel/Margin"]
+[node name="ConditionText" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConditionPanel/Margin" unique_id=592912378]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 text = "Challenge condition text goes here."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="RewardText" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="RewardText" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=396243352]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
 theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
 text = "REWARD: ???"
 horizontal_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer" unique_id=1954493771]
 layout_mode = 2
 theme_override_constants/separation = 30
 alignment = 1
 
-[node name="AcceptButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="AcceptButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=7791880]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 text = "START RIDE"
 
-[node name="DeclineButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="DeclineButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=807512509]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 text = "CANCEL"
+
+[node name="InputHints" type="HBoxContainer" parent="." unique_id=604942946 instance=ExtResource("1_hh2qt")]
+custom_minimum_size = Vector2(0, 40)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("2_ilc58")
+
+[node name="ControllerGlyph" type="HBoxContainer" parent="InputHints" unique_id=1997174711 instance=ExtResource("3_vg2b4")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_y3k4j")
+label_text = "Select"
+
+[node name="@HBoxContainer@39" type="HBoxContainer" parent="InputHints" unique_id=405900893 instance=ExtResource("3_vg2b4")]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+script = ExtResource("4_y3k4j")
+action = 4
+label_text = "Navigate"
 
 [connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/AcceptButton" to="." method="_on_accept_pressed"]
 [connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer/DeclineButton" to="." method="_on_decline_pressed"]

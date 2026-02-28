@@ -179,8 +179,6 @@ func get_next_autoplay_node() -> Dictionary:
 					neighbors.append(n)
 					break
 					
-	if neighbors.is_empty(): return {}
-	
 	# 1. Identify current state and medals
 	var inventory: Array = run_data.get("inventory", [])
 	var medals_held: int = 0

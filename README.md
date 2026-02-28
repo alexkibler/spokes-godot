@@ -50,9 +50,10 @@ Tests can be run from the Godot Editor using the GUT bottom panel or via the com
 
 ```sh
 # Headless test execution
-godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit -gprefix=test_ -gsuffix=.gd
 ```
 
+Note: Godot must be in your PATH for this to work, otherwise you'll need to specify the executable location
 ## 🏗 Build & Deployment
 
 The project includes a `deploy_local.sh` script for rapid iteration:

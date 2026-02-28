@@ -33,7 +33,7 @@ static func get_item(id: String) -> Dictionary:
 static func get_reward(id: String) -> Dictionary:
 	return rewards.get(id, {})
 
-static func get_loot_pool(count: int) -> Array[Dictionary]:
+static func get_loot_pool(count: int, forced_reward_id: String = "") -> Array[Dictionary]:
 	var pool: Array[Dictionary] = []
 	for r: Dictionary in rewards.values():
 		if not r.has("available") or (r["available"] as Callable).call(RunManager):
@@ -42,7 +42,12 @@ static func get_loot_pool(count: int) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	var used: Dictionary = {}
 	
-	if pool.size() <= count:
+	if forced_reward_id != "" and rewards.has(forced_reward_id):
+		var forced: Dictionary = rewards[forced_reward_id]
+		results.append(forced)
+		used[forced_reward_id] = true
+
+	if pool.size() <= count and forced_reward_id == "":
 		return pool
 		
 	while results.size() < count:
@@ -157,4 +162,158 @@ static func bootstrap() -> void:
 		"description": "Equipable: -3% Drag",
 		"rarity": "uncommon",
 		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("aero_helmet")
+	})
+
+	# --- Boss Unique Items ---
+	register_item({
+		"id": "aero_overshoes",
+		"label": "Aero Overshoes",
+		"slot": "BackPedal",
+		"rarity": "rare",
+		"visuals": { "color": Color.SKY_BLUE },
+		"modifier": {"dragReduction": 0.04},
+		"description": "-4% Drag"
+	})
+	register_reward({
+		"id": "item_aero_overshoes",
+		"label": "Aero Overshoes",
+		"description": "Unique: -4% Drag",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("aero_overshoes")
+	})
+
+	register_item({
+		"id": "sea_wall_frame",
+		"label": "Sea Wall Frame",
+		"slot": "Frame",
+		"rarity": "rare",
+		"visuals": { "color": Color.AQUAMARINE },
+		"modifier": {"dragReduction": 0.06, "weightMult": 1.05},
+		"description": "-6% Drag, +5% Weight"
+	})
+	register_reward({
+		"id": "item_sea_wall_frame",
+		"label": "Sea Wall Frame",
+		"description": "Unique: Extreme aerodynamics",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("sea_wall_frame")
+	})
+
+	register_item({
+		"id": "ti_skewers",
+		"label": "Titanium Skewers",
+		"slot": "Wheels",
+		"rarity": "rare",
+		"visuals": { "color": Color.LIGHT_SLATE_GRAY },
+		"modifier": {"weightMult": 0.94},
+		"description": "-6% Weight"
+	})
+	register_reward({
+		"id": "item_ti_skewers",
+		"label": "Titanium Skewers",
+		"description": "Unique: Ultralight hardware",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("ti_skewers")
+	})
+
+	register_item({
+		"id": "bear_claws",
+		"label": "Bear Claw Cranks",
+		"slot": "Crank",
+		"rarity": "rare",
+		"visuals": { "color": Color.SADDLE_BROWN },
+		"modifier": {"powerMult": 1.06},
+		"description": "+6% Power"
+	})
+	register_reward({
+		"id": "item_bear_claws",
+		"label": "Bear Claw Cranks",
+		"description": "Unique: Massive power transfer",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("bear_claws")
+	})
+
+	register_item({
+		"id": "mirage_bottle",
+		"label": "Mirage Bottle",
+		"slot": "Rider",
+		"rarity": "rare",
+		"visuals": { "color": Color.SANDY_BROWN },
+		"modifier": {"powerMult": 1.03, "dragReduction": 0.02},
+		"description": "+3% Power, -2% Drag"
+	})
+	register_reward({
+		"id": "item_mirage_bottle",
+		"label": "Mirage Bottle",
+		"description": "Unique: Endless hydration",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("mirage_bottle")
+	})
+
+	register_item({
+		"id": "studded_tires",
+		"label": "Studded Tires",
+		"slot": "Wheels",
+		"rarity": "rare",
+		"visuals": { "color": Color.AZURE },
+		"modifier": {"crrMult": 0.8},
+		"description": "-20% Rolling resistance"
+	})
+	register_reward({
+		"id": "item_studded_tires",
+		"label": "Studded Tires",
+		"description": "Unique: All-terrain grip",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("studded_tires")
+	})
+
+	register_item({
+		"id": "gust_bars",
+		"label": "Gust Handlebars",
+		"slot": "Handlebars",
+		"rarity": "rare",
+		"visuals": { "color": Color.ORANGE_RED },
+		"modifier": {"dragReduction": 0.05},
+		"description": "-5% Drag"
+	})
+	register_reward({
+		"id": "item_gust_bars",
+		"label": "Gust Handlebars",
+		"description": "Unique: Slices through wind",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("gust_bars")
+	})
+
+	register_item({
+		"id": "panther_kit",
+		"label": "Panther Kit",
+		"slot": "Rider",
+		"rarity": "rare",
+		"visuals": { "color": Color.FOREST_GREEN },
+		"modifier": {"powerMult": 1.04, "weightMult": 0.98},
+		"description": "+4% Power, -2% Weight"
+	})
+	register_reward({
+		"id": "item_panther_kit",
+		"label": "Panther Kit",
+		"description": "Unique: Agile performance",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("panther_kit")
+	})
+
+	register_item({
+		"id": "architect_crown",
+		"label": "The Crown",
+		"slot": "Rider",
+		"rarity": "rare",
+		"visuals": { "color": Color.GOLD },
+		"modifier": {"powerMult": 1.1, "dragReduction": 0.1, "weightMult": 0.9},
+		"description": "+10% Power, -10% Drag/Weight"
+	})
+	register_reward({
+		"id": "item_architect_crown",
+		"label": "The Crown",
+		"description": "Unique: The mark of the master",
+		"rarity": "rare",
+		"apply": func(rm: Node) -> void: RunManager.add_to_inventory("architect_crown")
 	})

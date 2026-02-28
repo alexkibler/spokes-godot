@@ -9,22 +9,22 @@ The Hub-and-Spoke generator creates a radial map where each 'spoke' represents a
 
 | Target | Diff | Metric | Mean | Median | Min | Max | Outliers? |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 50km | easy | Ascent (ft/10mi) | 368.6 | 371.1 | 282.7 | 456.3 | Yes |
+| 50km | easy | Ascent (ft/10mi) | 369.4 | 370.9 | 291.3 | 469.0 | Yes |
 | | | Generated Dist (km) | 40.9 | 40.9 | 40.9 | 40.9 | No |
 | | | Ratio (Ridden/Target) | 1.00x | 1.00x | 1.00x | 1.00x | No |
-| 50km | normal | Ascent (ft/10mi) | 871.2 | 876.7 | 678.9 | 1034.5 | No |
+| 50km | normal | Ascent (ft/10mi) | 872.4 | 877.6 | 693.1 | 1036.4 | No |
 | | | Generated Dist (km) | 40.9 | 40.9 | 40.9 | 40.9 | No |
 | | | Ratio (Ridden/Target) | 1.00x | 1.00x | 1.00x | 1.00x | No |
-| 50km | hard | Ascent (ft/10mi) | 1348.9 | 1344.5 | 1149.7 | 1573.0 | No |
+| 50km | hard | Ascent (ft/10mi) | 1344.5 | 1332.7 | 1042.3 | 1557.0 | No |
 | | | Generated Dist (km) | 40.9 | 40.9 | 40.9 | 40.9 | No |
 | | | Ratio (Ridden/Target) | 1.00x | 1.00x | 1.00x | 1.00x | No |
-| 200km | easy | Ascent (ft/10mi) | 356.0 | 354.3 | 316.1 | 409.5 | Yes |
+| 200km | easy | Ascent (ft/10mi) | 354.8 | 354.8 | 319.2 | 411.4 | Yes |
 | | | Generated Dist (km) | 162.3 | 162.3 | 162.3 | 162.3 | No |
 | | | Ratio (Ridden/Target) | 1.00x | 1.00x | 1.00x | 1.00x | No |
-| 200km | normal | Ascent (ft/10mi) | 866.3 | 863.4 | 784.8 | 942.1 | No |
+| 200km | normal | Ascent (ft/10mi) | 874.8 | 876.4 | 806.7 | 956.2 | No |
 | | | Generated Dist (km) | 162.3 | 162.3 | 162.3 | 162.3 | No |
 | | | Ratio (Ridden/Target) | 1.00x | 1.00x | 1.00x | 1.00x | No |
-| 200km | hard | Ascent (ft/10mi) | 1359.1 | 1361.6 | 1235.0 | 1484.1 | No |
+| 200km | hard | Ascent (ft/10mi) | 1356.9 | 1355.7 | 1233.2 | 1518.2 | Yes |
 | | | Generated Dist (km) | 162.3 | 162.3 | 162.3 | 162.3 | No |
 | | | Ratio (Ridden/Target) | 1.00x | 1.00x | 1.00x | 1.00x | No |
 
@@ -33,10 +33,10 @@ The Hub-and-Spoke generator creates a radial map where each 'spoke' represents a
 | Node Type | Avg per Map | Percentage |
 | :--- | :--- | :--- |
 | start | 1.00 | 1.5% |
-| standard | 21.12 | 32.0% |
-| hard | 10.84 | 16.4% |
-| event | 16.04 | 24.3% |
+| standard | 20.95 | 31.7% |
+| hard | 11.00 | 16.7% |
 | shop | 8.00 | 12.1% |
+| event | 16.05 | 24.3% |
 | boss | 8.00 | 12.1% |
 | finish | 1.00 | 1.5% |
 
@@ -45,21 +45,21 @@ Generates a variable elevation profile for a single edge. Each edge begins and e
 
 | Config | Metric | Mean | Median | Min | Max |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 5km @ 4% | Segments | 32.1 | 32.0 | 30.0 | 35.0 |
-| | Avg Grade % | 2.48% | 2.50% | 1.93% | 3.03% |
-| 20km @ 8% | Segments | 35.7 | 36.0 | 32.0 | 40.0 |
-| | Avg Grade % | 4.97% | 5.00% | 3.93% | 5.79% |
+| 5km @ 4% | Segments | 32.2 | 32.0 | 29.0 | 36.0 |
+| | Avg Grade % | 2.48% | 2.48% | 2.00% | 2.96% |
+| 20km @ 8% | Segments | 35.8 | 36.0 | 32.0 | 39.0 |
+| | Avg Grade % | 4.95% | 4.93% | 4.06% | 5.94% |
 
 ## 3. Elite Challenges (`EliteChallenge.gd`)
 Elite challenges are 'Hard' nodes that present specific power-based goals. The following table shows the distribution of challenge types across 100 selections.
 
 | Challenge Title | Frequency | Percentage |
 | :--- | :--- | :--- |
+| Time Trial Effort | 19 | 19.0% |
+| Sprint Finish | 15 | 15.0% |
+| Clean Ascent | 26 | 26.0% |
 | Red Zone Ramp | 16 | 16.0% |
-| Threshold Push | 21 | 21.0% |
-| Clean Ascent | 19 | 19.0% |
-| Time Trial Effort | 21 | 21.0% |
-| Sprint Finish | 23 | 23.0% |
+| Threshold Push | 24 | 24.0% |
 
 ## 4. Autoplay Pathfinding (`RunManager.gd`)
 The autoplay system uses a spoke-prioritized Breadth-First Search (BFS) to navigate the hub-and-spoke map structure.

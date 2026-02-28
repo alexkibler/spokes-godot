@@ -562,13 +562,19 @@ func _on_ride_complete() -> void:
 		# Show boss medal if applicable
 		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
 		var b_name: String = ""
+		var b_reward: String = ""
 		if is_boss:
 			# Find the boss name from the ghost (there should only be one)
 			if ghosts.size() > 0:
 				b_name = ghosts[0].label
+			
+			var spoke_id: String = current_node.get("metadata", {}).get("spokeId", "plains")
+			var BossRegistryScript: Script = load("res://src/features/cycling/BossRegistry.gd")
+			var boss_data: Dictionary = BossRegistryScript.get_boss(spoke_id)
+			b_reward = boss_data.get("reward_id", "")
 
 		if overlay.has_method("setup"):
-			overlay.setup(is_boss, b_name)
+			overlay.setup(is_boss, b_name, b_reward)
 		
 		if overlay.has_signal("reward_selected"):
 			overlay.connect("reward_selected", func() -> void:

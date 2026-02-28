@@ -602,6 +602,10 @@ func _check_and_show_pending_overlay(callback: Callable) -> void:
 		get_tree().create_timer(2.0).timeout.connect(callback)
 
 func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_autoplay"):
+		RunManager.toggle_autoplay()
+		get_viewport().set_input_as_handled()
+		
 	if event.is_action_pressed("ui_cancel"):
 		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
 		add_child(pause_menu)

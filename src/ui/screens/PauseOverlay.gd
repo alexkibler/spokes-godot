@@ -46,6 +46,10 @@ func _on_autoplay_toggled(enabled: bool) -> void:
 	RunManager.set_autoplay_enabled(enabled)
 
 func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_autoplay"):
+		autoplay_toggle.button_pressed = not autoplay_toggle.button_pressed
+		get_viewport().set_input_as_handled()
+		
 	if event.is_action_pressed("ui_cancel"):
 		_on_resume_pressed()
 		get_viewport().set_input_as_handled()

@@ -247,6 +247,10 @@ func _input(event: InputEvent) -> void:
 			if overlay.has_signal("reward_selected"):
 				overlay.connect("reward_selected", func() -> void: queue_redraw())
 
+	if event.is_action_pressed("toggle_autoplay"):
+		RunManager.toggle_autoplay()
+		get_viewport().set_input_as_handled()
+
 	if event.is_action_pressed("ui_cancel"):
 		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
 		add_child(pause_menu)

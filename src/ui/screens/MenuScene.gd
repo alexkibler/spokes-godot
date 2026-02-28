@@ -70,6 +70,7 @@ func _ready() -> void:
 		start_btn.text = "SELECT SLOT"
 
 	_on_dist_changed(dist_slider.value)
+	start_btn.grab_focus()
 
 func _exit_tree() -> void:
 	if SignalBus.trainer_power_updated.is_connected(self._on_trainer_power_updated):

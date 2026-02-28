@@ -33,6 +33,9 @@ func refresh_slots() -> void:
 		slot_ui.slot_selected.connect(_on_slot_selected)
 		slot_ui.slot_deleted.connect(_on_slot_deleted)
 
+	if slots_container.get_child_count() > 0:
+		(slots_container.get_child(0) as Control).grab_focus()
+
 func _on_slot_selected(index: int, is_empty: bool) -> void:
 	RunManager.current_slot_index = index
 	if is_empty:

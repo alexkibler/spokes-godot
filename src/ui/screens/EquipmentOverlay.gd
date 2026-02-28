@@ -26,6 +26,11 @@ func refresh_all() -> void:
 	if is_inside_tree():
 		_build_slots()
 		_build_inventory()
+		
+		if not get_viewport().gui_get_focus_owner():
+			var close_btn: Button = get_node_or_null("CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton")
+			if close_btn:
+				close_btn.grab_focus()
 
 func _build_slots() -> void:
 	for child in slot_container.get_children():

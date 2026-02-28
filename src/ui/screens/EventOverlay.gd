@@ -81,6 +81,7 @@ func _pick_event() -> void:
 	title_label.text = "SHADY MECHANIC"
 	desc_label.text = "A mysterious mechanic offers you a " + str(current_item["label"]) + " if you let him 'tune' your bike. It looks risky..."
 	attempt_btn.text = "ATTEMPT (%d%% CHANCE)" % int(success_chance * 100)
+	attempt_btn.grab_focus()
 
 func _on_attempt_pressed() -> void:
 	var roll: float = randf()
@@ -103,6 +104,12 @@ func _show_outcome(title: String, desc: String, success: bool) -> void:
 	outcome_title.text = title
 	outcome_desc.text = desc
 	outcome_title.add_theme_color_override("font_color", Color.GREEN if success else Color.RED)
+	
+	var close_btn: Button = get_node_or_null("%CloseButton")
+	if not close_btn:
+		close_btn = get_node_or_null("CenterContainer/PanelContainer/OutcomePanel/Margin/VBox/CloseButton")
+	if close_btn:
+		close_btn.grab_focus()
 	
 	if RunManager.autoplay_enabled:
 		get_tree().create_timer(2.0).timeout.connect(func() -> void:

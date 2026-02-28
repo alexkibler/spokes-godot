@@ -21,6 +21,7 @@ func _ready() -> void:
 	quit_map_btn.visible = current_scene and current_scene.name == "GameScene"
 	
 	get_tree().paused = true
+	resume_btn.grab_focus()
 
 func _exit_tree() -> void:
 	get_tree().paused = false

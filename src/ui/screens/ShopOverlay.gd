@@ -46,6 +46,10 @@ func refresh_all() -> void:
 	
 	_build_catalog()
 	_build_inventory()
+	
+	if not get_viewport().gui_get_focus_owner():
+		if catalog_container.get_child_count() > 0:
+			(catalog_container.get_child(0) as Control).grab_focus()
 
 func _build_catalog() -> void:
 	for child: Node in catalog_container.get_children():

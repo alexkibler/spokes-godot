@@ -142,6 +142,9 @@ func _render_cards() -> void:
 		card.pressed.connect(_on_card_pressed.bind(r["id"]))
 		card_container.add_child(card)
 
+	if card_container.get_child_count() > 0:
+		(card_container.get_child(0) as Control).grab_focus()
+
 func _on_card_pressed(reward_id: String) -> void:
 	ContentRegistry.apply_reward(reward_id)
 	reward_selected.emit()

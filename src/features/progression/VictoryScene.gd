@@ -45,9 +45,12 @@ func _ready() -> void:
     var avg_p: float = p_sum / float(ticks)
     var work_kj: float = (avg_p * float(total_seconds)) / 1000.0
     work_value.text = "%d kJ" % int(round(work_kj))
+    
+    var return_btn: Button = $CenterContainer/VBoxContainer/ReturnButton as Button
+    if return_btn:
+        return_btn.grab_focus()
 
-func _on_return_pressed() -> void:
-    # Delete the save for the current run as it's completed (victory!)
+func _on_return_pressed() -> void:    # Delete the save for the current run as it's completed (victory!)
     if RunManager.current_slot_index != -1:
         SaveManager.delete_save(RunManager.current_slot_index)
         

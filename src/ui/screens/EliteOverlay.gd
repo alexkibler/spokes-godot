@@ -46,6 +46,8 @@ func _update_ui() -> void:
 			if is_inside_tree():
 				_on_accept_pressed()
 		)
+		
+	accept_btn.grab_focus()
 
 func _on_accept_pressed() -> void:
 	challenge_accepted.emit(current_challenge)

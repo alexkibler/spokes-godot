@@ -33,6 +33,8 @@ func _update_ui(def: Dictionary) -> void:
 		keep_btn.text = "KEEP " + str(c_def["label"])
 	else:
 		keep_btn.text = "STASH IN BAG"
+		
+	equip_btn.grab_focus()
 
 func _on_equip_pressed() -> void:
 	RunManager.equip_item(current_item_id)

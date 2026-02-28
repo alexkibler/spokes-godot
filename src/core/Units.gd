@@ -14,6 +14,9 @@ const KM_TO_M: float = 1000.0
 const M_TO_MI: float = M_TO_KM * KM_TO_MI
 const MI_TO_M: float = MI_TO_KM * KM_TO_M
 
+const M_TO_FT: float = 3.28084
+const FT_TO_M: float = 1.0 / M_TO_FT
+
 ## Converts meters to kilometers
 static func m_to_km(m: float) -> float:
 	return m * M_TO_KM

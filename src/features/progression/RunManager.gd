@@ -74,7 +74,9 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 			"totalRiddenDistanceM": 0,
 			"totalRecordCount": 0,
 			"totalPowerSum": 0,
-			"totalCadenceSum": 0
+			"totalCadenceSum": 0,
+			"totalTimeS": 0,
+			"totalElevationGainM": 0.0
 		}
 	}
 	
@@ -179,40 +181,92 @@ func get_next_autoplay_node() -> Dictionary:
 					
 	if neighbors.is_empty(): return {}
 	
-	# Logic: Path toward the "Finish" node, but only if all medals are held.
-	# Otherwise, path toward unvisited "Boss" nodes.
+	# 1. Identify current state and medals
+	var inventory: Array = run_data.get("inventory", [])
 	var medals_held: int = 0
-	var inventory: Array = run_data["inventory"]
 	for item: String in inventory:
 		if item.begins_with("medal_"): medals_held += 1
-	var medals_needed: int = run_data["runLength"]
+	var medals_needed: int = run_data.get("runLength", 0)
 	
-	var targets: Array[Dictionary] = []
-	var visited: Array = run_data["visitedNodeIds"]
-	for n: Dictionary in nodes:
-		if n["type"] == "finish" and medals_held >= medals_needed:
-			targets.append(n)
-		elif n["type"] == "boss" and not n["id"] in visited:
-			targets.append(n)
-			
+	# 2. Identify the target spoke (first one we don't have a medal for)
+	var active_spoke_id: String = ""
+	for sid in MapGenerator.SPOKE_IDS:
+		if not ("medal_" + sid) in inventory:
+			# Check if this spoke exists in the current map
+			var exists: bool = false
+			for n in nodes:
+				if n.get("metadata", {}).get("spokeId", "") == sid:
+					exists = true
+					break
+			if exists:
+				active_spoke_id = sid
+				break
+				
+	var targets: Array[String] = []
+	var visited_ids: Array = run_data.get("visitedNodeIds", [])
+
+	if active_spoke_id == "" or medals_held >= medals_needed:
+		# All spokes completed! Target the final boss
+		targets = ["node_final_boss"]
+	else:
+		# We have an active spoke to clear.
+		var current_node_spoke: String = current_node.get("metadata", {}).get("spokeId", "")
+		
+		if current_node_spoke == active_spoke_id:
+			# We are IN the active spoke. Head straight for the boss.
+			targets = ["node_" + active_spoke_id + "_boss"]
+		elif current_node_spoke == "":
+			# We are at the Hub (or a start/finish node). Head into the active spoke.
+			targets = ["node_" + active_spoke_id + "_boss"]
+		else:
+			# We are in a DIFFERENT spoke (likely already completed). Head back to Hub.
+			targets = ["node_hub"]
+
 	if targets.is_empty():
-		# Fallback: just pick the first unvisited neighbor or any neighbor
+		# Fallback: pick the first unvisited neighbor, or any neighbor if all visited
 		for n: Dictionary in neighbors:
-			if not n["id"] in visited: return n
+			if not n["id"] in visited_ids: return n
 		return neighbors[0]
 		
-	# Simple heuristic: Pick neighbor that reduces distance to the nearest target
-	var best_neighbor: Dictionary = neighbors[0]
-	var min_dist: float = 999.0
+	# BFS to find the shortest graph path to the nearest target
+	var queue: Array[String] = [current_id]
+	var parent_map: Dictionary = {current_id: ""}
+	var found_target_id: String = ""
 	
-	for n: Dictionary in neighbors:
-		for t: Dictionary in targets:
-			var d: float = Vector2(n["x"], n["y"]).distance_to(Vector2(t["x"], t["y"]))
-			if d < min_dist:
-				min_dist = d
-				best_neighbor = n
+	while not queue.is_empty():
+		var u_id: String = queue.pop_front()
+		if u_id in targets:
+			found_target_id = u_id
+			break
+			
+		for edge: Dictionary in edges:
+			var v_id: String = ""
+			if edge["from"] == u_id: v_id = edge["to"]
+			elif edge["to"] == u_id: v_id = edge["from"]
+			
+			if v_id != "" and not v_id in parent_map and is_edge_traversable(edge):
+				parent_map[v_id] = u_id
+				queue.push_back(v_id)
 				
-	return best_neighbor
+	if found_target_id != "" and parent_map.has(found_target_id):
+		# Backtrack from the target to find the next step from current_id
+		var step_id: String = found_target_id
+		while parent_map[step_id] != current_id:
+			step_id = parent_map[step_id]
+		
+		var next_node: Dictionary = {}
+		for n: Dictionary in nodes:
+			if n["id"] == step_id:
+				next_node = n
+				break
+		
+		if not next_node.is_empty():
+			return next_node
+				
+	# If no path found (shouldn't happen if targets exist and are reachable), fallback
+	for n: Dictionary in neighbors:
+		if not n["id"] in visited_ids: return n
+	return neighbors[0]
 
 func complete_active_edge() -> bool:
 	var ae: Dictionary = run_data.get("active_edge", {})

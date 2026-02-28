@@ -40,5 +40,12 @@ func _on_select_button_pressed() -> void:
 	slot_selected.emit(_slot_index, _is_empty)
 
 func _on_delete_button_pressed() -> void:
-	# Add confirmation dialog if desired, for now direct delete
 	slot_deleted.emit(_slot_index)
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_on_select_button_pressed()
+		accept_event()
+	elif event.is_action_pressed("ui_accept"):
+		_on_select_button_pressed()
+		accept_event()

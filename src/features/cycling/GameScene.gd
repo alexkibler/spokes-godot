@@ -8,6 +8,7 @@ extends Node2D
 @onready var hud_speed_label: Label = $HUD/MarginContainer/HUDLayout/Stats/SpeedValue
 @onready var hud_dist_label: Label = $HUD/MarginContainer/HUDLayout/Stats/DistValue
 @onready var hud_grade_label: Label = $HUD/MarginContainer/HUDLayout/Stats/GradeValue
+@onready var hud_surface_label: Label = $HUD/MarginContainer/HUDLayout/Stats/SurfaceValue
 @onready var progress_bar: ProgressBar = $HUD/MarginContainer/HUDLayout/BottomPanel/ProgressBar
 @onready var environment: Node2D = $Environment
 @onready var parallax: ParallaxBackground = $ParallaxBackground
@@ -34,6 +35,10 @@ var is_complete: bool = false
 var fit_writer: FitWriter
 var last_record_ms: int = 0
 var ride_start_time: int = 0
+var ride_elevation_gain_m: float = 0.0
+var ride_power_sum: float = 0.0
+var ride_tick_count: int = 0
+var last_elevation: float = 0.0
 
 var is_dev_build: bool = false
 
@@ -48,6 +53,9 @@ func _ready() -> void:
 	ride_start_time = Time.get_ticks_msec()
 	fit_writer = FitWriter.new(Time.get_unix_time_from_system() * 1000)
 	last_record_ms = ride_start_time
+	
+	if course:
+		last_elevation = course.get_elevation_at_distance(0.0)
 	
 	UIUtils.handle_safe_area($HUD/MarginContainer)
 
@@ -128,24 +136,60 @@ func _ready() -> void:
 		_create_speed_control()
 
 func _spawn_ghosts() -> void:
-	# Spawn 3 ghosts with slightly different powers
+	# Spawn ghosts or a single boss
 	var base_power: float = 200.0
 	if RunManager.is_active_run:
 		base_power = float(RunManager.run_data.get("ftpW", 200.0))
 		
-	var offsets: Array[float] = [0.95, 1.05, 1.15]
-	var labels: Array[String] = ["ROOKIE", "PRO", "ELITE"]
+	var ae: Dictionary = RunManager.get_active_edge()
+	var dest_node_id: String = ae.get("actual_to", "")
+	var dest_node: Dictionary = {}
+	var spoke_id: String = "plains"
 	
-	for i: int in range(3):
+	if RunManager.is_active_run:
+		for n: Dictionary in RunManager.run_data.get("nodes", []):
+			if n["id"] == dest_node_id:
+				dest_node = n
+				spoke_id = n.get("metadata", {}).get("spokeId", "plains")
+				break
+			
+	if not dest_node.is_empty() and (dest_node["type"] == "boss" or dest_node["type"] == "finish"):
+		# Spawn a single boss
+		var BossRegistryScript: Script = load("res://src/features/cycling/BossRegistry.gd")
+		var boss_data: Dictionary = BossRegistryScript.get_boss(spoke_id if dest_node["type"] == "boss" else "final")
 		var g_node: Cyclist = cyclist_scene.instantiate()
-		environment.add_child(g_node) # Add to tree first so @onready are ready
-
+		environment.add_child(g_node)
+		
 		var g_stats: CyclistStats = player_cyclist.stats.duplicate()
-		var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+		g_node.setup(
+			false, 
+			g_stats, 
+			boss_data["name"], 
+			boss_data["color"], 
+			15.0, 
+			base_power * boss_data.get("power_mult", 1.0),
+			boss_data.get("modifiers", {})
+		)
 		
-		g_node.setup(false, g_stats, labels[i], color, 10.0 + i * 5.0, base_power * offsets[i])
-		
+		if boss_data.has("surge_config"):
+			g_node.apply_surge_config(boss_data["surge_config"])
+			
 		ghosts.append(g_node)
+	else:
+		# Spawn 3 ghosts with slightly different powers
+		var offsets: Array[float] = [0.95, 1.05, 1.15]
+		var labels: Array[String] = ["ROOKIE", "PRO", "ELITE"]
+		
+		for i: int in range(3):
+			var g_node: Cyclist = cyclist_scene.instantiate()
+			environment.add_child(g_node) # Add to tree first so @onready are ready
+
+			var g_stats: CyclistStats = player_cyclist.stats.duplicate()
+			var color: Color = Color.from_hsv(0.6 + i * 0.1, 0.5, 0.8)
+			
+			g_node.setup(false, g_stats, labels[i], color, 10.0 + i * 5.0, base_power * offsets[i])
+			
+			ghosts.append(g_node)
 
 func _apply_biome_theming(edge: Dictionary) -> void:
 	var spoke_id: String = "plains"
@@ -265,13 +309,23 @@ func _physics_process(delta: float) -> void:
 	# Process Player
 	player_cyclist.process_cyclist(delta, course, all_entities, run_modifiers)
 	
+	# Update Ride Stats
+	var current_elevation: float = course.get_elevation_at_distance(player_cyclist.distance_m)
+	var elev_diff: float = current_elevation - last_elevation
+	if elev_diff > 0:
+		ride_elevation_gain_m += elev_diff
+	last_elevation = current_elevation
+	
+	ride_power_sum += player_cyclist.effective_power
+	ride_tick_count += 1
+	
 	# For Ghosts, nearby is player + other ghosts
 	for g: Cyclist in ghosts:
 		var nearby: Array[Cyclist] = [player_cyclist]
 		for other: Cyclist in ghosts:
 			if other != g: nearby.append(other)
-		# Ghosts don't have run modifiers
-		g.process_cyclist(delta, course, nearby, {})
+		# Ghosts use their own modifiers (e.g. for bosses)
+		g.process_cyclist(delta, course, nearby, g.ghost_modifiers)
 	
 	# Elite Challenge Tracking
 	if RunManager.active_challenge != null:
@@ -449,6 +503,15 @@ func _on_ride_complete() -> void:
 		SignalBus.item_discovered.disconnect(_on_item_discovered)
 	
 	var run: Dictionary = RunManager.get_run()
+	if not run.is_empty() and run.has("stats"):
+		var s: Dictionary = run["stats"]
+		var ride_time_s: float = (Time.get_ticks_msec() - ride_start_time) / 1000.0
+		s["totalRiddenDistanceM"] += player_cyclist.distance_m
+		s["totalTimeS"] += ride_time_s
+		s["totalElevationGainM"] += ride_elevation_gain_m
+		s["totalPowerSum"] += ride_power_sum
+		s["totalRecordCount"] += ride_tick_count
+		
 	var current_node: Dictionary = {}
 	for n: Dictionary in run["nodes"]:
 		if n["id"] == run["currentNodeId"]:
@@ -457,6 +520,14 @@ func _on_ride_complete() -> void:
 			
 	var is_first_clear: bool = RunManager.complete_active_edge()
 	
+	# Re-fetch current node from RunManager directly to ensure we have the destination node data
+	var dest_node: Dictionary = {}
+	var current_node_id: String = RunManager.run_data.get("currentNodeId", "")
+	for n: Dictionary in RunManager.run_data.get("nodes", []):
+		if n["id"] == current_node_id:
+			dest_node = n
+			break
+
 	# Evaluate Elite Challenge
 	if RunManager.active_challenge != null:
 		var metrics: Dictionary = {
@@ -476,7 +547,7 @@ func _on_ride_complete() -> void:
 			
 		RunManager.active_challenge = null
 
-	if not current_node.is_empty() and current_node["type"] == "finish":
+	if not dest_node.is_empty() and dest_node["type"] == "finish":
 		get_tree().change_scene_to_file("res://src/features/progression/VictoryScene.tscn")
 		return
 
@@ -490,8 +561,20 @@ func _on_ride_complete() -> void:
 		
 		# Show boss medal if applicable
 		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
+		var b_name: String = ""
+		var b_reward: String = ""
+		if is_boss:
+			# Find the boss name from the ghost (there should only be one)
+			if ghosts.size() > 0:
+				b_name = ghosts[0].label
+			
+			var spoke_id: String = current_node.get("metadata", {}).get("spokeId", "plains")
+			var BossRegistryScript: Script = load("res://src/features/cycling/BossRegistry.gd")
+			var boss_data: Dictionary = BossRegistryScript.get_boss(spoke_id)
+			b_reward = boss_data.get("reward_id", "")
+
 		if overlay.has_method("setup"):
-			overlay.setup(is_boss)
+			overlay.setup(is_boss, b_name, b_reward)
 		
 		if overlay.has_signal("reward_selected"):
 			overlay.connect("reward_selected", func() -> void:
@@ -541,6 +624,12 @@ func _update_hud(p_effective_power: float) -> void:
 		hud_dist_label.text = Units.format_fixed(dist, 2) + unit_suffix
 	if hud_grade_label:
 		hud_grade_label.text = "Grade: " + Units.format_fixed(player_cyclist.current_grade * 100.0, 1) + "%"
+	if hud_surface_label:
+		var s: Resource = player_cyclist.current_surface
+		var s_name: String = s.get("name").capitalize() if s else "Asphalt"
+		var s_crr: float = s.get("crr") if s else 0.005
+		var crr_mult: float = s_crr / 0.005
+		hud_surface_label.text = "Surface: %s (%.1fx)" % [s_name, crr_mult]
 	if progress_bar:
 		progress_bar.value = player_cyclist.distance_m
 		

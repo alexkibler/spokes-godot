@@ -8,6 +8,8 @@ var is_selecting: bool = false
 var autoplay_timer: float = 0.0
 var autoplay_target_node: Dictionary = {}
 
+var selected_node_id: String = ""
+
 func _process(delta: float) -> void:
 	if is_selecting and not autoplay_target_node.is_empty():
 		autoplay_timer -= delta
@@ -28,6 +30,11 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
+	
+	var run: Dictionary = RunManager.get_run()
+	if not run.is_empty():
+		selected_node_id = run["currentNodeId"]
+		
 	hud.update_hud()
 	queue_redraw()
 	_check_autoplay()
@@ -119,6 +126,11 @@ func _draw() -> void:
 		if node["id"] == run["currentNodeId"]:
 			draw_circle(pos, radius + 4, Color.WHITE) # Highlight current
 		
+		if node["id"] == selected_node_id:
+			# Pulse animation or thick border for selected node
+			var pulse: float = sin(Time.get_ticks_msec() / 150.0) * 2.0 + 4.0
+			draw_arc(pos, radius + pulse, 0, TAU, 32, Color.GOLD, 2.0)
+		
 		var draw_color: Color = color
 		if is_locked:
 			draw_color = color.lerp(Color.BLACK, 0.4)
@@ -156,6 +168,16 @@ func _find_node(nodes: Array, id: String) -> Dictionary:
 			return n
 	return {}
 
+func _get_adjacent_nodes(node_id: String) -> Array[Dictionary]:
+	var run: Dictionary = RunManager.get_run()
+	var adjacent: Array[Dictionary] = []
+	for edge: Dictionary in run["edges"]:
+		if edge["from"] == node_id:
+			adjacent.append(_find_node(run["nodes"], edge["to"]))
+		elif edge["to"] == node_id:
+			adjacent.append(_find_node(run["nodes"], edge["from"]))
+	return adjacent
+
 func _input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		var run: Dictionary = RunManager.get_run()
@@ -172,16 +194,50 @@ func _input(event: InputEvent) -> void:
 		
 		var world_click_pos: Vector2 = get_canvas_transform().affine_inverse() * event_pos
 		
-		print("[INPUT DEBUG] Screen Pos: ", event_pos, " -> World Pos: ", world_click_pos)
-		
 		# Check node clicks
 		for node: Dictionary in run["nodes"]:
 			var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 			var dist: float = world_click_pos.distance_to(pos)
 			
 			if dist < 25.0:
-				print("[INPUT DEBUG] HIT Node: ", node["id"])
+				selected_node_id = node["id"]
+				queue_redraw()
 				_on_node_clicked(node)
+				return
+				
+	var run_data: Dictionary = RunManager.get_run()
+	if not run_data.is_empty() and selected_node_id != "":
+		var dir: Vector2 = Vector2.ZERO
+		if event.is_action_pressed("ui_up"): dir.y -= 1
+		elif event.is_action_pressed("ui_down"): dir.y += 1
+		elif event.is_action_pressed("ui_left"): dir.x -= 1
+		elif event.is_action_pressed("ui_right"): dir.x += 1
+		
+		if dir != Vector2.ZERO:
+			var current_node: Dictionary = _find_node(run_data["nodes"], selected_node_id)
+			var adjacent_nodes: Array[Dictionary] = _get_adjacent_nodes(selected_node_id)
+			
+			var best_node: Dictionary = {}
+			var best_score: float = -INF
+			
+			for adj: Dictionary in adjacent_nodes:
+				var node_dir: Vector2 = Vector2(adj["x"] - current_node["x"], adj["y"] - current_node["y"]).normalized()
+				var score: float = node_dir.dot(dir)
+				if score > 0.5 and score > best_score:
+					best_score = score
+					best_node = adj
+			
+			if not best_node.is_empty():
+				selected_node_id = best_node["id"]
+				queue_redraw()
+				get_viewport().set_input_as_handled()
+				return
+				
+		if event.is_action_pressed("ui_accept"):
+			var node: Dictionary = _find_node(run_data["nodes"], selected_node_id)
+			if not node.is_empty():
+				_on_node_clicked(node)
+				get_viewport().set_input_as_handled()
 				return
 	
 	if event is InputEventKey and (event as InputEventKey).pressed:

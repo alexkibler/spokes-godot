@@ -8,15 +8,24 @@ signal closed
 @onready var slot_container: HBoxContainer = %SlotContainer
 @onready var inventory_list: VBoxContainer = %InventoryList
 
-const ALL_SLOTS: Array[String] = ["helmet", "frame", "cranks", "pedals", "tires"]
+const ALL_SLOTS: Array[String] = ["Rider", "Frame", "Wheels", "Handlebars", "Crank"]
+const SLOT_LABELS: Dictionary = {
+	"Rider": "HELMET",
+	"Frame": "FRAME",
+	"Wheels": "WHEELS",
+	"Handlebars": "BARS",
+	"Crank": "CRANK"
+}
 
 func _ready() -> void:
 	refresh_all()
 	SignalBus.inventory_changed.connect(refresh_all)
 
 func refresh_all() -> void:
-	_build_slots()
-	_build_inventory()
+	# Ensure the container is ready (might be called via signal before @onready)
+	if is_inside_tree():
+		_build_slots()
+		_build_inventory()
 
 func _build_slots() -> void:
 	for child in slot_container.get_children():
@@ -33,7 +42,7 @@ func _build_slots() -> void:
 		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 		
 		var slot_label: Label = Label.new()
-		slot_label.text = slot.to_upper()
+		slot_label.text = SLOT_LABELS.get(slot, slot.to_upper())
 		slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		slot_label.add_theme_font_size_override("font_size", 12)
 		slot_label.add_theme_color_override("font_color", Color.GRAY)
@@ -50,8 +59,9 @@ func _build_slots() -> void:
 			var unequip_btn: Button = Button.new()
 			unequip_btn.text = "UNEQUIP"
 			unequip_btn.add_theme_font_size_override("font_size", 10)
+			var current_slot: String = slot # Capture for closure
 			unequip_btn.pressed.connect(func() -> void:
-				RunManager.unequip_item(slot)
+				RunManager.unequip_item(current_slot)
 				refresh_all()
 			)
 			vbox.add_child(unequip_btn)
@@ -94,8 +104,10 @@ func _build_inventory() -> void:
 		
 		var equip_btn: Button = Button.new()
 		equip_btn.text = "EQUIP"
+		var target_id: String = id # Capture for closure
 		equip_btn.pressed.connect(func() -> void:
-			RunManager.equip_item(id)
+			print("[EQUIPMENT] Equipping item: ", target_id)
+			RunManager.equip_item(target_id)
 			refresh_all()
 		)
 		hbox.add_child(equip_btn)

@@ -9,11 +9,22 @@ signal reward_selected
 
 var current_rewards: Array[Dictionary] = []
 var is_autoplay_selecting: bool = false
+var boss_reward_id: String = ""
 
-func setup(is_boss_clear: bool = false) -> void:
+func setup(is_boss_clear: bool = false, boss_name: String = "", p_boss_reward_id: String = "") -> void:
+	boss_reward_id = p_boss_reward_id
+	
+	# Pick 3 rewards, forcing the boss unique item if applicable
+	current_rewards = ContentRegistry.get_loot_pool(3, boss_reward_id)
+	_render_cards()
+	_check_autoplay()
+
 	if is_boss_clear:
 		var boss_label: Label = Label.new()
-		boss_label.text = "🏆 MEDAL EARNED! 🏆"
+		if boss_name != "":
+			boss_label.text = "🏆 %s DEFEATED! 🏆" % boss_name.to_upper()
+		else:
+			boss_label.text = "🏆 MEDAL EARNED! 🏆"
 		boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		boss_label.add_theme_font_size_override("font_size", 48)
 		boss_label.add_theme_color_override("font_color", Color.GOLD)
@@ -29,12 +40,8 @@ func setup(is_boss_clear: bool = false) -> void:
 		vbox.move_child(spacer, 1)
 
 func _ready() -> void:
-	# Pick 3 random rewards
-	current_rewards = ContentRegistry.get_loot_pool(3)
-	_render_cards()
-	
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
-	_check_autoplay()
+	# Initial _check_autoplay is now also handled in setup()
 
 func _exit_tree() -> void:
 	if SignalBus.autoplay_changed.is_connected(_on_autoplay_changed):

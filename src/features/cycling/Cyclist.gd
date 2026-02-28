@@ -25,6 +25,7 @@ var current_surface: Resource = preload("res://src/features/map/surfaces/asphalt
 # Public Accessors
 var effective_power: float = 0.0
 var draft_factor: float = 0.0
+var ghost_modifiers: Dictionary = {} # Applied for non-player cyclists
 
 func _ready() -> void:
 	if not stats:
@@ -38,11 +39,12 @@ func _ready() -> void:
 		SignalBus.inventory_changed.connect(refresh_visuals)
 
 ## Setup the cyclist with specific properties.
-func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE, p_start_distance: float = 0.0, p_base_power: float = 200.0) -> void:
+func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist", p_color: Color = Color.WHITE, p_start_distance: float = 0.0, p_base_power: float = 200.0, p_modifiers: Dictionary = {}) -> void:
 	is_player = p_is_player
 	stats = p_stats
 	label = p_label
 	distance_m = p_start_distance
+	ghost_modifiers = p_modifiers
 	
 	for child in get_children():
 		if child.has_method("initialize"):
@@ -56,6 +58,14 @@ func setup(p_is_player: bool, p_stats: CyclistStats, p_label: String = "Cyclist"
 		# For player, p_color might be used as a base or ignored if items exist
 	else:
 		set_color(p_color)
+
+func apply_surge_config(config: Dictionary) -> void:
+	if not surge: return
+	var s: SurgeComponent = surge as SurgeComponent
+	if config.has("surge_duration"): s.surge_duration = config["surge_duration"]
+	if config.has("recovery_duration"): s.recovery_duration = config["recovery_duration"]
+	if config.has("surge_multiplier"): s.surge_multiplier = config["surge_multiplier"]
+	if config.has("recovery_multiplier"): s.recovery_multiplier = config["recovery_multiplier"]
 
 func refresh_visuals() -> void:
 	if not visuals or not (visuals is CyclistVisuals): return

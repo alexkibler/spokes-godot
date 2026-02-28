@@ -1,11 +1,14 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" uid="uid://ctmk0nc32gh06" path="res://src/ui/screens/PauseOverlay.gd" id="0_script"]
+
 [ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_wrvla"]
 [ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_1vqdk"]
 [ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_c1nd6"]
 [ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_gvlgt"]
 
 [node name="PauseOverlay" type="CanvasLayer" unique_id=114207198]
+script = ExtResource("0_script")
 process_mode = 3
 
 [node name="Dim" type="ColorRect" parent="." unique_id=1733659526]

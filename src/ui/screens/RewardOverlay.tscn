@@ -1,11 +1,14 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" uid="uid://bsga6jcbonvkn" path="res://src/ui/screens/RewardOverlay.gd" id="0_script"]
+
 [ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_ylm63"]
 [ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_lkoft"]
 [ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_1cuxt"]
 [ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_ahvh0"]
 
 [node name="RewardOverlay" type="CanvasLayer" unique_id=1931281108]
+script = ExtResource("0_script")
 
 [node name="BackgroundDim" type="ColorRect" parent="." unique_id=1381513161]
 anchors_preset = 15

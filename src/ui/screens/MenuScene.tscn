@@ -1,11 +1,13 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" uid="uid://dl0ppnpru7df3" path="res://src/ui/screens/MenuScene.gd" id="0_script"]
 [ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_axn8s"]
 [ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_1knhc"]
 [ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_gpvjj"]
 [ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_f8p2i"]
 
 [node name="MenuScene" type="Control" unique_id=795896245]
+script = ExtResource("0_script")
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

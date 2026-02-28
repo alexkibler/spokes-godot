@@ -1,11 +1,13 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" uid="uid://btyfeak3uk4sf" path="res://src/ui/screens/SaveSelectionScene.gd" id="0_script"]
 [ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="1_fb2oy"]
 [ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="2_efrfo"]
 [ext_resource type="PackedScene" path="res://src/ui/components/ControllerGlyph.tscn" id="3_8mrx1"]
 [ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="4_w056i"]
 
 [node name="SaveSelectionScene" type="Control" unique_id=331417936]
+script = ExtResource("0_script")
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

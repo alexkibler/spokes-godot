@@ -175,7 +175,7 @@ func get_next_autoplay_node() -> Dictionary:
 		
 		if target_id != "":
 			for n: Dictionary in nodes:
-				if n["id"] == target_id:
+				if n["id"] == target_id and n.get("type", "") != "hard":
 					neighbors.append(n)
 					break
 					
@@ -228,45 +228,67 @@ func get_next_autoplay_node() -> Dictionary:
 			if not n["id"] in visited_ids: return n
 		return neighbors[0]
 		
-	# BFS to find the shortest graph path to the nearest target
-	var queue: Array[String] = [current_id]
-	var parent_map: Dictionary = {current_id: ""}
-	var found_target_id: String = ""
-	
-	while not queue.is_empty():
-		var u_id: String = queue.pop_front()
-		if u_id in targets:
-			found_target_id = u_id
-			break
-			
-		for edge: Dictionary in edges:
-			var v_id: String = ""
-			if edge["from"] == u_id: v_id = edge["to"]
-			elif edge["to"] == u_id: v_id = edge["from"]
-			
-			if v_id != "" and not v_id in parent_map and is_edge_traversable(edge):
-				parent_map[v_id] = u_id
-				queue.push_back(v_id)
-				
-	if found_target_id != "" and parent_map.has(found_target_id):
-		# Backtrack from the target to find the next step from current_id
-		var step_id: String = found_target_id
-		while parent_map[step_id] != current_id:
-			step_id = parent_map[step_id]
-		
-		var next_node: Dictionary = {}
-		for n: Dictionary in nodes:
-			if n["id"] == step_id:
-				next_node = n
+	# BFS to find the shortest graph path to the nearest target.
+	# First pass avoids hard nodes; if no path found, retry allowing them.
+	for allow_hard: bool in [false, true]:
+		var queue: Array[String] = [current_id]
+		var parent_map: Dictionary = {current_id: ""}
+		var found_target_id: String = ""
+
+		while not queue.is_empty():
+			var u_id: String = queue.pop_front()
+			if u_id in targets:
+				found_target_id = u_id
 				break
-		
-		if not next_node.is_empty():
-			return next_node
-				
-	# If no path found (shouldn't happen if targets exist and are reachable), fallback
+
+			for edge: Dictionary in edges:
+				var v_id: String = ""
+				if edge["from"] == u_id: v_id = edge["to"]
+				elif edge["to"] == u_id: v_id = edge["from"]
+
+				if v_id != "" and not v_id in parent_map and is_edge_traversable(edge):
+					var v_node: Dictionary = {}
+					for n: Dictionary in nodes:
+						if n["id"] == v_id:
+							v_node = n
+							break
+					if not allow_hard and v_node.get("type", "") == "hard":
+						continue
+					parent_map[v_id] = u_id
+					queue.push_back(v_id)
+
+		if found_target_id != "" and parent_map.has(found_target_id):
+			var step_id: String = found_target_id
+			while parent_map[step_id] != current_id:
+				step_id = parent_map[step_id]
+
+			var next_node: Dictionary = {}
+			for n: Dictionary in nodes:
+				if n["id"] == step_id:
+					next_node = n
+					break
+
+			if not next_node.is_empty():
+				return next_node
+
+	# Fallback: any non-hard unvisited neighbor, then any non-hard, then any
 	for n: Dictionary in neighbors:
 		if not n["id"] in visited_ids: return n
-	return neighbors[0]
+	if not neighbors.is_empty():
+		return neighbors[0]
+
+	# Last resort: include hard neighbors
+	for edge: Dictionary in edges:
+		var target_id: String = ""
+		if edge["from"] == current_id:
+			if is_edge_traversable(edge): target_id = edge["to"]
+		elif edge["to"] == current_id:
+			if is_edge_traversable(edge): target_id = edge["from"]
+		if target_id != "":
+			for n: Dictionary in nodes:
+				if n["id"] == target_id:
+					return n
+	return {}
 
 func complete_active_edge() -> bool:
 	var ae: Dictionary = run_data.get("active_edge", {})

@@ -1,5 +1,6 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" uid="uid://gtfq1w1h4jmf" path="res://src/features/map/MapScene.gd" id="0_script"]
 [ext_resource type="PackedScene" path="res://src/ui/components/MapHUD.tscn" id="2_h2h2h"]
 [ext_resource type="PackedScene" path="res://src/ui/components/InputHints.tscn" id="2_hf7tp"]
 [ext_resource type="Script" path="res://src/ui/components/InputHints.gd" id="3_afi5c"]
@@ -7,6 +8,7 @@
 [ext_resource type="Script" path="res://src/ui/components/ControllerGlyph.gd" id="5_sweqj"]
 
 [node name="MapScene" type="Node2D" unique_id=1965272985]
+script = ExtResource("0_script")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1132690592]
 layer = -1
@@ -20,7 +22,6 @@ grow_vertical = 2
 color = Color(0.05, 0.05, 0.1, 1)
 
 [node name="MapHUD" parent="." unique_id=602562017 instance=ExtResource("2_h2h2h")]
-script = null
 
 [node name="InputHints" type="HBoxContainer" parent="MapHUD" unique_id=883957587 instance=ExtResource("2_hf7tp")]
 custom_minimum_size = Vector2(0, 40)

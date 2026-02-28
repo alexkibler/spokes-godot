@@ -293,6 +293,16 @@ func _on_node_clicked(node: Dictionary) -> void:
 			RunManager.pending_overlay = "event"
 		elif node["type"] == "hard":
 			var challenge: EliteChallenge = EliteChallenge.get_random_challenge()
+			if RunManager.autoplay_enabled:
+				# Auto-accept: skip the dialog and start the challenge directly
+				RunManager.active_challenge = challenge
+				var max_g: float = RunManager.get_absolute_max_grade()
+				var profile: CourseProfile = challenge.generate_course_profile(max_g)
+				var elite_edge: Dictionary = connecting_edge.duplicate()
+				elite_edge["profile"] = profile
+				RunManager.set_active_edge(elite_edge)
+				get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
+				return
 			var overlay: Node = (load("res://src/ui/screens/EliteOverlay.tscn") as PackedScene).instantiate()
 			add_child(overlay)
 			if overlay.has_method("setup"):
@@ -300,12 +310,8 @@ func _on_node_clicked(node: Dictionary) -> void:
 			if overlay.has_signal("challenge_accepted"):
 				overlay.connect("challenge_accepted", func(accepted_challenge: EliteChallenge) -> void:
 					RunManager.active_challenge = accepted_challenge
-					# Use specialized elite profile
 					var max_g: float = RunManager.get_absolute_max_grade()
 					var profile: CourseProfile = accepted_challenge.generate_course_profile(max_g)
-					# Note: We don't overwrite the base edge profile permanently here 
-					# so that future traversals (in reverse) use the normal profile.
-					# We duplicate it for this specific ride.
 					var elite_edge: Dictionary = connecting_edge.duplicate()
 					elite_edge["profile"] = profile
 					RunManager.set_active_edge(elite_edge)

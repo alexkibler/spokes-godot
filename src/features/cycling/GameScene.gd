@@ -65,8 +65,11 @@ func _ready() -> void:
 	player_cyclist.is_player = true
 	environment.add_child(player_cyclist)
 
-	# Initialize stats from settings
-	player_cyclist.setup(true, CyclistStats.create_from_weight(SettingsManager.weight_kg), "Player", Color.WHITE)
+	# Initialize stats from run state (includes cargo & inventory item weight)
+	var player_stats: CyclistStats = CyclistStats.create_from_weight(SettingsManager.weight_kg)
+	if RunManager.is_active_run:
+		player_stats.mass_kg = RunManager.get_total_system_mass()
+	player_cyclist.setup(true, player_stats, "Player", Color.WHITE)
 	
 	# Initialize Course from Active Edge
 	if RunManager.is_active_run:

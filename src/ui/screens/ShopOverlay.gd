@@ -18,7 +18,19 @@ const CATALOG: Array[Dictionary] = [
 
 func _ready() -> void:
 	refresh_all()
-	
+
+	# Add Quest Board button above close button
+	var vbox: VBoxContainer = get_node("CenterContainer/PanelContainer/MarginContainer/VBoxContainer")
+	var quest_btn: Button = Button.new()
+	quest_btn.text = "QUEST BOARD"
+	quest_btn.custom_minimum_size = Vector2(200, 50)
+	quest_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	quest_btn.pressed.connect(_on_quest_board_pressed)
+	# Insert before CloseButton (second to last child)
+	var close_btn_idx: int = vbox.get_child_count() - 1
+	vbox.add_child(quest_btn)
+	vbox.move_child(quest_btn, close_btn_idx)
+
 	SignalBus.gold_changed.connect(func(_new_gold: int) -> void: refresh_all())
 	SignalBus.inventory_changed.connect(refresh_all)
 
@@ -135,6 +147,10 @@ func _on_sell_pressed(id: String, price: int) -> void:
 		inv.remove_at(idx)
 		RunManager.add_gold(price)
 		refresh_all()
+
+func _on_quest_board_pressed() -> void:
+	var overlay: Node = (load("res://src/ui/screens/QuestBoardOverlay.tscn") as PackedScene).instantiate()
+	add_child(overlay)
 
 func _on_close_pressed() -> void:
 	closed.emit()

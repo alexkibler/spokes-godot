@@ -95,6 +95,29 @@ func test_modifier_stacking_additive_drag() -> void:
 	RunManager.apply_modifier({"dragReduction": 0.30}, "Aero 3")
 	assert_almost_eq(RunManager.run_data["modifiers"]["dragReduction"], 0.99, 0.001, "Drag reduction should cap at 0.99")
 
+func test_all_bootstrap_items_have_weight_kg() -> void:
+	ContentRegistry.reset()
+	for item_id: String in ContentRegistry.items:
+		var item: Dictionary = ContentRegistry.get_item(item_id)
+		assert_true(item.has("weight_kg"), "Item '%s' should have weight_kg property" % item_id)
+		assert_true(typeof(item["weight_kg"]) == TYPE_FLOAT or typeof(item["weight_kg"]) == TYPE_INT,
+			"Item '%s' weight_kg should be numeric" % item_id)
+
+func test_cargo_items_defined() -> void:
+	assert_gt(ContentRegistry.CARGO_ITEMS.size(), 0, "CARGO_ITEMS should not be empty")
+	for cargo: Dictionary in ContentRegistry.CARGO_ITEMS:
+		assert_true(cargo.has("name"), "Cargo item should have 'name'")
+		assert_true(cargo.has("weight_kg"), "Cargo item should have 'weight_kg'")
+		assert_gt(cargo["weight_kg"] as float, 0.0, "Cargo weight should be positive")
+
+func test_cargo_items_include_expected_entries() -> void:
+	var names: Array[String] = []
+	for cargo: Dictionary in ContentRegistry.CARGO_ITEMS:
+		names.append(cargo["name"] as String)
+	assert_true("Emergency Medical Supplies" in names, "Should include Emergency Medical Supplies")
+	assert_true("Direct-Drive Trainer Flywheel" in names, "Should include Direct-Drive Trainer Flywheel")
+	assert_true("Loaded Child Trailer" in names, "Should include Loaded Child Trailer")
+
 func test_item_replacement_swaps_modifiers() -> void:
 	# Equip Item A
 	ContentRegistry.register_item({

@@ -19,3 +19,4 @@ signal autoplay_changed(enabled: bool)
 signal gold_changed(total_gold: int)
 signal inventory_changed
 signal item_discovered(item_id: String)
+signal quest_updated

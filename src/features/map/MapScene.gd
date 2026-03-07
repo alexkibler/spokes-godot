@@ -30,11 +30,14 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
 	SignalBus.autoplay_changed.connect(_on_autoplay_changed)
-	
+	SignalBus.quest_updated.connect(queue_redraw)
+
 	var run: Dictionary = RunManager.get_run()
 	if not run.is_empty():
 		selected_node_id = run["currentNodeId"]
-		
+		var current_node: Dictionary = _find_node(run["nodes"], selected_node_id)
+		hud.update_selected_node_name(current_node)
+
 	hud.update_hud()
 	queue_redraw()
 	_check_autoplay()
@@ -130,6 +133,20 @@ func _draw() -> void:
 			# Pulse animation or thick border for selected node
 			var pulse: float = sin(Time.get_ticks_msec() / 150.0) * 2.0 + 4.0
 			draw_arc(pos, radius + pulse, 0, TAU, 32, Color.GOLD, 2.0)
+
+		# Pulsing magenta dashed ring for active quest destination
+		var quest_dest_id: String = RunManager.active_quest.get("destination_id", "")
+		if quest_dest_id != "" and node["id"] == quest_dest_id:
+			var quest_pulse: float = sin(Time.get_ticks_msec() / 200.0) * 3.0 + 10.0
+			var quest_radius: float = radius + quest_pulse
+			var magenta: Color = Color.MAGENTA
+			# Dashed ring drawn as arc segments
+			var segments: int = 12
+			for seg: int in range(segments):
+				if seg % 2 == 0: # draw every other segment for dashed effect
+					var angle_start: float = (seg / float(segments)) * TAU
+					var angle_end: float = ((seg + 1) / float(segments)) * TAU
+					draw_arc(pos, quest_radius, angle_start, angle_end, 8, magenta, 3.0)
 		
 		var draw_color: Color = color
 		if is_locked:
@@ -201,6 +218,7 @@ func _input(event: InputEvent) -> void:
 			
 			if dist < 25.0:
 				selected_node_id = node["id"]
+				hud.update_selected_node_name(node)
 				queue_redraw()
 				_on_node_clicked(node)
 				return
@@ -229,6 +247,7 @@ func _input(event: InputEvent) -> void:
 			
 			if not best_node.is_empty():
 				selected_node_id = best_node["id"]
+				hud.update_selected_node_name(best_node)
 				queue_redraw()
 				get_viewport().set_input_as_handled()
 				return

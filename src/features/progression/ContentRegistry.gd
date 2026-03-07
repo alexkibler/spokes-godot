@@ -13,6 +13,20 @@ const RARITY_WEIGHTS: Dictionary = {
 static var items: Dictionary = {} # ID -> Dictionary
 static var rewards: Dictionary = {} # ID -> Dictionary
 
+## Delivery cargo options for quest generation.
+## Each entry: { "name": String, "weight_kg": float }
+const CARGO_ITEMS: Array[Dictionary] = [
+	{"name": "Emergency Medical Supplies", "weight_kg": 1.0},
+	{"name": "Low-Profile Keyboard Parts", "weight_kg": 1.5},
+	{"name": "Box of Spare Tubes & Tools", "weight_kg": 2.5},
+	{"name": "PETG Filament Spools", "weight_kg": 4.0},
+	{"name": "Bulk Coffee Beans", "weight_kg": 5.0},
+	{"name": "Cast-Iron Dutch Oven", "weight_kg": 6.0},
+	{"name": "E-Bike Conversion Kit", "weight_kg": 8.0},
+	{"name": "Direct-Drive Trainer Flywheel", "weight_kg": 15.0},
+	{"name": "Loaded Child Trailer", "weight_kg": 22.0},
+]
+
 static func _static_init() -> void:
 	bootstrap()
 
@@ -94,7 +108,8 @@ static func bootstrap() -> void:
 		"rarity": "uncommon",
 		"visuals": { "color": Color.CORAL },
 		"modifier": {"dragReduction": 0.03},
-		"description": "-3% Drag"
+		"description": "-3% Drag",
+		"weight_kg": 0.0,
 	})
 	
 	register_item({
@@ -104,7 +119,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color(0.2, 0.2, 0.2) }, # Carbon dark gray
 		"modifier": {"weightMult": 0.88, "dragReduction": 0.03},
-		"description": "-12% Weight, -3% Drag"
+		"description": "-12% Weight, -3% Drag",
+		"weight_kg": 0.0,
 	})
 
 	register_item({
@@ -114,7 +130,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.SKY_BLUE },
 		"modifier": {"dragReduction": 0.05, "weightMult": 1.05}, # Aero but heavy
-		"description": "-5% Drag, +5% Weight"
+		"description": "-5% Drag, +5% Weight",
+		"weight_kg": 0.0,
 	})
 
 	register_item({
@@ -124,7 +141,8 @@ static func bootstrap() -> void:
 		"rarity": "uncommon",
 		"visuals": { "color": Color.DARK_ORCHID },
 		"modifier": {"dragReduction": 0.02},
-		"description": "-2% Drag"
+		"description": "-2% Drag",
+		"weight_kg": 0.0,
 	})
 
 	# --- Rewards (Stat Boosts) ---
@@ -172,7 +190,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.SKY_BLUE },
 		"modifier": {"dragReduction": 0.04},
-		"description": "-4% Drag"
+		"description": "-4% Drag",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_aero_overshoes",
@@ -189,7 +208,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.AQUAMARINE },
 		"modifier": {"dragReduction": 0.06, "weightMult": 1.05},
-		"description": "-6% Drag, +5% Weight"
+		"description": "-6% Drag, +5% Weight",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_sea_wall_frame",
@@ -206,7 +226,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.LIGHT_SLATE_GRAY },
 		"modifier": {"weightMult": 0.94},
-		"description": "-6% Weight"
+		"description": "-6% Weight",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_ti_skewers",
@@ -223,7 +244,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.SADDLE_BROWN },
 		"modifier": {"powerMult": 1.06},
-		"description": "+6% Power"
+		"description": "+6% Power",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_bear_claws",
@@ -240,7 +262,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.SANDY_BROWN },
 		"modifier": {"powerMult": 1.03, "dragReduction": 0.02},
-		"description": "+3% Power, -2% Drag"
+		"description": "+3% Power, -2% Drag",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_mirage_bottle",
@@ -257,7 +280,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.AZURE },
 		"modifier": {"crrMult": 0.8},
-		"description": "-20% Rolling resistance"
+		"description": "-20% Rolling resistance",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_studded_tires",
@@ -274,7 +298,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.ORANGE_RED },
 		"modifier": {"dragReduction": 0.05},
-		"description": "-5% Drag"
+		"description": "-5% Drag",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_gust_bars",
@@ -291,7 +316,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.FOREST_GREEN },
 		"modifier": {"powerMult": 1.04, "weightMult": 0.98},
-		"description": "+4% Power, -2% Weight"
+		"description": "+4% Power, -2% Weight",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_panther_kit",
@@ -308,7 +334,8 @@ static func bootstrap() -> void:
 		"rarity": "rare",
 		"visuals": { "color": Color.GOLD },
 		"modifier": {"powerMult": 1.1, "dragReduction": 0.1, "weightMult": 0.9},
-		"description": "+10% Power, -10% Drag/Weight"
+		"description": "+10% Power, -10% Drag/Weight",
+		"weight_kg": 0.0,
 	})
 	register_reward({
 		"id": "item_architect_crown",

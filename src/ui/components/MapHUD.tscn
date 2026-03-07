@@ -30,6 +30,15 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 24
 text = "FLOOR 0"
 
+[node name="NodeNameLabel" type="Label" parent="MarginContainer/TopLeft"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 16
+text = ""
+
 [node name="EquipButton" type="Button" parent="MarginContainer/TopLeft"]
 layout_mode = 2
 text = "EQUIPMENT"
@@ -38,6 +47,17 @@ text = "EQUIPMENT"
 unique_name_in_owner = true
 layout_mode = 2
 text = "AUTOPLAY: OFF"
+
+[node name="QuestLabel" type="Label" parent="MarginContainer/TopLeft"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 14
+text = ""
+autowrap_mode = 3
+visible = false
 
 [node name="TopRight" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2

@@ -19,7 +19,6 @@ var navigation_target_id: String:
 	get:
 		return run_data.get("navigation_target_id", "")
 	set(value):
-		print("[DEBUG-RUN] Setting navigation_target_id to: ", value)
 		run_data["navigation_target_id"] = value
 
 func reset() -> void:
@@ -60,9 +59,7 @@ func load_run_data(data: Dictionary) -> void:
 	SignalBus.run_started.emit()
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
-	print("[DEBUG-RUN] toggle_autoplay: ", autoplay_enabled)
 	if not autoplay_enabled:
-		print("[DEBUG-RUN] Clearing navigation target because autoplay was turned OFF manually")
 		navigation_target_id = ""
 	SignalBus.autoplay_changed.emit(autoplay_enabled)
 	_maybe_save()
@@ -70,9 +67,7 @@ func toggle_autoplay() -> void:
 func set_autoplay_enabled(enabled: bool) -> void:
 	if autoplay_enabled != enabled:
 		autoplay_enabled = enabled
-		print("[DEBUG-RUN] set_autoplay_enabled: ", enabled)
 		if not autoplay_enabled:
-			print("[DEBUG-RUN] Clearing navigation target because autoplay was disabled")
 			navigation_target_id = ""
 		SignalBus.autoplay_changed.emit(autoplay_enabled)
 		_maybe_save()
@@ -189,11 +184,9 @@ func get_next_autoplay_node() -> Dictionary:
 	var edges: Array = run_data["edges"]
 	var visited_ids: Array = run_data.get("visitedNodeIds", [])
 	
-	print("[DEBUG-RUN] get_next_autoplay_node called. Current node: ", current_id, " Nav target: ", navigation_target_id)
 
 	# 1. Check if we arrived at navigation target
 	if navigation_target_id != "" and navigation_target_id == current_id:
-		print("[DEBUG-RUN] ARRIVAL DETECTED at destination node: ", navigation_target_id)
 		navigation_target_id = ""
 		set_autoplay_enabled(false)
 		return {}
@@ -303,7 +296,6 @@ func get_next_autoplay_node() -> Dictionary:
 				return score_a > score_b
 			)
 			
-			print("[DEBUG-RUN] BFS expanding node: ", u_id, " Neighbors found: ", connected_edges.map(func(e): return e.id))
 
 			for entry in connected_edges:
 				var v_id: String = entry.id
@@ -313,14 +305,10 @@ func get_next_autoplay_node() -> Dictionary:
 					queue.push_back(v_id)
 
 		if found_target_id != "":
-			print("[DEBUG-RUN] BFS found path to target: ", found_target_id, " (AllowHard: ", allow_hard, ")")
 			var step_id: String = found_target_id
 			while parent_map[step_id] != current_id:
 				step_id = parent_map[step_id]
-			print("[DEBUG-RUN] BFS next step identified: ", step_id)
 			return _find_node(nodes, step_id)
-		else:
-			print("[DEBUG-RUN] BFS failed to find path to targets: ", targets, " (AllowHard: ", allow_hard, ")")
 
 	# 6. Absolute Fallback
 	for n: Dictionary in neighbors:

@@ -180,16 +180,13 @@ func _draw() -> void:
 
 func _check_autoplay() -> void:
 	if not RunManager.autoplay_enabled or is_selecting: 
-		print("[DEBUG-MAP] _check_autoplay skipped. Enabled: ", RunManager.autoplay_enabled, " is_selecting: ", is_selecting)
 		return
 	
 	autoplay_target_node = RunManager.get_next_autoplay_node()
 	if not autoplay_target_node.is_empty():
-		print("[DEBUG-MAP] Autoplay target found: ", autoplay_target_node["id"])
 		is_selecting = true
 		autoplay_timer = 2.0
 	else:
-		print("[DEBUG-MAP] Autoplay target NOT found (empty return from RunManager)")
 
 func _find_node(nodes: Array, id: String) -> Dictionary:
 	for n: Dictionary in nodes:
@@ -291,10 +288,8 @@ func _input(event: InputEvent) -> void:
 
 func _on_node_clicked(node: Dictionary, is_manual: bool = true) -> void:
 	var run: Dictionary = RunManager.get_run()
-	print("[DEBUG-MAP] _on_node_clicked: ", node["id"], " manual: ", is_manual, " Current: ", run["currentNodeId"])
 	
 	if node["id"] == run["currentNodeId"]:
-		print("[DEBUG-MAP] Clicking current node, reopening overlay...")
 		if node["type"] == "shop":
 			_show_shop_overlay()
 		elif node["type"] == "event":
@@ -327,7 +322,6 @@ func _on_node_clicked(node: Dictionary, is_manual: bool = true) -> void:
 	# Only clear navigation if the player MANUALLY clicked a different node.
 	# Autoplay clicking the next step in the path should NOT clear the target.
 	if is_manual:
-		print("[DEBUG-MAP] Clearing navigation target due to manual node click")
 		RunManager.navigation_target_id = ""
 		hud.nav_button.visible = false
 

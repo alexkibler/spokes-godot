@@ -30,11 +30,14 @@ alignment = 1
 [node name="Label" type="Label" parent="PanelContainer/VBoxContainer/EmptyView"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
 text = "— EMPTY SLOT —"
 horizontal_alignment = 1
 
 [node name="NewGameBtn" type="Button" parent="PanelContainer/VBoxContainer/EmptyView"]
+custom_minimum_size = Vector2(160, 64)
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "NEW GAME"
 
 [node name="DataView" type="VBoxContainer" parent="PanelContainer/VBoxContainer"]
@@ -47,26 +50,32 @@ layout_mode = 2
 [node name="GoldLabel" type="Label" parent="PanelContainer/VBoxContainer/DataView/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
 text = "Gold: 0"
 
 [node name="DistLabel" type="Label" parent="PanelContainer/VBoxContainer/DataView/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
 text = "Dist: 0.0 km"
 
 [node name="DiffLabel" type="Label" parent="PanelContainer/VBoxContainer/DataView/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
 text = "Normal"
 
 [node name="DeleteButton" type="Button" parent="PanelContainer/VBoxContainer/DataView/HBoxContainer"]
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 24
 text = "X"
 
 [node name="DateLabel" type="Label" parent="PanelContainer/VBoxContainer/DataView"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 16
 text = "YYYY-MM-DD HH:MM"
 horizontal_alignment = 2
 

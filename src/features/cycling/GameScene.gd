@@ -42,6 +42,8 @@ var last_elevation: float = 0.0
 
 var is_dev_build: bool = false
 
+var _portrait_bg: ColorRect = null
+
 # Elite Challenge Tracking
 var challenge_power_sum: float = 0.0
 var challenge_tick_count: int = 0
@@ -417,9 +419,86 @@ func _on_viewport_resized() -> void:
 				for child: Node in layer.get_children():
 					if child is Control:
 						(child as Control).custom_minimum_size.x = mirror_val.x
-	
-	# Wait for layout update to get correct ElevationContainer width
+
+	# Wait for layout update to get correct sizes before repositioning
 	get_tree().process_frame.connect(_build_elevation_graph, CONNECT_ONE_SHOT)
+	get_tree().process_frame.connect(_update_portrait_layout, CONNECT_ONE_SHOT)
+
+func _update_portrait_layout() -> void:
+	var vp: Vector2 = get_viewport_rect().size
+	var is_portrait: bool = vp.y > vp.x
+
+	var stats: VBoxContainer = $HUD/MarginContainer/HUDLayout/Stats as VBoxContainer
+	var race_gap: VBoxContainer = %RaceGapPanel as VBoxContainer
+	var hud_layout: Control = $HUD/MarginContainer/HUDLayout as Control
+
+	if is_portrait:
+		# The 1280x720 game content is scaled to fit the portrait width.
+		# Game content screen height ≈ viewport_width * (720 / 1280).
+		var hud_margin: float = 20.0
+		var game_h: float = vp.x * (720.0 / 1280.0)
+		var y_top: float = maxf(0.0, game_h - hud_margin)
+		var hud_w: float = maxf(1.0, hud_layout.size.x)
+		var half_w: float = hud_w * 0.5
+
+		# Stats: left half, below game area
+		stats.anchor_left = 0.0
+		stats.anchor_top = 0.0
+		stats.anchor_right = 0.0
+		stats.anchor_bottom = 0.0
+		stats.offset_left = 0.0
+		stats.offset_top = y_top
+		stats.offset_right = half_w - 5.0
+		stats.offset_bottom = y_top + 320.0
+
+		# RaceGapPanel: right half, below game area
+		race_gap.anchor_left = 0.0
+		race_gap.anchor_top = 0.0
+		race_gap.anchor_right = 0.0
+		race_gap.anchor_bottom = 0.0
+		race_gap.offset_left = half_w + 5.0
+		race_gap.offset_top = y_top
+		race_gap.offset_right = hud_w
+		race_gap.offset_bottom = y_top + 320.0
+
+		# Background panel filling the space between game content and bottom panel
+		if not _portrait_bg:
+			_portrait_bg = ColorRect.new()
+			_portrait_bg.color = Color(0.06, 0.06, 0.09, 0.95)
+			_portrait_bg.layout_mode = 1
+			hud_layout.add_child(_portrait_bg)
+			hud_layout.move_child(_portrait_bg, 0)
+		_portrait_bg.visible = true
+		_portrait_bg.anchor_left = 0.0
+		_portrait_bg.anchor_top = 0.0
+		_portrait_bg.anchor_right = 1.0
+		_portrait_bg.anchor_bottom = 1.0
+		_portrait_bg.offset_left = 0.0
+		_portrait_bg.offset_top = y_top
+		_portrait_bg.offset_right = 0.0
+		_portrait_bg.offset_bottom = -124.0
+	else:
+		# Restore landscape layout
+		stats.anchor_left = 0.0
+		stats.anchor_top = 0.0
+		stats.anchor_right = 0.0
+		stats.anchor_bottom = 0.0
+		stats.offset_left = 0.0
+		stats.offset_top = 0.0
+		stats.offset_right = 200.0
+		stats.offset_bottom = 200.0
+
+		race_gap.anchor_left = 1.0
+		race_gap.anchor_top = 0.0
+		race_gap.anchor_right = 1.0
+		race_gap.anchor_bottom = 0.0
+		race_gap.offset_left = -200.0
+		race_gap.offset_top = 0.0
+		race_gap.offset_right = 0.0
+		race_gap.offset_bottom = 200.0
+
+		if _portrait_bg:
+			_portrait_bg.visible = false
 
 func _create_speed_control() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()

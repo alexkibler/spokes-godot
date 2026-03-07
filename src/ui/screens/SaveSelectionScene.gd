@@ -6,12 +6,15 @@ var _delete_dialog: ConfirmationDialog
 var _slot_to_delete: int = -1
 
 func _ready() -> void:
+	UIUtils.handle_safe_area($MarginContainer)
+	get_viewport().size_changed.connect(func() -> void: UIUtils.handle_safe_area($MarginContainer))
+
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Confirm Deletion"
 	_delete_dialog.dialog_text = "Are you sure you want to delete this save? This cannot be undone."
 	_delete_dialog.confirmed.connect(_on_delete_confirmed)
 	add_child(_delete_dialog)
-	
+
 	refresh_slots()
 
 func refresh_slots() -> void:

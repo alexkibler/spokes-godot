@@ -47,16 +47,31 @@ func _on_autoplay_changed(enabled: bool) -> void:
 	if enabled:
 		_check_autoplay()
 
+func _get_map_draw_params() -> Array:
+	# Returns [center: Vector2, scale_factor: float] in world-space coords.
+	# Uses the canvas transform so the map fills a proportional area in
+	# both landscape (unchanged) and portrait orientations.
+	var vp: Vector2 = get_viewport_rect().size
+	if vp.y <= vp.x:
+		# Landscape: use original hardcoded values
+		return [Vector2(640.0, 360.0), 600.0]
+	# Portrait: compute center (= camera position = screen center in world space)
+	# and a scale that fills ~82% of the portrait width.
+	var canvas_tf: Transform2D = get_canvas_transform()
+	var cs: float = maxf(canvas_tf.get_scale().x, 0.01)
+	var center: Vector2 = canvas_tf.affine_inverse() * (vp * 0.5)
+	var scale_factor: float = (vp.x * 0.82) / cs
+	return [center, scale_factor]
+
 func _draw() -> void:
 	var run: Dictionary = RunManager.get_run()
 	if run.is_empty(): return
-	
+
 	hud.update_hud()
-	
-	# Use fixed reference for world-space drawing
-	# This matches the Camera2D position at (640, 360)
-	var center: Vector2 = Vector2(640, 360)
-	var scale_factor: float = 600.0 # 0.8 * 750 (approx)
+
+	var draw_params: Array = _get_map_draw_params()
+	var center: Vector2 = draw_params[0] as Vector2
+	var scale_factor: float = draw_params[1] as float # 0.8 * 750 (approx)
 	
 	# Draw edges
 	for edge: Dictionary in run["edges"]:
@@ -183,9 +198,10 @@ func _input(event: InputEvent) -> void:
 		var run: Dictionary = RunManager.get_run()
 		if run.is_empty(): return
 		
-		# Stable World Coordinates
-		var center: Vector2 = Vector2(640, 360)
-		var scale_factor: float = 600.0
+		# World coordinates matching what _draw() uses
+		var draw_params: Array = _get_map_draw_params()
+		var center: Vector2 = draw_params[0] as Vector2
+		var scale_factor: float = draw_params[1] as float
 		
 		# Translate Screen/Viewport position to World position
 		var event_pos: Vector2 = Vector2.ZERO

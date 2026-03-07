@@ -11,6 +11,9 @@ extends Control
 @onready var dist_label: Label = $MarginContainer/VBoxContainer/DistanceContainer/HBox/DistValue
 
 func _ready() -> void:
+	get_viewport().size_changed.connect(_on_viewport_resized)
+	_on_viewport_resized()
+
 	# Load from settings
 	ftp_input.value = SettingsManager.ftp_w
 	weight_input.value = SettingsManager.weight_kg
@@ -71,6 +74,16 @@ func _ready() -> void:
 
 	_on_dist_changed(dist_slider.value)
 	start_btn.grab_focus()
+
+func _on_viewport_resized() -> void:
+	var is_portrait: bool = get_viewport_rect().size.y > get_viewport_rect().size.x
+	var mc: MarginContainer = $MarginContainer as MarginContainer
+	var margin_h: int = 40 if is_portrait else 100
+	var margin_v: int = 30 if is_portrait else 50
+	mc.add_theme_constant_override("margin_left", margin_h)
+	mc.add_theme_constant_override("margin_right", margin_h)
+	mc.add_theme_constant_override("margin_top", margin_v)
+	mc.add_theme_constant_override("margin_bottom", margin_v)
 
 func _exit_tree() -> void:
 	if SignalBus.trainer_power_updated.is_connected(self._on_trainer_power_updated):

@@ -286,7 +286,7 @@ func _input(event: InputEvent) -> void:
 		RunManager.toggle_autoplay()
 		get_viewport().set_input_as_handled()
 
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("open_pause_menu"):
 		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
 		add_child(pause_menu)
 		get_viewport().set_input_as_handled()

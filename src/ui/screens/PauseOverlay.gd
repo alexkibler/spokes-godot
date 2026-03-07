@@ -20,6 +20,11 @@ func _ready() -> void:
 	var current_scene: Node = get_tree().current_scene
 	quit_map_btn.visible = current_scene and current_scene.name == "GameScene"
 	
+	# Lock left/right navigation so analog stick horizontal doesn't accidentally navigate the vertical list
+	for btn: Button in [resume_btn, quit_map_btn, quit_btn]:
+		btn.focus_neighbor_left = btn.get_path()
+		btn.focus_neighbor_right = btn.get_path()
+
 	get_tree().paused = true
 	resume_btn.grab_focus()
 
@@ -49,7 +54,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_autoplay"):
 		autoplay_toggle.button_pressed = not autoplay_toggle.button_pressed
 		get_viewport().set_input_as_handled()
-		
-	if event.is_action_pressed("ui_cancel"):
+
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_pause_menu"):
 		_on_resume_pressed()
 		get_viewport().set_input_as_handled()

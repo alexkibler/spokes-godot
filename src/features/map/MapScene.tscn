@@ -45,7 +45,7 @@ label_text = "Travel"
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 script = ExtResource("5_sweqj")
-action = 1
+action = 2
 label_text = "Menu"
 
 [node name="@HBoxContainer@3" type="HBoxContainer" parent="MapHUD/InputHints" unique_id=854207278 instance=ExtResource("4_fh4bg")]

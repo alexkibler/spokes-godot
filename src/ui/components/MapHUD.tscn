@@ -41,11 +41,13 @@ text = ""
 
 [node name="EquipButton" type="Button" parent="MarginContainer/TopLeft"]
 layout_mode = 2
+focus_mode = 0
 text = "EQUIPMENT"
 
 [node name="AutoplayButton" type="Button" parent="MarginContainer/TopLeft"]
 unique_name_in_owner = true
 layout_mode = 2
+focus_mode = 0
 text = "AUTOPLAY: OFF"
 
 [node name="QuestLabel" type="Label" parent="MarginContainer/TopLeft"]

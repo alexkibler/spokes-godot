@@ -7,11 +7,15 @@ extends CanvasLayer
 @onready var modifier_container: HBoxContainer = $MarginContainer/TopCenter/ModifierContainer
 @onready var equip_button: Button = $MarginContainer/TopLeft/EquipButton
 @onready var autoplay_button: Button = %AutoplayButton
+@onready var nav_button: Button = %NavButton
+
+var _potential_nav_target: Dictionary = {}
 
 func _ready() -> void:
 	UIUtils.handle_safe_area($MarginContainer)
 	equip_button.pressed.connect(_on_equip_pressed)
 	autoplay_button.pressed.connect(_on_autoplay_pressed)
+	nav_button.pressed.connect(_on_nav_pressed)
 
 	SignalBus.gold_changed.connect(_on_gold_changed)
 	SignalBus.modifiers_changed.connect(_on_modifiers_changed)
@@ -33,6 +37,7 @@ func _on_autoplay_changed(enabled: bool) -> void:
 	_update_autoplay_ui(enabled)
 
 func _on_quest_updated() -> void:
+	nav_button.visible = false
 	_update_quest_display()
 
 func _on_equip_pressed() -> void:
@@ -44,6 +49,24 @@ func _on_equip_pressed() -> void:
 func _on_autoplay_pressed() -> void:
 	RunManager.toggle_autoplay()
 	# UI update handled by signal
+
+func _on_nav_pressed() -> void:
+	if not _potential_nav_target.is_empty():
+		RunManager.navigation_target_id = _potential_nav_target["id"]
+		if not RunManager.autoplay_enabled:
+			RunManager.set_autoplay_enabled(true)
+		else:
+			# Signal scene to update immediately if already on
+			SignalBus.autoplay_changed.emit(true)
+		
+		nav_button.visible = false
+		_potential_nav_target = {}
+
+func show_navigation_button(node: Dictionary) -> void:
+	_potential_nav_target = node
+	var display_name: String = _get_node_display_name(node)
+	nav_button.text = "NAVIGATE TO: " + display_name.to_upper()
+	nav_button.visible = true
 
 func _update_autoplay_ui(enabled: bool) -> void:
 	if enabled:

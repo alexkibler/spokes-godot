@@ -50,6 +50,14 @@ layout_mode = 2
 focus_mode = 0
 text = "AUTOPLAY: OFF"
 
+[node name="NavButton" type="Button" parent="MarginContainer/TopLeft"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.529412, 0.807843, 0.980392, 1)
+text = "NAVIGATE TO..."
+
 [node name="QuestLabel" type="Label" parent="MarginContainer/TopLeft"]
 unique_name_in_owner = true
 layout_mode = 2

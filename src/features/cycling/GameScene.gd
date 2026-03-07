@@ -604,6 +604,8 @@ func _on_ride_complete() -> void:
 	var is_first_clear: bool = completion_results.get("is_first_clear", false)
 	var quest_info: Dictionary = completion_results.get("quest", {})
 	
+	print("[DEBUG-GAME] ride_complete. New current_id: ", RunManager.run_data.get("currentNodeId"), " nav_target: ", RunManager.navigation_target_id)
+	
 	# Re-fetch current node from RunManager directly to ensure we have the destination node data
 	var dest_node: Dictionary = {}
 	var current_node_id: String = RunManager.run_data.get("currentNodeId", "")

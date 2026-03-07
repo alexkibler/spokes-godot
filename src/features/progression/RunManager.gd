@@ -15,6 +15,13 @@ var active_quest: Dictionary:
 	set(value):
 		run_data["active_quest"] = value
 
+var navigation_target_id: String:
+	get:
+		return run_data.get("navigation_target_id", "")
+	set(value):
+		print("[DEBUG-RUN] Setting navigation_target_id to: ", value)
+		run_data["navigation_target_id"] = value
+
 func reset() -> void:
 	run_data = {}
 	is_active_run = false
@@ -29,6 +36,8 @@ func load_run_data(data: Dictionary) -> void:
 	# Ensure active_quest exists in run_data if it was missing in old saves
 	if not "active_quest" in run_data:
 		run_data["active_quest"] = {}
+	if not "navigation_target_id" in run_data:
+		run_data["navigation_target_id"] = ""
 	
 	# Reconstruct CourseProfiles in edges
 	var edges: Array = run_data.get("edges", [])
@@ -51,12 +60,22 @@ func load_run_data(data: Dictionary) -> void:
 	SignalBus.run_started.emit()
 func toggle_autoplay() -> void:
 	autoplay_enabled = !autoplay_enabled
+	print("[DEBUG-RUN] toggle_autoplay: ", autoplay_enabled)
+	if not autoplay_enabled:
+		print("[DEBUG-RUN] Clearing navigation target because autoplay was turned OFF manually")
+		navigation_target_id = ""
 	SignalBus.autoplay_changed.emit(autoplay_enabled)
+	_maybe_save()
 
 func set_autoplay_enabled(enabled: bool) -> void:
 	if autoplay_enabled != enabled:
 		autoplay_enabled = enabled
+		print("[DEBUG-RUN] set_autoplay_enabled: ", enabled)
+		if not autoplay_enabled:
+			print("[DEBUG-RUN] Clearing navigation target because autoplay was disabled")
+			navigation_target_id = ""
 		SignalBus.autoplay_changed.emit(autoplay_enabled)
+		_maybe_save()
 
 func start_new_run(run_length: int, total_distance_km: float, difficulty: String, ftp_w: int, weight_kg: float, units: String) -> void:
 	run_data = {
@@ -70,6 +89,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		"active_edge": null,
 		"pendingNodeAction": null,
 		"active_quest": {},
+		"navigation_target_id": "",
 		"nodes": [],
 		"edges": [],
 		"runLength": run_length,
@@ -165,17 +185,21 @@ func get_next_autoplay_node() -> Dictionary:
 	if not is_active_run or run_data.get("currentNodeId", "") == "": return {}
 	
 	var current_id: String = run_data["currentNodeId"]
-	var current_node: Dictionary = {}
 	var nodes: Array = run_data["nodes"]
-	for n: Dictionary in nodes:
-		if n["id"] == current_id:
-			current_node = n
-			break
-	if current_node.is_empty(): return {}
-	
-	# Identify valid next steps (neighbors)
-	var neighbors: Array[Dictionary] = []
 	var edges: Array = run_data["edges"]
+	var visited_ids: Array = run_data.get("visitedNodeIds", [])
+	
+	print("[DEBUG-RUN] get_next_autoplay_node called. Current node: ", current_id, " Nav target: ", navigation_target_id)
+
+	# 1. Check if we arrived at navigation target
+	if navigation_target_id != "" and navigation_target_id == current_id:
+		print("[DEBUG-RUN] ARRIVAL DETECTED at destination node: ", navigation_target_id)
+		navigation_target_id = ""
+		set_autoplay_enabled(false)
+		return {}
+
+	# 2. Identify neighbors for quick checks and fallback
+	var neighbors: Array[Dictionary] = []
 	for edge: Dictionary in edges:
 		var target_id: String = ""
 		if edge["from"] == current_id: 
@@ -185,62 +209,63 @@ func get_next_autoplay_node() -> Dictionary:
 		
 		if target_id != "":
 			for n: Dictionary in nodes:
-				if n["id"] == target_id and n.get("type", "") != "hard":
+				if n["id"] == target_id:
 					neighbors.append(n)
 					break
-					
-	# 1. Identify current state and medals
-	var inventory: Array = run_data.get("inventory", [])
-	var medals_held: int = 0
-	for item: String in inventory:
-		if item.begins_with("medal_"): medals_held += 1
-	var medals_needed: int = run_data.get("runLength", 0)
-	
-	# 2. Identify the target spoke (first one we don't have a medal for)
-	var active_spoke_id: String = ""
-	for sid in MapGenerator.SPOKE_IDS:
-		if not ("medal_" + sid) in inventory:
-			# Check if this spoke exists in the current map
-			var exists: bool = false
-			for n in nodes:
-				if n.get("metadata", {}).get("spokeId", "") == sid:
-					exists = true
-					break
-			if exists:
-				active_spoke_id = sid
-				break
-				
+
+	# 3. If navigation target is a neighbor, go there IMMEDIATELY
+	if navigation_target_id != "":
+		for n in neighbors:
+			if n["id"] == navigation_target_id:
+				return n
+
+	# 4. Identify the primary target(s)
 	var targets: Array[String] = []
-	var visited_ids: Array = run_data.get("visitedNodeIds", [])
-
-	if active_spoke_id == "" or medals_held >= medals_needed:
-		# All spokes completed! Target the final boss
-		targets = ["node_final_boss"]
-	else:
-		# We have an active spoke to clear.
-		var current_node_spoke: String = current_node.get("metadata", {}).get("spokeId", "")
-		
-		if current_node_spoke == active_spoke_id:
-			# We are IN the active spoke. Head straight for the boss.
-			targets = ["node_" + active_spoke_id + "_boss"]
-		elif current_node_spoke == "":
-			# We are at the Hub (or a start/finish node). Head into the active spoke.
-			targets = ["node_" + active_spoke_id + "_boss"]
-		else:
-			# We are in a DIFFERENT spoke (likely already completed). Head back to Hub.
-			targets = ["node_hub"]
-
+	
+	# Try to find a path to the navigation target if it exists
+	if navigation_target_id != "":
+		var path_exists: bool = _is_node_reachable(current_id, navigation_target_id)
+		if path_exists:
+			targets = [navigation_target_id]
+	
+	# If no navigation target (or it's locked), fall back to medal-seeking
 	if targets.is_empty():
-		# Fallback: pick the first unvisited neighbor, or any neighbor if all visited
-		for n: Dictionary in neighbors:
-			if not n["id"] in visited_ids: return n
-		return neighbors[0]
+		var inventory: Array = run_data.get("inventory", [])
+		var medals_held: int = 0
+		for item: String in inventory:
+			if item.begins_with("medal_"): medals_held += 1
+		var medals_needed: int = run_data.get("runLength", 0)
 		
-	# BFS to find the shortest graph path to the nearest target.
-	# First pass avoids hard nodes; if no path found, retry allowing them.
+		if medals_held >= medals_needed:
+			targets = ["node_final_boss"]
+		else:
+			# Find the first spoke we don't have a medal for
+			var active_spoke_id: String = ""
+			for sid in MapGenerator.SPOKE_IDS:
+				if not ("medal_" + sid) in inventory:
+					# Verify spoke exists in map
+					var exists: bool = false
+					for n in nodes:
+						if n.get("metadata", {}).get("spokeId", "") == sid:
+							exists = true; break
+					if exists:
+						active_spoke_id = sid; break
+			
+			if active_spoke_id != "":
+				# Route to that spoke's boss
+				var current_node: Dictionary = _find_node(nodes, current_id)
+				var current_node_spoke: String = current_node.get("metadata", {}).get("spokeId", "")
+				if current_node_spoke == active_spoke_id or current_node_spoke == "":
+					targets = ["node_" + active_spoke_id + "_boss"]
+				else:
+					targets = ["node_hub"]
+
+	# 5. BFS to find the best next step to the nearest target
+	# First pass avoids hard nodes
 	for allow_hard: bool in [false, true]:
 		var queue: Array[String] = [current_id]
 		var parent_map: Dictionary = {current_id: ""}
+		var dist_map: Dictionary = {current_id: 0}
 		var found_target_id: String = ""
 
 		while not queue.is_empty():
@@ -249,53 +274,79 @@ func get_next_autoplay_node() -> Dictionary:
 				found_target_id = u_id
 				break
 
+			var u_dist: int = dist_map[u_id]
+			
+			# Sort edges to prefer shops/events if distances are equal
+			var connected_edges: Array = []
 			for edge: Dictionary in edges:
 				var v_id: String = ""
 				if edge["from"] == u_id: v_id = edge["to"]
 				elif edge["to"] == u_id: v_id = edge["from"]
+				if v_id != "" and is_edge_traversable(edge):
+					var v_node: Dictionary = _find_node(nodes, v_id)
+					if v_node.is_empty(): continue
+					if not allow_hard and v_node.get("type", "") == "hard": continue
+					connected_edges.append({"id": v_id, "node": v_node})
+			
+			# Prioritize "Interesting" nodes (shop > event > standard)
+			connected_edges.sort_custom(func(a, b):
+				var score_a = 0
+				var t_a = a.node.get("type", "")
+				if t_a == "shop": score_a = 2
+				elif t_a == "event": score_a = 1
+				
+				var score_b = 0
+				var t_b = b.node.get("type", "")
+				if t_b == "shop": score_b = 2
+				elif t_b == "event": score_b = 1
+				
+				return score_a > score_b
+			)
+			
+			print("[DEBUG-RUN] BFS expanding node: ", u_id, " Neighbors found: ", connected_edges.map(func(e): return e.id))
 
-				if v_id != "" and not v_id in parent_map and is_edge_traversable(edge):
-					var v_node: Dictionary = {}
-					for n: Dictionary in nodes:
-						if n["id"] == v_id:
-							v_node = n
-							break
-					if not allow_hard and v_node.get("type", "") == "hard":
-						continue
+			for entry in connected_edges:
+				var v_id: String = entry.id
+				if not v_id in parent_map:
 					parent_map[v_id] = u_id
+					dist_map[v_id] = u_dist + 1
 					queue.push_back(v_id)
 
-		if found_target_id != "" and parent_map.has(found_target_id):
+		if found_target_id != "":
+			print("[DEBUG-RUN] BFS found path to target: ", found_target_id, " (AllowHard: ", allow_hard, ")")
 			var step_id: String = found_target_id
 			while parent_map[step_id] != current_id:
 				step_id = parent_map[step_id]
+			print("[DEBUG-RUN] BFS next step identified: ", step_id)
+			return _find_node(nodes, step_id)
+		else:
+			print("[DEBUG-RUN] BFS failed to find path to targets: ", targets, " (AllowHard: ", allow_hard, ")")
 
-			var next_node: Dictionary = {}
-			for n: Dictionary in nodes:
-				if n["id"] == step_id:
-					next_node = n
-					break
-
-			if not next_node.is_empty():
-				return next_node
-
-	# Fallback: any non-hard unvisited neighbor, then any non-hard, then any
+	# 6. Absolute Fallback
 	for n: Dictionary in neighbors:
-		if not n["id"] in visited_ids: return n
-	if not neighbors.is_empty():
-		return neighbors[0]
+		if n.get("type", "") != "hard" and not n["id"] in visited_ids: return n
+	if not neighbors.is_empty(): return neighbors[0]
+	return {}
 
-	# Last resort: include hard neighbors
-	for edge: Dictionary in edges:
-		var target_id: String = ""
-		if edge["from"] == current_id:
-			if is_edge_traversable(edge): target_id = edge["to"]
-		elif edge["to"] == current_id:
-			if is_edge_traversable(edge): target_id = edge["from"]
-		if target_id != "":
-			for n: Dictionary in nodes:
-				if n["id"] == target_id:
-					return n
+func _is_node_reachable(start_id: String, target_id: String) -> bool:
+	var queue: Array[String] = [start_id]
+	var visited: Array[String] = [start_id]
+	while not queue.is_empty():
+		var u_id = queue.pop_front()
+		if u_id == target_id: return true
+		for edge in run_data["edges"]:
+			var v_id = ""
+			if edge["from"] == u_id: v_id = edge["to"]
+			elif edge["to"] == u_id: v_id = edge["from"]
+			if v_id != "" and not v_id in visited and is_edge_traversable(edge):
+				visited.append(v_id)
+				queue.push_back(v_id)
+	return false
+
+func _find_node(nodes: Array, id: String) -> Dictionary:
+	for n: Dictionary in nodes:
+		if n["id"] == id:
+			return n
 	return {}
 
 func complete_active_edge() -> Dictionary:

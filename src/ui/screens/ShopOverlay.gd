@@ -34,7 +34,8 @@ func _ready() -> void:
 	SignalBus.gold_changed.connect(func(_new_gold: int) -> void: refresh_all())
 	SignalBus.inventory_changed.connect(refresh_all)
 
-	if RunManager.autoplay_enabled:
+	# Only auto-close if we are in general autoplay mode, NOT if we specifically navigated here.
+	if RunManager.autoplay_enabled and RunManager.navigation_target_id == "":
 		var pb: ProgressBar = ProgressBar.new()
 		pb.show_percentage = false
 		pb.custom_minimum_size.y = 8

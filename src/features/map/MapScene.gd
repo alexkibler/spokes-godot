@@ -19,7 +19,7 @@ func _process(delta: float) -> void:
 			var node: Dictionary = autoplay_target_node
 			autoplay_target_node = {}
 			if RunManager.autoplay_enabled:
-				_on_node_clicked(node)
+				_on_node_clicked(node, false) # NOT manual
 		queue_redraw()
 
 func _ready() -> void:
@@ -52,15 +52,9 @@ func _on_autoplay_changed(enabled: bool) -> void:
 		_check_autoplay()
 
 func _get_map_draw_params() -> Array:
-	# Returns [center: Vector2, scale_factor: float] in world-space coords.
-	# Uses the canvas transform so the map fills a proportional area in
-	# both landscape (unchanged) and portrait orientations.
 	var vp: Vector2 = get_viewport_rect().size
 	if vp.y <= vp.x:
-		# Landscape: use original hardcoded values
 		return [Vector2(640.0, 360.0), 600.0]
-	# Portrait: compute center (= camera position = screen center in world space)
-	# and a scale that fills ~82% of the portrait width.
 	var canvas_tf: Transform2D = get_canvas_transform()
 	var cs: float = maxf(canvas_tf.get_scale().x, 0.01)
 	var center: Vector2 = canvas_tf.affine_inverse() * (vp * 0.5)
@@ -75,9 +69,8 @@ func _draw() -> void:
 
 	var draw_params: Array = _get_map_draw_params()
 	var center: Vector2 = draw_params[0] as Vector2
-	var scale_factor: float = draw_params[1] as float # 0.8 * 750 (approx)
+	var scale_factor: float = draw_params[1] as float
 	
-	# Draw edges
 	for edge: Dictionary in run["edges"]:
 		var from_node: Dictionary = _find_node(run["nodes"], edge["from"])
 		var to_node: Dictionary = _find_node(run["nodes"], edge["to"])
@@ -98,7 +91,6 @@ func _draw() -> void:
 				dashed = true
 			
 			if dashed:
-				# Simple dashed line implementation
 				var dir: Vector2 = (p2 - p1).normalized()
 				var dist: float = p1.distance_to(p2)
 				var dash_len: float = 10.0
@@ -111,10 +103,8 @@ func _draw() -> void:
 			else:
 				draw_line(p1, p2, color, width, true)
 
-	# Draw nodes
 	for node: Dictionary in run["nodes"]:
 		var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
-		
 		var color: Color = Color.WHITE
 		var radius: float = 10.0
 		
@@ -143,43 +133,44 @@ func _draw() -> void:
 					break
 		
 		if node["id"] == run["currentNodeId"]:
-			draw_circle(pos, radius + 4, Color.WHITE) # Highlight current
+			draw_circle(pos, radius + 4, Color.WHITE)
 		
 		if node["id"] == selected_node_id:
-			# Pulse animation or thick border for selected node
 			var pulse: float = sin(Time.get_ticks_msec() / 150.0) * 2.0 + 4.0
 			draw_arc(pos, radius + pulse, 0, TAU, 32, Color.GOLD, 2.0)
 
-		# Pulsing magenta dashed ring for active quest destination
 		var quest_dest_id: String = RunManager.active_quest.get("destination_id", "")
 		if quest_dest_id != "" and node["id"] == quest_dest_id:
 			var quest_pulse: float = sin(Time.get_ticks_msec() / 200.0) * 3.0 + 10.0
 			var quest_radius: float = radius + quest_pulse
 			var magenta: Color = Color.MAGENTA
-			# Dashed ring drawn as arc segments
 			var segments: int = 12
 			for seg: int in range(segments):
-				if seg % 2 == 0: # draw every other segment for dashed effect
+				if seg % 2 == 0:
 					var angle_start: float = (seg / float(segments)) * TAU
 					var angle_end: float = ((seg + 1) / float(segments)) * TAU
 					draw_arc(pos, quest_radius, angle_start, angle_end, 8, magenta, 3.0)
+
+		var nav_dest_id: String = RunManager.navigation_target_id
+		if nav_dest_id != "" and node["id"] == nav_dest_id:
+			var nav_pulse: float = sin(Time.get_ticks_msec() / 150.0) * 4.0 + 12.0
+			var nav_radius: float = radius + nav_pulse
+			draw_arc(pos, nav_radius, 0, TAU, 32, Color.SKY_BLUE, 2.5)
 		
 		var draw_color: Color = color
 		if is_locked:
 			draw_color = color.lerp(Color.BLACK, 0.4)
 		elif node.get("isUsed", false) and node["id"] != run["currentNodeId"] and node["type"] != "start":
-			draw_color = color.lerp(Color.BLACK, 0.7) # Heavily dim used nodes
+			draw_color = color.lerp(Color.BLACK, 0.7)
 			
-		draw_circle(pos, radius + 1.5, Color.BLACK) # Outline
+		draw_circle(pos, radius + 1.5, Color.BLACK)
 		draw_circle(pos, radius, draw_color)
 		
 		if is_locked:
-			# Draw a small lock-like symbol
 			var lock_rect: Rect2 = Rect2(pos.x - 4, pos.y - 1, 8, 6)
 			draw_rect(lock_rect, Color.WHITE)
 			draw_arc(pos + Vector2(0, -1), 3, PI, 2*PI, 8, Color.WHITE, 1.5)
 
-	# Draw autoplay progress
 	if is_selecting and not autoplay_target_node.is_empty():
 		var ap_node: Dictionary = autoplay_target_node
 		var ap_pos: Vector2 = center + (Vector2(ap_node["x"], ap_node["y"]) - Vector2(0.5, 0.5)) * scale_factor
@@ -188,12 +179,17 @@ func _draw() -> void:
 		draw_arc(ap_pos, ap_radius, -PI/2, -PI/2 + (2.0 * PI * progress), 32, Color.GOLD, 3.0, true)
 
 func _check_autoplay() -> void:
-	if not RunManager.autoplay_enabled or is_selecting: return
+	if not RunManager.autoplay_enabled or is_selecting: 
+		print("[DEBUG-MAP] _check_autoplay skipped. Enabled: ", RunManager.autoplay_enabled, " is_selecting: ", is_selecting)
+		return
 	
 	autoplay_target_node = RunManager.get_next_autoplay_node()
 	if not autoplay_target_node.is_empty():
+		print("[DEBUG-MAP] Autoplay target found: ", autoplay_target_node["id"])
 		is_selecting = true
 		autoplay_timer = 2.0
+	else:
+		print("[DEBUG-MAP] Autoplay target NOT found (empty return from RunManager)")
 
 func _find_node(nodes: Array, id: String) -> Dictionary:
 	for n: Dictionary in nodes:
@@ -218,24 +214,17 @@ func _input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		var run: Dictionary = RunManager.get_run()
 		if run.is_empty(): return
-		
-		# World coordinates matching what _draw() uses
 		var draw_params: Array = _get_map_draw_params()
 		var center: Vector2 = draw_params[0] as Vector2
 		var scale_factor: float = draw_params[1] as float
-		
-		# Translate Screen/Viewport position to World position
 		var event_pos: Vector2 = Vector2.ZERO
 		if event is InputEventMouseButton: event_pos = (event as InputEventMouseButton).position
 		elif event is InputEventScreenTouch: event_pos = (event as InputEventScreenTouch).position
-		
 		var world_click_pos: Vector2 = get_canvas_transform().affine_inverse() * event_pos
 		
-		# Check node clicks
 		for node: Dictionary in run["nodes"]:
 			var pos: Vector2 = center + (Vector2(node["x"], node["y"]) - Vector2(0.5, 0.5)) * scale_factor
 			var dist: float = world_click_pos.distance_to(pos)
-			
 			if dist < 25.0:
 				selected_node_id = node["id"]
 				hud.update_selected_node_name(node)
@@ -254,17 +243,14 @@ func _input(event: InputEvent) -> void:
 		if dir != Vector2.ZERO:
 			var current_node: Dictionary = _find_node(run_data["nodes"], selected_node_id)
 			var adjacent_nodes: Array[Dictionary] = _get_adjacent_nodes(selected_node_id)
-			
 			var best_node: Dictionary = {}
 			var best_score: float = -INF
-			
 			for adj: Dictionary in adjacent_nodes:
 				var node_dir: Vector2 = Vector2(adj["x"] - current_node["x"], adj["y"] - current_node["y"]).normalized()
 				var score: float = node_dir.dot(dir)
 				if score > 0.5 and score > best_score:
 					best_score = score
 					best_node = adj
-			
 			if not best_node.is_empty():
 				selected_node_id = best_node["id"]
 				hud.update_selected_node_name(best_node)
@@ -303,18 +289,18 @@ func _input(event: InputEvent) -> void:
 			pause_menu.connect("resume_requested", _on_overlay_closed)
 		get_viewport().set_input_as_handled()
 
-func _on_node_clicked(node: Dictionary) -> void:
+func _on_node_clicked(node: Dictionary, is_manual: bool = true) -> void:
 	var run: Dictionary = RunManager.get_run()
+	print("[DEBUG-MAP] _on_node_clicked: ", node["id"], " manual: ", is_manual, " Current: ", run["currentNodeId"])
 	
-	# If clicking the current node, allow reopening shop/event
 	if node["id"] == run["currentNodeId"]:
+		print("[DEBUG-MAP] Clicking current node, reopening overlay...")
 		if node["type"] == "shop":
 			_show_shop_overlay()
 		elif node["type"] == "event":
 			_show_event_overlay()
 		return
 	
-	# 1. Find the connecting edge
 	var connecting_edge: Dictionary = {}
 	for edge: Dictionary in run["edges"]:
 		if (edge["from"] == run["currentNodeId"] and edge["to"] == node["id"]) or \
@@ -323,23 +309,28 @@ func _on_node_clicked(node: Dictionary) -> void:
 			break
 			
 	if connecting_edge.is_empty():
-		print("[MAP] Node not reachable from current node")
+		print("[MAP] Node not adjacent, showing navigation button...")
+		hud.show_navigation_button(node)
+		queue_redraw()
 		return
 		
-	# 2. Check traversability FIRST (applies to shops/events too!)
 	if not RunManager.is_edge_traversable(connecting_edge):
 		print("[MAP] Path is locked! Need more medals.")
-		# Visual feedback: subtle shake
 		var tween: Tween = create_tween()
 		var orig_pos: Vector2 = position
 		tween.tween_property(self, "position", orig_pos + Vector2(4, 0), 0.05)
 		tween.tween_property(self, "position", orig_pos - Vector2(4, 0), 0.05)
 		tween.tween_property(self, "position", orig_pos, 0.05)
-		# Re-check autoplay in case we picked a bad node
 		get_tree().create_timer(0.5).timeout.connect(_check_autoplay)
 		return
 
-	# 3. Handle by type (Only if NOT already used)
+	# Only clear navigation if the player MANUALLY clicked a different node.
+	# Autoplay clicking the next step in the path should NOT clear the target.
+	if is_manual:
+		print("[DEBUG-MAP] Clearing navigation target due to manual node click")
+		RunManager.navigation_target_id = ""
+		hud.nav_button.visible = false
+
 	if not node.get("isUsed", false):
 		if node["type"] == "shop":
 			RunManager.pending_overlay = "shop"
@@ -348,7 +339,6 @@ func _on_node_clicked(node: Dictionary) -> void:
 		elif node["type"] == "hard":
 			var challenge: EliteChallenge = EliteChallenge.get_random_challenge()
 			if RunManager.autoplay_enabled:
-				# Auto-accept: skip the dialog and start the challenge directly
 				RunManager.active_challenge = challenge
 				var max_g: float = RunManager.get_absolute_max_grade()
 				var profile: CourseProfile = challenge.generate_course_profile(max_g)
@@ -382,7 +372,6 @@ func _on_node_clicked(node: Dictionary) -> void:
 				overlay.connect("closed", _on_overlay_closed)
 			return
 
-	# Start the ride for all other cases (standard, used nodes, etc.)
 	RunManager.set_active_edge(connecting_edge)
 	get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
 

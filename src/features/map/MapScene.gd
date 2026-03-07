@@ -186,7 +186,6 @@ func _check_autoplay() -> void:
 	if not autoplay_target_node.is_empty():
 		is_selecting = true
 		autoplay_timer = 2.0
-	else:
 
 func _find_node(nodes: Array, id: String) -> Dictionary:
 	for n: Dictionary in nodes:

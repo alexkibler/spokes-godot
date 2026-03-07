@@ -9,6 +9,7 @@ var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
 var active_challenge: EliteChallenge = null
 var pending_overlay: String = "" # "shop", "event", or ""
+var active_quest: Dictionary = {} # Quest: {destination_id, destination_name, cargo_name, cargo_weight_kg, reward_gold}
 
 func reset() -> void:
 	run_data = {}
@@ -17,6 +18,7 @@ func reset() -> void:
 	autoplay_enabled = false
 	active_challenge = null
 	pending_overlay = ""
+	active_quest = {}
 
 func load_run_data(data: Dictionary) -> void:
 	run_data = data
@@ -341,6 +343,18 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	# Clear active edge as the ride is now complete
 	run_data["active_edge"] = null
 
+	# Check if this node completes the active delivery quest
+	if not active_quest.is_empty() and dest_id == active_quest.get("destination_id", ""):
+		var quest_reward: int = active_quest.get("reward_gold", 0) as int
+		add_gold(quest_reward)
+		print("[RUN] Quest complete! Delivered '%s' to '%s'. Reward: %dg" % [
+			active_quest.get("cargo_name", ""),
+			active_quest.get("destination_name", ""),
+			quest_reward
+		])
+		active_quest = {}
+		SignalBus.quest_updated.emit()
+
 	# Auto-save after completing a node (end of EACH ride)
 	_maybe_save()
 
@@ -533,6 +547,38 @@ func add_gold(amount: int) -> void:
 	run_data["gold"] = current_gold
 	SignalBus.gold_changed.emit(current_gold)
 	_maybe_save()
+
+## Returns the total real-world system mass (kg): rider + bike + inventory items + active cargo.
+## Used by physics to ensure all carried weight affects simulation.
+func get_total_system_mass() -> float:
+	var base_rider_kg: float = run_data.get("weightKg", 75.0)
+	var base_bike_kg: float = 8.0
+	var total: float = base_rider_kg + base_bike_kg
+
+	# Add active quest cargo weight
+	if not active_quest.is_empty():
+		total += active_quest.get("cargo_weight_kg", 0.0) as float
+
+	# Add weight of all equipped items
+	var equipped: Dictionary = run_data.get("equipped", {})
+	for slot: String in equipped:
+		var item_id: String = equipped[slot]
+		var item_def: Dictionary = ContentRegistry.get_item(item_id)
+		total += item_def.get("weight_kg", 0.0) as float
+
+	# Add weight of all items in inventory (unequipped)
+	var inventory: Array = run_data.get("inventory", [])
+	for item_id: String in inventory:
+		var item_def: Dictionary = ContentRegistry.get_item(item_id)
+		if not item_def.is_empty():
+			total += item_def.get("weight_kg", 0.0) as float
+
+	return total
+
+## Accept a delivery quest, storing it as the active quest.
+func accept_quest(quest_data: Dictionary) -> void:
+	active_quest = quest_data
+	SignalBus.quest_updated.emit()
 
 func _maybe_save() -> void:
 	if current_slot_index != -1:

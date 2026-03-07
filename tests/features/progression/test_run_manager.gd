@@ -115,6 +115,111 @@ func test_complete_node_visit() -> void:
 	var second_clear: bool = RunManager.complete_node_visit(edge)
 	assert_false(second_clear, "second visit should return false")
 
+func test_get_total_system_mass_base() -> void:
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
+	RunManager.active_quest = {}
+
+	# Base mass = rider (68) + bike (8.0) = 76.0
+	var mass: float = RunManager.get_total_system_mass()
+	assert_almost_eq(mass, 76.0, 0.01, "Base mass should be rider + 8kg bike")
+
+func test_get_total_system_mass_with_cargo() -> void:
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
+	RunManager.active_quest = {
+		"destination_id": "node_test",
+		"destination_name": "Test Shop",
+		"cargo_name": "Bulk Coffee Beans",
+		"cargo_weight_kg": 5.0,
+		"reward_gold": 125,
+	}
+
+	# Base mass (76.0) + cargo (5.0) = 81.0
+	var mass: float = RunManager.get_total_system_mass()
+	assert_almost_eq(mass, 81.0, 0.01, "Mass should include quest cargo weight")
+	RunManager.active_quest = {}
+
+func test_get_total_system_mass_with_items() -> void:
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
+	RunManager.active_quest = {}
+
+	# Register a test item with actual weight
+	ContentRegistry.register_item({
+		"id": "heavy_test_bag",
+		"label": "Heavy Test Bag",
+		"slot": "Rider",
+		"modifier": {},
+		"weight_kg": 3.0,
+	})
+	RunManager.run_data["inventory"] = ["heavy_test_bag"]
+	RunManager.run_data["equipped"] = {}
+
+	# Base (76.0) + inventory item (3.0) = 79.0
+	var mass: float = RunManager.get_total_system_mass()
+	assert_almost_eq(mass, 79.0, 0.01, "Mass should include inventory item weight")
+
+func test_accept_quest() -> void:
+	RunManager.active_quest = {}
+	watch_signals(SignalBus)
+
+	var quest_data: Dictionary = {
+		"destination_id": "node_plains_shop",
+		"destination_name": "Plains Shop",
+		"cargo_name": "Emergency Medical Supplies",
+		"cargo_weight_kg": 1.0,
+		"reward_gold": 115,
+	}
+	RunManager.accept_quest(quest_data)
+
+	assert_false(RunManager.active_quest.is_empty(), "active_quest should be set after accept")
+	assert_eq(RunManager.active_quest["cargo_name"], "Emergency Medical Supplies")
+	assert_signal_emitted(SignalBus, "quest_updated", "should emit quest_updated")
+	RunManager.active_quest = {}
+
+func test_quest_completion_on_node_visit() -> void:
+	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
+	var run: Dictionary = RunManager.get_run()
+	var hub_id: String = run.currentNodeId
+
+	# Find an edge from hub
+	var edge: Dictionary = {}
+	for e: Dictionary in run.edges:
+		if e.from == hub_id:
+			edge = e
+			break
+
+	assert_false(edge.is_empty(), "should find an edge")
+	var dest_id: String = edge.to
+
+	# Set up an active quest targeting that destination
+	RunManager.active_quest = {
+		"destination_id": dest_id,
+		"destination_name": "Target Node",
+		"cargo_name": "Test Cargo",
+		"cargo_weight_kg": 2.5,
+		"reward_gold": 200,
+	}
+
+	var gold_before: int = run.gold
+	watch_signals(SignalBus)
+
+	RunManager.complete_node_visit(edge)
+
+	# Quest should be cleared and gold awarded
+	assert_true(RunManager.active_quest.is_empty(), "active_quest should be cleared on delivery")
+	assert_eq(run.gold, gold_before + 25 + 200, "Should award node gold + quest reward")
+	assert_signal_emitted(SignalBus, "quest_updated", "should emit quest_updated on completion")
+
+func test_reset_clears_active_quest() -> void:
+	RunManager.active_quest = {
+		"destination_id": "test",
+		"cargo_name": "Cargo",
+		"cargo_weight_kg": 1.0,
+		"destination_name": "Test",
+		"reward_gold": 50,
+	}
+	RunManager.reset()
+	assert_true(RunManager.active_quest.is_empty(), "reset should clear active_quest")
+
 func test_is_edge_traversable() -> void:
 	RunManager.start_new_run(3, 50.0, "normal", 200, 68.0, "imperial")
 	var run: Dictionary = RunManager.get_run()

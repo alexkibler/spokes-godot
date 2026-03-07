@@ -273,6 +273,32 @@ static func generate_hub_and_spoke_map(run_data: Dictionary) -> void:
     for e: Dictionary in edges:
         total_map_dist += (e["profile"] as CourseProfile).total_distance_m
     
+    var raw_total_ascent_m: float = 0.0
+    for e: Dictionary in edges:
+        for s: Dictionary in (e["profile"] as CourseProfile).segments:
+            if s["grade"] > 0:
+                raw_total_ascent_m += s["distanceM"] * s["grade"]
+
+    var target_ft_per_10mi: float = 0.0
+    if difficulty == "easy":
+        target_ft_per_10mi = randf_range(300.0, 500.0)
+    elif difficulty == "normal":
+        target_ft_per_10mi = randf_range(750.0, 1000.0)
+    elif difficulty == "hard":
+        target_ft_per_10mi = randf_range(1200.0, 1500.0)
+    else:
+        target_ft_per_10mi = randf_range(750.0, 1000.0)
+
+    var target_ascent_m_per_m: float = target_ft_per_10mi / (16093.44 * 3.28084)
+    var target_total_ascent_m: float = target_ascent_m_per_m * total_map_dist
+
+    if raw_total_ascent_m > 0:
+        var multiplier: float = target_total_ascent_m / raw_total_ascent_m
+        for e: Dictionary in edges:
+            for s: Dictionary in (e["profile"] as CourseProfile).segments:
+                s["grade"] *= multiplier
+                s["grade"] = clamp(s["grade"], -absolute_max_grade, absolute_max_grade)
+
     run_data["stats"]["totalMapDistanceM"] = total_map_dist
     
     print("[MAP GEN] spokes: %d, nodes: %d, edges: %d, total length: %.1fkm" % [

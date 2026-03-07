@@ -9,6 +9,7 @@ var autoplay_timer: float = 0.0
 var autoplay_target_node: Dictionary = {}
 
 var selected_node_id: String = ""
+var _active_overlay: Node = null
 
 func _process(delta: float) -> void:
 	if is_selecting and not autoplay_target_node.is_empty():
@@ -211,6 +212,9 @@ func _get_adjacent_nodes(node_id: String) -> Array[Dictionary]:
 	return adjacent
 
 func _input(event: InputEvent) -> void:
+	if _active_overlay and is_instance_valid(_active_overlay):
+		return
+		
 	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.is_pressed():
 		var run: Dictionary = RunManager.get_run()
 		if run.is_empty(): return
@@ -279,8 +283,11 @@ func _input(event: InputEvent) -> void:
 		if (event as InputEventKey).keycode == KEY_R:
 			var overlay: Node = (load("res://src/ui/screens/RewardOverlay.tscn") as PackedScene).instantiate()
 			add_child(overlay)
+			_active_overlay = overlay
 			if overlay.has_signal("reward_selected"):
-				overlay.connect("reward_selected", func() -> void: queue_redraw())
+				overlay.connect("reward_selected", _on_overlay_closed)
+			elif overlay.has_signal("closed"):
+				overlay.connect("closed", _on_overlay_closed)
 
 	if event.is_action_pressed("toggle_autoplay"):
 		RunManager.toggle_autoplay()
@@ -289,11 +296,23 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("open_pause_menu"):
 		var pause_menu: Node = (load("res://src/ui/screens/PauseOverlay.tscn") as PackedScene).instantiate()
 		add_child(pause_menu)
+		_active_overlay = pause_menu
+		if pause_menu.has_signal("closed"):
+			pause_menu.connect("closed", _on_overlay_closed)
+		elif pause_menu.has_signal("resume_requested"):
+			pause_menu.connect("resume_requested", _on_overlay_closed)
 		get_viewport().set_input_as_handled()
 
 func _on_node_clicked(node: Dictionary) -> void:
 	var run: Dictionary = RunManager.get_run()
-	if node["id"] == run["currentNodeId"]: return
+	
+	# If clicking the current node, allow reopening shop/event
+	if node["id"] == run["currentNodeId"]:
+		if node["type"] == "shop":
+			_show_shop_overlay()
+		elif node["type"] == "event":
+			_show_event_overlay()
+		return
 	
 	# 1. Find the connecting edge
 	var connecting_edge: Dictionary = {}
@@ -340,10 +359,12 @@ func _on_node_clicked(node: Dictionary) -> void:
 				return
 			var overlay: Node = (load("res://src/ui/screens/EliteOverlay.tscn") as PackedScene).instantiate()
 			add_child(overlay)
+			_active_overlay = overlay
 			if overlay.has_method("setup"):
 				overlay.setup(challenge)
 			if overlay.has_signal("challenge_accepted"):
 				overlay.connect("challenge_accepted", func(accepted_challenge: EliteChallenge) -> void:
+					_on_overlay_closed()
 					RunManager.active_challenge = accepted_challenge
 					var max_g: float = RunManager.get_absolute_max_grade()
 					var profile: CourseProfile = accepted_challenge.generate_course_profile(max_g)
@@ -354,10 +375,31 @@ func _on_node_clicked(node: Dictionary) -> void:
 				)
 			if overlay.has_signal("challenge_declined"):
 				overlay.connect("challenge_declined", func() -> void:
+					_on_overlay_closed()
 					_check_autoplay()
 				)
+			elif overlay.has_signal("closed"):
+				overlay.connect("closed", _on_overlay_closed)
 			return
 
 	# Start the ride for all other cases (standard, used nodes, etc.)
 	RunManager.set_active_edge(connecting_edge)
 	get_tree().change_scene_to_file("res://src/features/cycling/GameScene.tscn")
+
+func _show_shop_overlay() -> void:
+	var overlay: Node = (load("res://src/ui/screens/ShopOverlay.tscn") as PackedScene).instantiate()
+	add_child(overlay)
+	_active_overlay = overlay
+	if overlay.has_signal("closed"):
+		overlay.connect("closed", _on_overlay_closed)
+
+func _show_event_overlay() -> void:
+	var overlay: Node = (load("res://src/ui/screens/EventOverlay.tscn") as PackedScene).instantiate()
+	add_child(overlay)
+	_active_overlay = overlay
+	if overlay.has_signal("closed"):
+		overlay.connect("closed", _on_overlay_closed)
+
+func _on_overlay_closed() -> void:
+	_active_overlay = null
+	queue_redraw()

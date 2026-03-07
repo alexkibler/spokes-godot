@@ -9,7 +9,11 @@ var autoplay_enabled: bool = false
 var autoplay_delay_ms: int = 2000
 var active_challenge: EliteChallenge = null
 var pending_overlay: String = "" # "shop", "event", or ""
-var active_quest: Dictionary = {} # Quest: {destination_id, destination_name, cargo_name, cargo_weight_kg, reward_gold}
+var active_quest: Dictionary:
+	get:
+		return run_data.get("active_quest", {})
+	set(value):
+		run_data["active_quest"] = value
 
 func reset() -> void:
 	run_data = {}
@@ -18,10 +22,13 @@ func reset() -> void:
 	autoplay_enabled = false
 	active_challenge = null
 	pending_overlay = ""
-	active_quest = {}
 
 func load_run_data(data: Dictionary) -> void:
 	run_data = data
+	
+	# Ensure active_quest exists in run_data if it was missing in old saves
+	if not "active_quest" in run_data:
+		run_data["active_quest"] = {}
 	
 	# Reconstruct CourseProfiles in edges
 	var edges: Array = run_data.get("edges", [])
@@ -62,6 +69,7 @@ func start_new_run(run_length: int, total_distance_km: float, difficulty: String
 		"visitedNodeIds": [],
 		"active_edge": null,
 		"pendingNodeAction": null,
+		"active_quest": {},
 		"nodes": [],
 		"edges": [],
 		"runLength": run_length,
@@ -290,12 +298,12 @@ func get_next_autoplay_node() -> Dictionary:
 					return n
 	return {}
 
-func complete_active_edge() -> bool:
+func complete_active_edge() -> Dictionary:
 	var ae: Dictionary = run_data.get("active_edge", {})
 	return complete_node_visit(ae)
 
-func complete_node_visit(edge: Dictionary) -> bool:
-	if edge.is_empty(): return false
+func complete_node_visit(edge: Dictionary) -> Dictionary:
+	if edge.is_empty(): return {"is_first_clear": false, "quest_completed": false}
 	
 	# Find destination node
 	var dest_id: String = edge["to"]
@@ -343,6 +351,8 @@ func complete_node_visit(edge: Dictionary) -> bool:
 	# Clear active edge as the ride is now complete
 	run_data["active_edge"] = null
 
+	var quest_info: Dictionary = {"quest_completed": false}
+
 	# Check if this node completes the active delivery quest
 	if not active_quest.is_empty() and dest_id == active_quest.get("destination_id", ""):
 		var quest_reward: int = active_quest.get("reward_gold", 0) as int
@@ -352,13 +362,24 @@ func complete_node_visit(edge: Dictionary) -> bool:
 			active_quest.get("destination_name", ""),
 			quest_reward
 		])
+		
+		quest_info = {
+			"quest_completed": true,
+			"cargo_name": active_quest.get("cargo_name", ""),
+			"destination_name": active_quest.get("destination_name", ""),
+			"reward_gold": quest_reward
+		}
+		
 		active_quest = {}
 		SignalBus.quest_updated.emit()
 
 	# Auto-save after completing a node (end of EACH ride)
 	_maybe_save()
 
-	return is_first_clear
+	return {
+		"is_first_clear": is_first_clear,
+		"quest": quest_info
+	}
 
 func get_best_reward(rewards: Array[Dictionary]) -> Dictionary:
 	if rewards.is_empty(): return {}
@@ -579,6 +600,7 @@ func get_total_system_mass() -> float:
 func accept_quest(quest_data: Dictionary) -> void:
 	active_quest = quest_data
 	SignalBus.quest_updated.emit()
+	_maybe_save()
 
 func _maybe_save() -> void:
 	if current_slot_index != -1:

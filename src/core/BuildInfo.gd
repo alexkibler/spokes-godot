@@ -3,7 +3,7 @@ extends Node
 # This file is automatically updated by the CI/CD pipeline.
 # DO NOT EDIT MANUALLY.
 
-const COMMIT_HASH: String = "3652f84ef71b441febdb91273b5f8a549c09ee48"
+const COMMIT_HASH: String = "9d03fbce1401e96f06c383198861c58bf2ed3256"
 
 func _ready() -> void:
 	if OS.has_feature("web"):

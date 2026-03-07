@@ -150,7 +150,20 @@ func _on_sell_pressed(id: String, price: int) -> void:
 
 func _on_quest_board_pressed() -> void:
 	var overlay: Node = (load("res://src/ui/screens/QuestBoardOverlay.tscn") as PackedScene).instantiate()
-	add_child(overlay)
+	get_parent().add_child(overlay)
+	visible = false
+	
+	if overlay.has_signal("close_pressed"):
+		overlay.connect("close_pressed", func() -> void:
+			if is_instance_valid(self):
+				visible = true
+		)
+	
+	if overlay.has_signal("quest_accepted"):
+		overlay.connect("quest_accepted", func() -> void:
+			if is_instance_valid(self):
+				_on_close_pressed()
+		)
 
 func _on_close_pressed() -> void:
 	closed.emit()

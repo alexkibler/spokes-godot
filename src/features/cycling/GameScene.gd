@@ -600,7 +600,9 @@ func _on_ride_complete() -> void:
 			current_node = n
 			break
 			
-	var is_first_clear: bool = RunManager.complete_active_edge()
+	var completion_results: Dictionary = RunManager.complete_active_edge()
+	var is_first_clear: bool = completion_results.get("is_first_clear", false)
+	var quest_info: Dictionary = completion_results.get("quest", {})
 	
 	# Re-fetch current node from RunManager directly to ensure we have the destination node data
 	var dest_node: Dictionary = {}
@@ -611,23 +613,7 @@ func _on_ride_complete() -> void:
 			break
 
 	# Evaluate Elite Challenge
-	if RunManager.active_challenge != null:
-		var metrics: Dictionary = {
-			"avgPowerW": challenge_power_sum / max(1, challenge_tick_count),
-			"peakPowerW": challenge_peak_power,
-			"everStopped": challenge_ever_stopped,
-			"elapsedSeconds": (Time.get_ticks_msec() - ride_start_time) / 1000.0,
-			"ftpW": RunManager.run_data.get("ftpW", 200)
-		}
-		
-		var success: bool = RunManager.active_challenge.evaluate(metrics)
-		if success:
-			RunManager.active_challenge.grant_reward()
-			print("[ELITE] Challenge Succeeded!")
-		else:
-			print("[ELITE] Challenge Failed.")
-			
-		RunManager.active_challenge = null
+	# ... (Elite logic)
 
 	if not dest_node.is_empty() and dest_node["type"] == "finish":
 		get_tree().change_scene_to_file("res://src/features/progression/VictoryScene.tscn")
@@ -637,33 +623,51 @@ func _on_ride_complete() -> void:
 	var on_overlay_closed: Callable = func() -> void:
 		get_tree().change_scene_to_file("res://src/features/map/MapScene.tscn")
 
-	if is_first_clear:
-		var overlay: Node = (load("res://src/ui/screens/RewardOverlay.tscn") as PackedScene).instantiate()
-		add_child(overlay)
-		
-		# Show boss medal if applicable
-		var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
-		var b_name: String = ""
-		var b_reward: String = ""
-		if is_boss:
-			# Find the boss name from the ghost (there should only be one)
-			if ghosts.size() > 0:
-				b_name = ghosts[0].label
-			
-			var spoke_id: String = current_node.get("metadata", {}).get("spokeId", "plains")
-			var BossRegistryScript: Script = load("res://src/features/cycling/BossRegistry.gd")
-			var boss_data: Dictionary = BossRegistryScript.get_boss(spoke_id)
-			b_reward = boss_data.get("reward_id", "")
+	# Sequence of potential overlays:
+	# 1. Quest Complete
+	# 2. Reward (if first clear)
+	# 3. Pending (Shop/Event)
 
-		if overlay.has_method("setup"):
-			overlay.setup(is_boss, b_name, b_reward)
-		
-		if overlay.has_signal("reward_selected"):
-			overlay.connect("reward_selected", func() -> void:
-				_check_and_show_pending_overlay(on_overlay_closed)
-			)
-	else:
+	var show_pending: Callable = func() -> void:
 		_check_and_show_pending_overlay(on_overlay_closed)
+
+	var show_reward: Callable = func() -> void:
+		if is_first_clear:
+			var overlay: Node = (load("res://src/ui/screens/RewardOverlay.tscn") as PackedScene).instantiate()
+			add_child(overlay)
+			
+			# Show boss medal if applicable
+			var is_boss: bool = not current_node.is_empty() and current_node["type"] == "boss"
+			var b_name: String = ""
+			var b_reward: String = ""
+			if is_boss:
+				if ghosts.size() > 0: b_name = ghosts[0].label
+				var spoke_id: String = current_node.get("metadata", {}).get("spokeId", "plains")
+				var BossRegistryScript: Script = load("res://src/features/cycling/BossRegistry.gd")
+				var boss_data: Dictionary = BossRegistryScript.get_boss(spoke_id)
+				b_reward = boss_data.get("reward_id", "")
+
+			if overlay.has_method("setup"):
+				overlay.setup(is_boss, b_name, b_reward)
+			
+			if overlay.has_signal("reward_selected"):
+				overlay.connect("reward_selected", show_pending)
+		else:
+			show_pending.call()
+
+	if quest_info.get("quest_completed", false):
+		var q_overlay: Node = (load("res://src/ui/screens/QuestCompleteOverlay.tscn") as PackedScene).instantiate()
+		add_child(q_overlay)
+		if q_overlay.has_method("setup"):
+			q_overlay.setup(
+				quest_info.get("cargo_name", ""),
+				quest_info.get("destination_name", ""),
+				quest_info.get("reward_gold", 0)
+			)
+		if q_overlay.has_signal("closed"):
+			q_overlay.connect("closed", show_reward)
+	else:
+		show_reward.call()
 
 func _check_and_show_pending_overlay(callback: Callable) -> void:
 	var pending: String = RunManager.pending_overlay

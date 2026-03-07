@@ -3,6 +3,8 @@ extends CanvasLayer
 # Quest Board: generates 2-3 delivery quests between shop nodes and lets the player accept one.
 
 signal quest_accepted
+signal closed
+signal close_pressed
 
 @onready var quest_container: VBoxContainer = %QuestContainer
 @onready var gold_label: Label = %GoldLabel
@@ -235,6 +237,8 @@ func _on_accept_quest(quest: Dictionary) -> void:
 		"reward_gold": quest["reward_gold"] as int,
 	}
 	RunManager.accept_quest(quest_data)
+	quest_accepted.emit()
+	closed.emit()
 	queue_free()
 
 var _locating: bool = false
@@ -306,4 +310,6 @@ func _get_node_display_name(node: Dictionary) -> String:
 			return node_type.capitalize()
 
 func _on_close_pressed() -> void:
+	close_pressed.emit()
+	closed.emit()
 	queue_free()
